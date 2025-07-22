@@ -21,6 +21,7 @@ app.use(
     origin: [
       process.env.VITE_FRONT_URL,
       'http://localhost:5173', // Vite dev server default port
+      'http://localhost:5174', // Vite dev server default port
       'http://127.0.0.1:5173',
       'https://daily-viva-tracker.onrender.com', // Add Render deployment URL
       'https://daily-viva-tracker.vercel.app', // Add Vercel deployment URL

@@ -11,6 +11,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Dashboard from "./pages/admin/dashboard";
 import History from "@/pages/history";
 import Performance from "@/pages/performance";
+import Convert2CCE from "@/pages/cnvrt2cce";
 
 function Router() {
   return ( // TODO: Add a loading state
@@ -18,6 +19,7 @@ function Router() {
       <ProtectedRoute path="/" component={Home} />
       <ProtectedRoute path="/history" component={History} />
       <ProtectedRoute path="/performance" component={Performance} />
+      <ProtectedRoute path="/cnvrt2cce" component={Convert2CCE} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/admin/*" component={Dashboard}/>
       <Route component={NotFound} />

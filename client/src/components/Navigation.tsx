@@ -1,4 +1,4 @@
-import { Menu, Home, History, BarChart } from "lucide-react"
+import { Menu, Home, History, BarChart, Replace } from "lucide-react"
 import { useLocation } from "wouter"
 import {
   Offcanvas,
@@ -28,6 +28,11 @@ export default function Navigation() {
       title: "Performance Board",
       icon: BarChart,
       href: "/performance",
+    },
+    {
+      title: "Convert to CCE",
+      icon: Replace,
+      href: "/cnvrt2cce",
     },
   ]
 
