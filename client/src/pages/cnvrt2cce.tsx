@@ -60,7 +60,7 @@ export default function Cnvrt2CCE() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [isAskMeModalOpen, setIsAskMeModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [totalCceMark, setTotalCceMark] = useState<number>(10); // default 10
+  const [totalCceMark, setTotalCceMark] = useState<number | "">(10); // default 10, allow empty
   const baseUrl = import.meta.env.VITE_BASE_URL;
 
   const fetchStudents = async () => {
@@ -306,7 +306,10 @@ export default function Cnvrt2CCE() {
                   type="number"
                   min={1}
                   value={totalCceMark}
-                  onChange={(e) => setTotalCceMark(Number(e.target.value))}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setTotalCceMark(value === "" ? "" : Number(value));
+                  }}
                   className="w-full px-2 py-1 border border-blue-600 rounded focus:outline-none"
                 />
               </div>
@@ -424,7 +427,7 @@ export default function Cnvrt2CCE() {
                         </div>
                         <p className={`text-lg font-bold ${colors.text}`}>
                           {(
-                            (performance.percentage * totalCceMark) /
+                            (performance.percentage * (Number(totalCceMark) || 0)) /
                             100
                           ).toFixed(2)}
                         </p>
