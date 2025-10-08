@@ -13,6 +13,10 @@ interface User {
   phone?: string;
   subjectsTaught: Subject[];
   tId: string;
+  role?: "teacher" | "super_admin";
+  qualification?: string;
+  joinedAt?: string;
+  active?: boolean;
 }
 
 interface AuthContextType {

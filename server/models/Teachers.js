@@ -2,21 +2,21 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
 const teacherSchema = new mongoose.Schema({
-    name: { type: String, required: false },
+    name: { type: String, required: true },
     password: { type: String, required: true },
-    email: { type: String, required: false, unique: false, sparse: true }, // Add `sparse: true` to allow multiple nulls
+    email: { type: String, required: true, unique: true },
     phone: { type: String, required: true },
-    qualification: { type: String, required: false },
-    tId: { type: String, required: false },
+    role: { type: String, enum: ['teacher', 'super_admin'], default: 'teacher' },
+    qualification: { type: String },
     subjectsTaught: [
         {
-            class: { type: Number, required: false },
-            subject: { type: String, required: false },
-            periodsInSemester: { type: Number, required: false }
+            class: { type: Number },
+            subject: { type: String },
+            periodsInSemester: { type: Number }
         }
     ],
-    joinedAt: { type: Date, required: false },
-    active: { type: Boolean, required: false }
+    joinedAt: { type: Date, default: Date.now },
+    active: { type: Boolean, default: true }
 });
 
 teacherSchema.pre('save', async function (next) {

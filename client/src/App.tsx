@@ -9,19 +9,29 @@ import AuthPage from "@/pages/auth-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Dashboard from "./pages/admin/dashboard";
+import SuperAdminDashboard from "./pages/admin/SuperAdminDashboard";
 import History from "@/pages/history";
 import Performance from "@/pages/performance";
 import Convert2CCE from "@/pages/cnvrt2cce";
+import Export from "@/pages/Export";
+import Profile from "@/pages/Profile";
+import TeacherList from "@/pages/admin/TeacherList";
+import TeacherDetails from "@/pages/admin/TeacherDetails";
 
 function Router() {
   return ( // TODO: Add a loading state
     <Switch>
+      <Route path="/auth" component={AuthPage} />
+      <ProtectedRoute path="/admin/teachers/:id" component={TeacherDetails} />
+      <ProtectedRoute path="/admin/teachers" component={TeacherList} />
+      <ProtectedRoute path="/admin/superadmin" component={SuperAdminDashboard} />
+      <ProtectedRoute path="/admin/*" component={Dashboard} />
       <ProtectedRoute path="/" component={Home} />
       <ProtectedRoute path="/history" component={History} />
       <ProtectedRoute path="/performance" component={Performance} />
       <ProtectedRoute path="/cnvrt2cce" component={Convert2CCE} />
-      <Route path="/auth" component={AuthPage} />
-      <Route path="/admin/*" component={Dashboard}/>
+      <ProtectedRoute path="/export" component={Export} />
+      <ProtectedRoute path="/profile" component={Profile} />
       <Route component={NotFound} />
     </Switch>
   );

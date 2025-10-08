@@ -13,6 +13,7 @@ interface MongoUser {
   name: string;
   email: string;
   phone: string;
+  role: 'teacher' | 'superadmin';
   subjectsTaught: Array<{
     class: number;
     subject: string;

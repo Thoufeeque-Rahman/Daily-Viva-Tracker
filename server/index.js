@@ -23,14 +23,27 @@ app.use(
       'http://localhost:5173', // Vite dev server default port
       'http://localhost:5174', // Vite dev server default port
       'http://127.0.0.1:5173',
+      'http://localhost:3000',
       'https://daily-viva-tracker.onrender.com', // Add Render deployment URL
       'https://daily-viva-tracker.vercel.app', // Add Vercel deployment URL
+      'https://v6xrx50k-5000.inc1.devtunnels.ms'
     ],
     credentials: true,
   })
 );
 app.use(express.json());
 app.use(cookieParser());
+
+// Configure cookie settings
+app.use((req, res, next) => {
+  res.cookie('token', req.cookies.token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  });
+  next();
+});
 
 // Session middleware
 app.use(session(sessionConfig));
@@ -53,12 +66,27 @@ const studentRoutes = require("./routes/students");
 const teachersRoutes = require("./routes/teachers");
 const roundsRoutes = require("./routes/rounds");
 const dvtMarksRoutes = require("./routes/dvtmarks");
+const semestersRoutes = require("./routes/semesters");
+const subjectsRoutes = require("./routes/subjects");
+const gradingConfigsRoutes = require("./routes/gradingConfigs");
+const exportsRoutes = require("./routes/exports");
+const superadminRoutes = require("./routes/superadmin");
 
-// Use routes
-app.use("/api/students", studentRoutes);
-app.use("/api/teachers", teachersRoutes);
-app.use("/api/rounds", roundsRoutes);
-app.use("/api/dvtmarks", dvtMarksRoutes);
+// Import auth middleware
+const { authenticateToken } = require('./middleware/auth');
+
+// Public routes
+app.use("/api/teachers", teachersRoutes); // Keep this public for login/register
+
+// Protected routes - require JWT authentication
+app.use("/api/students", authenticateToken, studentRoutes);
+app.use("/api/rounds", authenticateToken, roundsRoutes);
+app.use("/api/dvtmarks", authenticateToken, dvtMarksRoutes);
+app.use("/api/semesters", authenticateToken, semestersRoutes);
+app.use("/api/subjects", authenticateToken, subjectsRoutes);
+app.use("/api/grading-configs", authenticateToken, gradingConfigsRoutes);
+app.use("/api/exports", authenticateToken, exportsRoutes);
+app.use("/api/superadmin", authenticateToken, superadminRoutes); // This route also has isSuperAdmin middleware inside
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -99,7 +127,7 @@ app.get(/^(?!\/?api).*/, (req, res) => {
 });
 
 // Start the server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

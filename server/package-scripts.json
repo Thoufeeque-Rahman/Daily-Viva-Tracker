@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "migrate-roles": "node migrations/update-roles.js"
+  }
+}

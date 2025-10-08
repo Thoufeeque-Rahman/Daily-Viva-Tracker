@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { GraduationCap, ArrowRight, User } from "lucide-react";
 import { ClassInfo, SubjectInfo } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
+import axios from "@/lib/axios";
 import { Redirect } from "wouter";
 import {
   Table,
@@ -46,20 +47,19 @@ export default function StartScreen({
 
   const fetchDvtMarks = async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/dvtmarks/dvtmarksbydate`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      if (!response.ok) throw new Error("Failed to fetch DVT marks");
-      const data = await response.json();
-      console.log(data.data);
-      setDvtMarks(data.data);
+      const response = await axios.get(`/api/dvtmarks/dvtmarksbydate`);
+      console.log("Fetch DVT marks response:", response);
+      
+      setDvtMarks(response.data.data);
     } catch (error) {
       console.error("Error fetching DVT marks:", error);
+      let errorMessage = "Failed to fetch DVT marks. Please try again.";
+      if (error.response?.status === 401) {
+        errorMessage = "Session expired. Please log in again.";
+      }
       toast({
         title: "Error",
-        description: "Failed to fetch DVT marks. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }

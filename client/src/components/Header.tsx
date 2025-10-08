@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useEffect } from "react";
-import { Redirect } from "wouter";
+import { Redirect, useLocation } from "wouter";
 import Navigation from "./Navigation";
 
 interface HeaderProps {
@@ -27,6 +27,7 @@ export default function Header({
   onHomeClick,
 }: HeaderProps) {
   const { user, logout, isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
 
   const handleLogout = async () => {
     try {
@@ -34,6 +35,10 @@ export default function Header({
     } catch (error) {
       console.error("Logout failed:", error);
     }
+  };
+
+  const handleProfileClick = () => {
+    setLocation('/profile');
   };
 
   if (!isAuthenticated) {
@@ -81,9 +86,9 @@ export default function Header({
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem className="cursor-pointer" onClick={handleProfileClick}>
                   <User className="mr-2 h-4 w-4" />
-                  <span>{user.name}</span>
+                  <span>Profile</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="cursor-pointer text-red-600 focus:text-red-600"

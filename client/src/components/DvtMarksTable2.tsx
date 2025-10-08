@@ -80,9 +80,7 @@ const DvtMarksTable: React.FC = () => {
     setError(null);
     try {
       const response = await fetch(`${baseUrl}/api/dvtmarks/dvtmarksbydate`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        credentials: 'include', // This will send the cookie
       });
       if (!response.ok) throw new Error("Failed to fetch DVT marks");
       const data = await response.json();

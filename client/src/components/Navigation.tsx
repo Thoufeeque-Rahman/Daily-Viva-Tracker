@@ -1,4 +1,5 @@
-import { Menu, Home, History, BarChart, Replace } from "lucide-react"
+import { Menu, Home, History, BarChart, Replace, Users as UsersIcon } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
 import { useLocation } from "wouter"
 import {
   Offcanvas,
@@ -12,6 +13,10 @@ import { cn } from "@/lib/utils"
 
 export default function Navigation() {
   const [location, navigate] = useLocation()
+
+  const { user } = useAuth();
+  console.log("Current user in Navigation:", user);
+  console.log("User role in Navigation:", user?.role);
 
   const menuItems = [
     {
@@ -34,6 +39,13 @@ export default function Navigation() {
       icon: Replace,
       href: "/cnvrt2cce",
     },
+    ...(user?.role === 'super_admin' ? [
+      {
+        title: "Manage Teachers",
+        icon: UsersIcon,
+        href: "/admin/superadmin",
+      }
+    ] : [])
   ]
 
   return (

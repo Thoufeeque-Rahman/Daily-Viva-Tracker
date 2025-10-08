@@ -10,6 +10,10 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   phone: text("phone"),
   subjectsTaught: text("subjects_taught").array(), // Array of subjects taught
+  role: text("role").notNull().default("teacher"), // teacher, super_admin
+  qualification: text("qualification"),
+  joinedAt: timestamp("joined_at").defaultNow(),
+  active: boolean("active").default(true),
   // classesAssigned: text("classes_assigned").array(), // Array of classes assigned
 });
 
@@ -90,3 +94,39 @@ export const insertEvaluationSchema = createInsertSchema(evaluations).pick({
 
 export type InsertEvaluation = z.infer<typeof insertEvaluationSchema>;
 export type Evaluation = typeof evaluations.$inferSelect;
+
+// Semesters table
+export const semesters = pgTable("semesters", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  isActive: boolean("is_active").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertSemesterSchema = createInsertSchema(semesters).pick({
+  name: true,
+  startDate: true,
+  endDate: true,
+});
+
+export type InsertSemester = z.infer<typeof insertSemesterSchema>;
+export type Semester = typeof semesters.$inferSelect;
+
+// Grading configuration table
+export const gradingConfig = pgTable("grading_config", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  levels: text("levels").array().notNull(), // Array of grade levels like ["Poor", "Good", "Great"]
+  isActive: boolean("is_active").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertGradingConfigSchema = createInsertSchema(gradingConfig).pick({
+  name: true,
+  levels: true,
+});
+
+export type InsertGradingConfig = z.infer<typeof insertGradingConfigSchema>;
+export type GradingConfig = typeof gradingConfig.$inferSelect;

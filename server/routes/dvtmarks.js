@@ -303,7 +303,7 @@ async function getTodayYesterdayData() {
 }
 
 // Express.js route example
-router.get("/dvtmarksbydate", async (req, res) => {
+router.get("/dvtmarksbydate", authenticateToken, async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     
