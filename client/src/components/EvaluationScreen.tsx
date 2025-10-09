@@ -50,6 +50,7 @@ interface EvaluationScreenProps {
   allStudents: Student[];
   onStudentSelect?: (student: Student) => void;
   onForceStop?: () => void;
+  selectedSubject?: { subject: string; class: number };
 }
 
 export default function EvaluationScreen({
@@ -68,6 +69,7 @@ export default function EvaluationScreen({
   isNextEnabled,
   allStudents,
   onStudentSelect,
+  selectedSubject,
 }: EvaluationScreenProps) {
   const [studentKey, setStudentKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
@@ -237,7 +239,13 @@ export default function EvaluationScreen({
         key={studentKey}
         className="transform transition-transform duration-300 mb-auto"
       >
-        <StudentCard student={currentStudent} animate />
+        <StudentCard 
+          student={currentStudent} 
+          onSkip={onSkip} 
+          animate 
+          subject={selectedSubject?.subject}
+          classNumber={selectedSubject?.class}
+        />
       </div>
 
       {/* Evaluation Buttons */}
@@ -292,18 +300,11 @@ export default function EvaluationScreen({
           <div className="flex w-full space-x-3">
             <Button
               variant="outline"
-              className="flex-1 py-3 bg-blue-500 text-white shadow-md rounded-xl border-0 font-medium hover:bg-blue-500 hover:text-white transition-colors"
-              onClick={onSkip}
-            >
-              Skip
-            </Button> 
-            <Button
-              variant="outline"
               className="flex-1 py-3 bg-red-500 shadow-md rounded-xl text-white border-0 font-medium hover:bg-destructive hover:text-white transition-colors"
               onClick={onFinish}
             >
               Finish Evaluation
-            </Button>
+            </Button> 
             {/* <div>
               <Button
                 variant="outline"

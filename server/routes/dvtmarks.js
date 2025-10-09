@@ -65,6 +65,32 @@ router.post("/", authenticateToken, async (req, res) => {
   }
 });
 
+// Get DvtMarks by student ID, subject, and class for student history
+router.get("/student/:studentId/:subject/:class", async (req, res) => {
+  try {
+    const { studentId, subject, class: classNumber } = req.params;
+    
+    console.log("Fetching student marks history:", {
+      studentId,
+      subject,
+      class: classNumber,
+    });
+
+    const dvtMarks = await DvtMarks.find({
+      studentId: studentId,
+      subject: subject,
+      class: parseInt(classNumber),
+    }).sort({ date: -1 }).limit(10); // Get last 10 records
+
+    console.log(`Found ${dvtMarks.length} marks for student ${studentId} in ${subject} class ${classNumber}`);
+    
+    res.json(dvtMarks);
+  } catch (error) {
+    console.error("Error fetching student marks history:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Get DvtMarks by subject and class
 router.get("/:subject/:class", async (req, res) => {
   try {

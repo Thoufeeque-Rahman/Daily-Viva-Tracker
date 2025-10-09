@@ -1,16 +1,27 @@
+import { useState } from "react";
 import { Student } from "@/types";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "./ui/button";
+import { Book, Forward, ForwardIcon, History, SkipForward } from "lucide-react";
+import { StudentHistoryModal } from "./StudentHistoryModal";
 
 interface StudentCardProps {
   student: Student | undefined;
+  onSkip: () => void;
   animate?: boolean;
+  subject?: string;
+  classNumber?: number;
 }
 
 export default function StudentCard({
   student,
+  onSkip,
   animate = false,
+  subject,
+  classNumber,
 }: StudentCardProps) {
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   if (!student) {
     return (
       <Card className="bg-white rounded-xl shadow-md h-[420px] overflow-hidden mb-6">
@@ -120,16 +131,18 @@ export default function StudentCard({
   return (
     <Card
       className={`bg-gradient-to-r ${bg} shadow-xl overflow-hidden border text-white rounded-2xl mb-6 ${animationClass}`}
-      style={{ height: "180px" }}
+      // style={{ height: "fit" }} 
     >
-      <div className="h-full flex items-center p-6">
+      <div className="h-full flex flex-col items-center gap-2 p-6"> 
         <div className="flex items-center w-full">
           <div className="flex justify-center items-center mr-6">
             <Avatar className={`w-24 h-24`}>
               {student.photoUrl ? (
                 <AvatarImage src={student.photoUrl} alt={student.rollNumber} />
               ) : (
-                <div className={`flex items-center justify-center w-full h-full bg-white/20 text-5xl font-bold rounded-full `}>
+                <div
+                  className={`flex items-center justify-center w-full h-full bg-white/20 text-5xl font-bold rounded-full `}
+                >
                   <h1>{student.rollNumber}</h1>
                 </div>
                 // <AvatarFallback>{student.rollNumber}</AvatarFallback>
@@ -141,40 +154,56 @@ export default function StudentCard({
             <div className="mt-3 w-full space-y-2 bg-white/20 p-3 rounded-xl shadow-sm">
               <div className="flex justify-between text-sm">
                 <span className="text-white/80">Roll Number:</span>
-                <span className={`font-medium text-white`}>{student.rollNumber}</span>
+                <span className={`font-medium text-white`}>
+                  {student.rollNumber}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-white/80">Admission No.:</span>
-                <span className={`font-medium text-white`}>{student.adNumber}</span>
+                <span className={`font-medium text-white`}>
+                  {student.adNumber}
+                </span>
               </div>
             </div>
           </div>
         </div>
+        <div className="w-full mt-auto flex gap-2">
+          <Button
+            variant="outline"
+            className="flex-1 bg-white/20 text-white rounded-md border-0 font-medium hover:bg-white/30 hover:text-white transition-colors"
+            onClick={onSkip}
+          >
+            Skip <SkipForward />
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1 bg-white/20 text-white rounded-md border-0 font-medium hover:bg-white/30 hover:text-white transition-colors"
+            onClick={() => setIsHistoryModalOpen(true)}
+            disabled={!subject || !classNumber}
+          >
+            History <History />
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1 bg-white/20 text-white rounded-md border-0 font-medium hover:bg-white/30 hover:text-white transition-colors"
+            onClick={onSkip}
+            disabled
+          >
+            Improvement <Book />
+          </Button>
+        </div>
       </div>
+
+      {/* Student History Modal */}
+      {student && subject && classNumber && (
+        <StudentHistoryModal
+          isOpen={isHistoryModalOpen}
+          onClose={() => setIsHistoryModalOpen(false)}
+          student={student}
+          subject={subject}
+          classNumber={classNumber}
+        />
+      )}
     </Card>
-    // <Card className={`bg-white rounded-xl shadow-md overflow-hidden mb-6 ${animationClass}`}>
-    //   <div className="flex flex-col items-center p-6">
-    //     <div className="mb-4 relative">
-    //       <Avatar className="w-24 h-24 border-4 border-primary">
-    //         {student.photoUrl ? (
-    //           <AvatarImage src={student.photoUrl} alt={student.rollNumber} />
-    //         ) : (
-    //           <AvatarFallback>{student.rollNumber}</AvatarFallback>
-    //         )}
-    //       </Avatar>
-    //     </div>
-    //     <h3 className="text-xl font-bold text-gray-800 text-center">{student.name}</h3>
-    //     <div className="mt-3 w-full space-y-2">
-    //       <div className="flex justify-between text-sm">
-    //         <span className="text-gray-500">Roll Number:</span>
-    //         <span className="font-medium text-gray-800">{student.rollNumber}</span>
-    //       </div>
-    //       <div className="flex justify-between text-sm">
-    //         <span className="text-gray-500">Admission No.:</span>
-    //         <span className="font-medium text-gray-800">{student.adNumber}</span>
-    //       </div>
-    //     </div>
-    //   </div>
-    // </Card>
   );
 }

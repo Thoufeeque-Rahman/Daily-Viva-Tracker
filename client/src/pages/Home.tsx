@@ -433,6 +433,7 @@ export default function Home() {
             onFinish={handleFinish}
             setPunishmentModalOpen={setPunishmentModalOpen}
             isNextEnabled={!!currentEvaluation}
+            selectedSubject={selectedSubject}
           />
         )}
       </main>
