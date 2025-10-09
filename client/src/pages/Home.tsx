@@ -25,9 +25,7 @@ export default function Home() {
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
   const [punishmentModalOpen, setPunishmentModalOpen] = useState(false);
   const [punishment, setPunishment] = useState<string>();
-  const [currentEvaluation, setCurrentEvaluation] = useState<
-    "poor" | "good" | "great" | null
-  >(null);
+  const [currentEvaluation, setCurrentEvaluation] = useState<string | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [currentStudentIndex, setCurrentStudentIndex] = useState(0);
   const { toast } = useToast();
@@ -268,36 +266,24 @@ export default function Home() {
     setCurrentEvaluation(null);
   };
 
-  const handleEvaluate = (value: "great" | "good" | "poor") => {
+  const handleEvaluate = (value: string, mark: number) => {
     setCurrentEvaluation(value);
 
-    if (value === "great") {
-      console.log(
-        currentStudent,
-        selectedSubject?.subject,
-        selectedSubject?.class
-      );
-      // Submit evaluation with mark 2
-      submitEvaluation(2);
-      toast({
-        title: "Great evaluation recorded",
-      });
-      handleNext();
-    } else if (value === "good") {
-      // Submit evaluation with mark 1
-      submitEvaluation(1, punishment);
-      toast({
-        title: "Good evaluation recorded",
-      });
-      handleNext();
-    } else if (value === "poor") {
-      // Submit evaluation with mark 0
-      submitEvaluation(0, punishment);
-      toast({
-        title: "Poor evaluation recorded",
-      });
-      handleNext();
-    }
+    console.log(
+      currentStudent,
+      selectedSubject?.subject,
+      selectedSubject?.class,
+      `Evaluation: ${value}, Mark: ${mark}`
+    );
+    
+    // Submit evaluation with the provided mark
+    submitEvaluation(mark, punishment);
+    
+    toast({
+      title: `${value.charAt(0).toUpperCase() + value.slice(1)} evaluation recorded`,
+    });
+    
+    handleNext();
 
     // if (value !== "great") {
     //   // setPunishmentModalOpen(true);
@@ -319,7 +305,7 @@ export default function Home() {
   };
 
   const handleNext = async () => {
-    removeStudentFromRound(String(currentStudent._id));
+    removeStudentFromRound(String(currentStudent?._id));
 
     // Move to next student
     getRandomStudent(rounds);
@@ -446,7 +432,7 @@ export default function Home() {
             onEnd={handleEnd}
             onFinish={handleFinish}
             setPunishmentModalOpen={setPunishmentModalOpen}
-            isNextEnabled={!!currentEvaluation && currentEvaluation === "great"}
+            isNextEnabled={!!currentEvaluation}
           />
         )}
       </main>

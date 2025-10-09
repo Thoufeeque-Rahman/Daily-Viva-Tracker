@@ -283,8 +283,9 @@ router.delete('/:teacherId/subjects/:subjectId', authenticateToken, async (req, 
       return res.status(404).json({ error: 'Teacher not found' });
     }
 
+    // Remove subject based on subject ID
     teacher.subjectsTaught = teacher.subjectsTaught.filter(
-      subject => subject._id.toString() !== subjectId
+      s => !s._id.equals(subjectId)
     );
 
     await teacher.save();

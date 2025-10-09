@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -17,6 +18,14 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Users,
   BookOpen,
@@ -54,10 +63,19 @@ interface Teacher {
   active: boolean;
 }
 
+interface Level {
+  name: string;
+  emoji?: string;
+  mark: number;
+  color: string;
+  description?: string;
+}
+
 interface GradingConfig {
   _id: string;
   name: string;
-  levels: string[];
+  description?: string;
+  levels: Level[];
   isActive: boolean;
 }
 
@@ -85,9 +103,16 @@ export default function SuperAdminDashboard() {
     password: "",
     qualification: "",
   });
-  const [newGradingConfig, setNewGradingConfig] = useState({
+  const [newGradingConfig, setNewGradingConfig] = useState<{
+    name: string;
+    description?: string;
+    levels: Level[];
+    isActive: boolean;
+  }>({
     name: "",
-    levels: ["Poor", "Good", "Great"],
+    description: "",
+    levels: [],
+    isActive: false,
   });
 
   // Check if user is super admin
@@ -229,17 +254,63 @@ export default function SuperAdminDashboard() {
 
   const handleCreateGradingConfig = async () => {
     try {
+      if (newGradingConfig.levels.length === 0) {
+        toast({
+          title: "Error",
+          description: "Please add at least one level.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate levels
+      const invalidLevel = newGradingConfig.levels.find(
+        (level) => !level.name || level.mark === undefined || !level.color
+      );
+      if (invalidLevel) {
+        toast({
+          title: "Error",
+          description: "Each level must have a name, mark, and color.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       await axios.post("/api/grading-configs", newGradingConfig);
       toast({
         title: "Success",
         description: "New grading configuration has been created successfully.",
       });
-      setNewGradingConfig({ name: "", levels: ["Poor", "Good", "Great"] });
+      setNewGradingConfig({
+        name: "",
+        description: "",
+        levels: [],
+        isActive: false,
+      });
       fetchGradingConfigs();
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to create grading configuration.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteGradingConfig = async (configId: string) => {
+    try {
+      await axios.delete(`/api/grading-configs/${configId}`);
+      toast({
+        title: "Success",
+        description: "Grading configuration has been deleted successfully.",
+      });
+      fetchGradingConfigs();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.error ||
+          "Failed to delete grading configuration.",
         variant: "destructive",
       });
     }
@@ -315,14 +386,12 @@ export default function SuperAdminDashboard() {
           <Tabs defaultValue="teachers" className="space-y-6">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="teachers">Teachers</TabsTrigger>
+              <TabsTrigger value="grading">Grading</TabsTrigger>
               <TabsTrigger value="semesters" disabled>
                 Semesters
               </TabsTrigger>
               <TabsTrigger value="subjects" disabled>
                 Subjects
-              </TabsTrigger>
-              <TabsTrigger value="grading" disabled>
-                Grading
               </TabsTrigger>
             </TabsList>
 
@@ -660,8 +729,8 @@ export default function SuperAdminDashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="grading-name">Configuration Name</Label>
+                  <div>
+                    <Label htmlFor="grading-name">Template Name</Label>
                     <Input
                       id="grading-name"
                       value={newGradingConfig.name}
@@ -674,64 +743,175 @@ export default function SuperAdminDashboard() {
                       placeholder="e.g., Standard Grading"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Grade Levels</Label>
-                    <div className="space-y-2">
+                  <div>
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={newGradingConfig.description || ""}
+                      onChange={(e) =>
+                        setNewGradingConfig({
+                          ...newGradingConfig,
+                          description: e.target.value,
+                        })
+                      }
+                      placeholder="Template description..."
+                    />
+                  </div>
+                  <div>
+                    <Label>Levels</Label>
+                    <div className="space-y-2 mt-2">
                       {newGradingConfig.levels.map((level, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                          <Input
-                            value={level}
-                            onChange={(e) => {
-                              const newLevels = [...newGradingConfig.levels];
-                              newLevels[index] = e.target.value;
+                        <div
+                          key={index}
+                          className="flex items-start gap-2 p-2 border rounded-lg"
+                        >
+                          <div className="flex-1 flex flex-wrap gap-2">
+                            <div className="w-20">
+                              <Label>Emoji</Label>
+                              <Input
+                                value={level.emoji}
+                                onChange={(e) => {
+                                  const newLevels = [
+                                    ...newGradingConfig.levels,
+                                  ];
+                                  newLevels[index] = {
+                                    ...newLevels[index],
+                                    emoji: e.target.value,
+                                  };
+                                  setNewGradingConfig({
+                                    ...newGradingConfig,
+                                    levels: newLevels,
+                                  });
+                                }}
+                                placeholder="e.g., 🙂"
+                              />
+                            </div>
+                            <div className="col-span-3">
+                              <Label>Name</Label>
+                              <Input
+                                value={level.name}
+                                onChange={(e) => {
+                                  const newLevels = [
+                                    ...newGradingConfig.levels,
+                                  ];
+                                  newLevels[index] = {
+                                    ...newLevels[index],
+                                    name: e.target.value,
+                                  };
+                                  setNewGradingConfig({
+                                    ...newGradingConfig,
+                                    levels: newLevels,
+                                  });
+                                }}
+                                placeholder="e.g., Excellent"
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              <Label>Mark</Label>
+                              <Input
+                                type="number"
+                                value={level.mark}
+                                className="w-12 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none appearance-none"
+                                onChange={(e) => {
+                                  const newLevels = [
+                                    ...newGradingConfig.levels,
+                                  ];
+                                  newLevels[index] = {
+                                    ...newLevels[index],
+                                    mark: Number(e.target.value),
+                                  };
+                                  setNewGradingConfig({
+                                    ...newGradingConfig,
+                                    levels: newLevels,
+                                  });
+                                }}
+                                placeholder="0-100"
+                              />
+                            </div>
+                            <div className="col-span-5">
+                              <Label>Color</Label>
+                              <div className="flex gap-2">
+                                <Input
+                                  type="color"
+                                  value={level.color}
+                                  onChange={(e) => {
+                                    const newLevels = [
+                                      ...newGradingConfig.levels,
+                                    ];
+                                    newLevels[index] = {
+                                      ...newLevels[index],
+                                      color: e.target.value,
+                                    };
+                                    setNewGradingConfig({
+                                      ...newGradingConfig,
+                                      levels: newLevels,
+                                    });
+                                  }}
+                                  className="w-14"
+                                />
+                                <Input
+                                  value={level.color}
+                                  className="w-24" 
+                                  onChange={(e) => {
+                                    const newLevels = [
+                                      ...newGradingConfig.levels,
+                                    ];
+                                    newLevels[index] = {
+                                      ...newLevels[index],
+                                      color: e.target.value,
+                                    };
+                                    setNewGradingConfig({
+                                      ...newGradingConfig,
+                                      levels: newLevels,
+                                    });
+                                  }}
+                                  placeholder="#000000"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className=""
+                            size="icon"
+                            onClick={() => {
+                              const newLevels = newGradingConfig.levels.filter(
+                                (_, i) => i !== index
+                              );
                               setNewGradingConfig({
                                 ...newGradingConfig,
                                 levels: newLevels,
                               });
                             }}
-                            placeholder={`Level ${index + 1}`}
-                          />
-                          {newGradingConfig.levels.length > 2 && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                const newLevels =
-                                  newGradingConfig.levels.filter(
-                                    (_, i) => i !== index
-                                  );
-                                setNewGradingConfig({
-                                  ...newGradingConfig,
-                                  levels: newLevels,
-                                });
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
+                          >
+                            <Trash2 className="h-1 w-1" />
+                          </Button>
                         </div>
                       ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setNewGradingConfig({
+                            ...newGradingConfig,
+                            levels: [
+                              ...newGradingConfig.levels,
+                              { name: "", mark: 0, color: "#000000" },
+                            ],
+                          });
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-2" /> Add Level
+                      </Button>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setNewGradingConfig({
-                          ...newGradingConfig,
-                          levels: [...newGradingConfig.levels, ""],
-                        });
-                      }}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Level
-                    </Button>
                   </div>
                   <Button
                     onClick={handleCreateGradingConfig}
                     className="w-full"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Create Configuration
+                    Create Template
                   </Button>
                 </CardContent>
               </Card>
@@ -741,44 +921,72 @@ export default function SuperAdminDashboard() {
                   <CardTitle>Grading Configurations</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     {gradingConfigs.map((config) => (
-                      <div
-                        key={config._id}
-                        className="flex justify-between items-center p-3 border rounded"
-                      >
-                        <div>
-                          <h3 className="font-medium">{config.name}</h3>
-                          <div className="flex gap-1 mt-1">
-                            {config.levels.map((level, index) => (
-                              <Badge
-                                key={index}
-                                variant="outline"
-                                className="text-xs"
-                              >
-                                {level}
-                              </Badge>
-                            ))}
+                      <Card key={config._id} className="p-4">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="text-lg font-semibold">
+                              {config.name}
+                            </h3>
+                            {config.description && (
+                              <p className="text-gray-500 mt-1">
+                                {config.description}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <Label htmlFor={`active-${config._id}`}>
+                                Active
+                              </Label>
+                              <Switch
+                                id={`active-${config._id}`}
+                                checked={config.isActive}
+                                onCheckedChange={(checked) =>
+                                  handleActivateGradingConfig(config._id)
+                                }
+                              />
+                            </div>
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              onClick={() => deleteGradingConfig(config._id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={config.isActive ? "default" : "secondary"}
-                          >
-                            {config.isActive ? "Active" : "Inactive"}
-                          </Badge>
-                          {!config.isActive && (
-                            <Button
-                              size="sm"
-                              onClick={() =>
-                                handleActivateGradingConfig(config._id)
-                              }
-                            >
-                              Activate
-                            </Button>
-                          )}
-                        </div>
-                      </div>
+
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Level</TableHead>
+                              <TableHead>Emoji</TableHead>
+                              <TableHead>Mark</TableHead>
+                              <TableHead>Color</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {config.levels.map((level, index) => (
+                              <TableRow key={index}>
+                                <TableCell>{level.name}</TableCell>
+                                <TableCell>{level.emoji}</TableCell>
+                                <TableCell>{level.mark}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <div
+                                      className="w-6 h-6 rounded border"
+                                      style={{ backgroundColor: level.color }}
+                                    />
+                                    {level.color}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </Card>
                     ))}
                   </div>
                 </CardContent>

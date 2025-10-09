@@ -17,6 +17,7 @@ import Export from "@/pages/Export";
 import Profile from "@/pages/Profile";
 import TeacherList from "@/pages/admin/TeacherList";
 import TeacherDetails from "@/pages/admin/TeacherDetails";
+import GradingConfig from "@/pages/admin/GradingConfig";
 
 function Router() {
   return ( // TODO: Add a loading state
@@ -25,6 +26,7 @@ function Router() {
       <ProtectedRoute path="/admin/teachers/:id" component={TeacherDetails} />
       <ProtectedRoute path="/admin/teachers" component={TeacherList} />
       <ProtectedRoute path="/admin/superadmin" component={SuperAdminDashboard} />
+      <ProtectedRoute path="/admin/grading" component={GradingConfig} />
       <ProtectedRoute path="/admin/*" component={Dashboard} />
       <ProtectedRoute path="/" component={Home} />
       <ProtectedRoute path="/history" component={History} />

@@ -1,4 +1,4 @@
-import { type Student } from "@shared/schema";
+import { Student } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -12,6 +12,8 @@ import StudentCard from "./StudentCard";
 import { useEffect, useState } from "react";
 import { Input } from "./ui/input";
 import { Label } from "@radix-ui/react-label";
+import { useActiveGradingConfig, getDefaultGradingLevels } from "@/hooks/use-grading-config";
+import { GradingLevel } from "@/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,12 +38,12 @@ interface EvaluationScreenProps {
   currentIndex: number;
   totalStudents: number;
   studentsNot: number;
-  currentEvaluation: "poor" | "good" | "great" | null;
-  setCurrentEvaluation: (evaluation: "poor" | "good" | "great") => void;
-  onEvaluate: (value: "poor" | "good" | "great") => void;
+  currentEvaluation: string | null;
+  setCurrentEvaluation: (evaluation: string) => void;
+  onEvaluate: (value: string, mark: number) => void;
   onSkip: () => void;
   onEnd: () => void;
-  onNext: (value: "poor" | "good" | "great") => void;
+  onNext: (value: string, mark: number) => void;
   onFinish: () => void;
   setPunishmentModalOpen: (open: boolean) => void;
   isNextEnabled: boolean;
@@ -68,9 +70,45 @@ export default function EvaluationScreen({
   onStudentSelect,
 }: EvaluationScreenProps) {
   const [studentKey, setStudentKey] = useState(0);
-  const [status, setStatus] = useState<"great" | "good" | "poor">("great");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
+
+  // Get active grading configuration
+  const { data: gradingConfig } = useActiveGradingConfig();
+  const gradingLevels = gradingConfig?.levels || getDefaultGradingLevels();
+
+  // Utility functions for styling
+  const getGradientClass = (color: string) => {
+    const colorMap: Record<string, string> = {
+      '#16a34a': 'bg-gradient-to-r from-emerald-500 to-green-600',
+      '#e88d8d': 'bg-gradient-to-r from-yellow-500 to-amber-600',
+      '#dc2626': 'bg-gradient-to-r from-rose-500 to-red-600',
+      '#4ce600': 'bg-gradient-to-r from-blue-500 to-blue-600',
+      '#d97706': 'bg-gradient-to-r from-purple-500 to-purple-600',
+      '#EC4899': 'bg-gradient-to-r from-pink-500 to-pink-600',
+    };
+    return colorMap[color] || `bg-gradient-to-r from-gray-500 to-gray-600`;
+  };
+
+  const getRingClass = (color: string) => {
+    const colorMap: Record<string, string> = {
+      '#16a34a': 'ring-emerald-500',
+      '#e88d8d': 'ring-yellow-500',
+      '#dc2626': 'ring-red-500',
+      '#4ce600': 'ring-blue-500',
+      '#d97706': 'ring-purple-500',
+      '#EC4899': 'ring-pink-500',
+    };
+    return colorMap[color] || 'ring-gray-500';
+  };
+
+  const getDefaultEmoji = (name: string) => {
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes('great') || lowerName.includes('excellent')) return '😊';
+    if (lowerName.includes('good') || lowerName.includes('average')) return '🙂';
+    if (lowerName.includes('poor') || lowerName.includes('bad')) return '☹️';
+    return '😐';
+  };
 
   // Filter students based on search query
   console.log(allStudents);
@@ -207,56 +245,32 @@ export default function EvaluationScreen({
         <h4 className="text-sm font-medium text-gray-700 mb-3">
           Evaluate Student:
         </h4>
-        <div className="grid grid-cols-3 gap-3">
-          <button
-            className={`flex flex-col items-center p-3 bg-gradient-to-r from-emerald-500 to-green-600 rounded-xl shadow-lg hover:bg-green-50 transition-all ${
-              currentEvaluation === "great" ? "ring-2 ring-emerald-500" : ""
-            }`}
-            onClick={() => {
-              onEvaluate("great");
-              setStatus("great");
-            }}
-          > 
-            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1">
-              {/* <Star className="text-white w-5 h-5" /> */}
-              <span className="text-white text-4xl">☺️</span>
-            </div>  
-            <span className="text-base font-medium text-white">Great</span>
-          </button>
-
-          <button
-            className={`flex flex-col items-center p-3 bg-gradient-to-r from-yellow-500 to-amber-600 rounded-xl shadow-lg hover:bg-yellow-50 transition-all ${
-              currentEvaluation === "good" ? "ring-2 ring-yellow-500" : ""
-            }`}
-            onClick={() => {
-              onEvaluate("good");
-              setCurrentEvaluation("good");
-              setStatus("good");
-            }}
-          >
-            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1">
-              {/* <ThumbsUp className="text-white w-5 h-5" /> */}
-              <span className="text-white text-4xl">🙂</span>
-            </div>
-            <span className="text-base font-medium text-white">Good</span>
-          </button>
-
-          <button
-            className={`flex flex-col items-center p-3 bg-gradient-to-r from-rose-500 to-red-600 rounded-xl shadow-lg hover:bg-red-50 transition-all ${
-              currentEvaluation === "poor" ? "ring-2 ring-red-500" : ""
-            }`}
-            onClick={() => {
-              onEvaluate("poor");
-              setCurrentEvaluation("poor");
-              setStatus("poor");
-            }}
-          >
-            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1">
-              {/* <ThumbsDown className="text-white w-5 h-5" /> */}
-              <span className="text-white text-4xl">☹️</span> 
-            </div>
-            <span className="text-base font-medium text-white">Poor</span>
-          </button>
+        <div className={`grid gap-3 ${gradingLevels.length <= 3 ? 'grid-cols-3' : gradingLevels.length === 4 ? 'grid-cols-2' : gradingLevels.length === 5 ? 'grid-cols-3' : 'grid-cols-1'}`}>
+          {gradingLevels.map((level, index) => {
+            const isSelected = currentEvaluation === level.name.toLowerCase();
+            const gradientClass = getGradientClass(level.color);
+            const ringClass = getRingClass(level.color);
+            
+            return (
+              <button
+                key={level.name}
+                style={{ background: `linear-gradient(to right, ${level.color}80, ${level.color})`}}
+                className={`flex flex-col items-center p-3 rounded-xl shadow-lg transition-all ${
+                  isSelected ? `ring-2 ${ringClass}` : ""
+                }`}
+                onClick={() => {
+                  const evaluation = level.name.toLowerCase();
+                  onEvaluate(evaluation, level.mark);
+                  setCurrentEvaluation(evaluation);
+                }}
+              > 
+                <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1">
+                  <span className="text-white text-4xl">{level.emoji || getDefaultEmoji(level.name)}</span>
+                </div>  
+                <span className="text-base font-medium text-white">{level.name}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

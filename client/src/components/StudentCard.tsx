@@ -1,4 +1,4 @@
-import { type Student } from "@shared/schema";
+import { Student } from "@/types";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 

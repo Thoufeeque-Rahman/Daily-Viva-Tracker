@@ -17,11 +17,21 @@ router.get("/", authenticateToken, async (req, res) => {
 // Create a new grading configuration
 router.post("/", authenticateToken, async (req, res) => {
   try {
-    const { name, levels } = req.body;
+    const { name, emoji, description, levels, isActive } = req.body;
 
     // Validate input
-    if (!name || !levels || !Array.isArray(levels) || levels.length < 2) {
-      return res.status(400).json({ error: "Name and at least 2 levels are required" });
+    if (!name || !levels || !Array.isArray(levels) || levels.length === 0) {
+      return res.status(400).json({ error: "Name and at least one level are required" });
+    }
+
+    // Validate each level has required fields
+    const invalidLevel = levels.find(
+      level => !level.name || level.mark === undefined || !level.color || !level.emoji
+    );
+    if (invalidLevel) {
+      return res.status(400).json({ 
+        error: 'Each level must have a name, mark, color, and emoji' 
+      });
     }
 
     // Check if configuration with this name already exists
@@ -30,10 +40,17 @@ router.post("/", authenticateToken, async (req, res) => {
       return res.status(400).json({ error: "Configuration with this name already exists" });
     }
 
+    // If this template is being set as active, deactivate all others
+    if (isActive) {
+      await GradingConfig.updateMany({}, { isActive: false });
+    }
+
     const config = new GradingConfig({
       name,
+      emoji,
+      description,
       levels,
-      isActive: false
+      isActive
     });
 
     await config.save();
@@ -82,15 +99,33 @@ router.get("/active", authenticateToken, async (req, res) => {
 // Update grading configuration
 router.put("/:id", authenticateToken, async (req, res) => {
   try {
-    const { name, levels } = req.body;
+    const { name, description, levels, isActive } = req.body;
 
-    if (!name || !levels || !Array.isArray(levels) || levels.length < 2) {
-      return res.status(400).json({ error: "Name and at least 2 levels are required" });
+    if (!name || !levels || !Array.isArray(levels) || levels.length === 0) {
+      return res.status(400).json({ error: "Name and at least one level are required" });
+    }
+
+    // Validate each level has required fields
+    const invalidLevel = levels.find(
+      level => !level.name || level.mark === undefined || !level.color
+    );
+    if (invalidLevel) {
+      return res.status(400).json({ 
+        error: 'Each level must have a name, mark, and color' 
+      });
+    }
+
+    // If this template is being set as active, deactivate all others
+    if (isActive) {
+      await GradingConfig.updateMany(
+        { _id: { $ne: req.params.id } },
+        { isActive: false }
+      );
     }
 
     const config = await GradingConfig.findByIdAndUpdate(
       req.params.id,
-      { name, levels },
+      { name, description, levels, isActive },
       { new: true }
     );
 

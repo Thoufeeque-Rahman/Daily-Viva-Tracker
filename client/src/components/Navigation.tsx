@@ -44,7 +44,7 @@ export default function Navigation() {
         title: "Manage Teachers",
         icon: UsersIcon,
         href: "/admin/superadmin",
-      }
+      },
     ] : [])
   ]
 

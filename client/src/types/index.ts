@@ -70,10 +70,20 @@ export interface Teacher {
 
 export type User = Teacher;
 
+export interface GradingLevel {
+  _id?: string;
+  name: string;
+  mark: number;
+  color: string;
+  description?: string;
+  emoji?: string;
+}
+
 export interface GradingConfig {
   _id: string;
   name: string;
-  levels: string[];
+  description?: string;
+  levels: GradingLevel[];
   isActive: boolean;
   createdAt: string;
 } 

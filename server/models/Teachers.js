@@ -10,6 +10,7 @@ const teacherSchema = new mongoose.Schema({
     qualification: { type: String },
     subjectsTaught: [
         {
+            _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
             class: { type: Number },
             subject: { type: String },
             periodsInSemester: { type: Number }
