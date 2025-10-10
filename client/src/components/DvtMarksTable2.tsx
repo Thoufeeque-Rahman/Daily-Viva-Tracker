@@ -404,11 +404,11 @@ const DvtMarksTable: React.FC = () => {
       </div>
 
       {/* Description */}
-      <div className="mt-4 text-gray-700 text-sm">
+      {/* <div className="mt-4 text-gray-700 text-sm">
         This table shows the count of periods (questions asked) in each class
         for each day. The colored bar below visually represents the performance
         of that class on that day.
-      </div>
+      </div> */}
 
       {/* Legend */}
       {/* <div className="mt-4 flex flex-wrap gap-4 text-sm">
@@ -437,7 +437,7 @@ const DvtMarksTable: React.FC = () => {
         </div>
       </div> */}
 
-      <div className="mt-4 flex flex-wrap gap-4 text-sm">
+      {/* <div className="mt-4 flex flex-wrap gap-4 text-sm">
         <div className="flex items-center gap-2">
           <span className="text-gray-600">Performance Legend:</span>
         </div>
@@ -477,7 +477,7 @@ const DvtMarksTable: React.FC = () => {
           <span className="inline-block w-5 h-1.5 bg-emerald-500 rounded"></span>
           <span className="text-gray-600">90% and above</span>
         </div>
-      </div>
+      </div> */}
 
       {tableData.length === 0 && !loading && (
         <div className="text-center py-8 text-gray-500">

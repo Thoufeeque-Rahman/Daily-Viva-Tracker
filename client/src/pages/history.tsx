@@ -52,6 +52,16 @@ import { toast } from "sonner";
 import { getMarkColors } from "@/lib/colors";
 import { AskMeModal } from "@/components/AskMeModal";
 import { useToast } from "@/hooks/use-toast";
+import {
+  useActiveGradingConfig,
+  getDefaultGradingLevels,
+} from "@/hooks/use-grading-config";
+import {
+  getMarkLabel,
+  getMarkColors as getGradingMarkColors,
+  getMarkEmoji,
+  getMarkCardColors,
+} from "@/lib/grading-utils";
 
 interface Student {
   _id: string;
@@ -104,6 +114,10 @@ const EditDialog = ({ evaluation, onSave }: EditDialogProps) => {
   const [mark, setMark] = useState(evaluation.mark);
   const [punishment, setPunishment] = useState(evaluation.punishment || "");
 
+  // Get active grading configuration
+  const { data: gradingConfig } = useActiveGradingConfig();
+  const gradingLevels = gradingConfig?.levels || getDefaultGradingLevels();
+
   const handleSave = async () => {
     await onSave(evaluation.id, mark, punishment);
   };
@@ -124,9 +138,11 @@ const EditDialog = ({ evaluation, onSave }: EditDialogProps) => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="0">Poor</SelectItem>
-              <SelectItem value="1">Good</SelectItem>
-              <SelectItem value="2">Great</SelectItem>
+              {gradingLevels.map((level) => (
+                <SelectItem key={level.mark} value={level.mark.toString()}>
+                  {level.emoji} {level.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -209,6 +225,10 @@ export default function History() {
   const baseUrl = import.meta.env.VITE_BASE_URL;
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isAskMeModalOpen, setIsAskMeModalOpen] = useState(false);
+
+  // Get active grading configuration
+  const { data: gradingConfig } = useActiveGradingConfig();
+  const gradingLevels = gradingConfig?.levels || getDefaultGradingLevels();
   // Fetch all students when component mounts
   const fetchStudents = async () => {
     try {
@@ -280,7 +300,9 @@ export default function History() {
       toast({
         title: "Error",
         description:
-          error instanceof Error ? error.message : "Failed to delete evaluation",
+          error instanceof Error
+            ? error.message
+            : "Failed to delete evaluation",
         variant: "destructive",
       });
     }
@@ -319,7 +341,9 @@ export default function History() {
       toast({
         title: "Error",
         description:
-          error instanceof Error ? error.message : "Failed to update evaluation",
+          error instanceof Error
+            ? error.message
+            : "Failed to update evaluation",
         variant: "destructive",
       });
     }
@@ -380,17 +404,9 @@ export default function History() {
     setHistory(subjectHistory);
   }, [selectedSubject, dvtMarks, students, sortOrder]);
 
-  const getMarkLabel = (mark: number) => {
-    switch (mark) {
-      case 0:
-        return "Poor";
-      case 1:
-        return "Good";
-      case 2:
-        return "Great";
-      default:
-        return "Unknown";
-    }
+  // Use the grading configuration for mark labels
+  const getMarkLabelForHistory = (mark: number) => {
+    return getMarkLabel(mark, gradingLevels);
   };
 
   const handleAskMeClick = (adNumber: string) => {
@@ -515,14 +531,22 @@ export default function History() {
         {history && (
           <div className="space-y-4">
             {history.evaluations.map((evaluation) => {
-              const colors = getMarkColors(evaluation.mark);
+              const colors = getMarkCardColors(evaluation.mark, gradingLevels);
               return (
                 <Card
                   key={evaluation.id}
-                  className={`w-full max-w-md mx-auto border-0 shadow-xl overflow-hidden ${colors.card}`}
+                  style={{ 
+                    background: `linear-gradient(to bottom right, ${colors}42, ${colors}42)`,
+                  }}
+                  className={`w-full max-w-md mx-auto border-0 shadow-xl overflow-hidden`}
                 >
                   {/* Header Section */}
-                  <div className={`px-4 py-4 ${colors.header}`}>
+                  <div
+                    className={`px-4 py-4`}
+                    style={{
+                      background: `linear-gradient(to right, ${colors}, ${colors}c7)`,
+                    }}
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div>
@@ -590,7 +614,10 @@ export default function History() {
                       <div className="grid grid-cols-3 gap-4">
                         <div className="text-center">
                           <div className="flex items-center justify-center gap-2 mb-1">
-                            <User className={`w-4 h-4 ${colors.icon}`} />
+                            <User
+                              className={`w-4 h-4`}
+                              style={{ color: `${colors}` }}
+                            />
                             <p className="text-xs text-gray-500 uppercase tracking-wide">
                               Roll No
                             </p>
@@ -602,7 +629,10 @@ export default function History() {
 
                         <div className="text-center">
                           <div className="flex items-center justify-center gap-2 mb-1">
-                            <Hash className={`w-4 h-4 ${colors.icon}`} />
+                            <Hash
+                              className={`w-4 h-4`}
+                              style={{ color: `${colors}` }}
+                            />
                             <p className="text-xs text-gray-500 uppercase tracking-wide">
                               Ad. No
                             </p>
@@ -614,18 +644,20 @@ export default function History() {
 
                         <div className="text-center">
                           <div className="flex items-center justify-center gap-2 mb-1">
-                            <ChartBar className={`w-4 h-4 ${colors.icon}`} />
+                            <ChartBar
+                              className={`w-4 h-4`}
+                              style={{ color: `${colors}` }}
+                            />
                             <p className="text-xs text-gray-500 uppercase tracking-wide">
                               Status
                             </p>
                           </div>
-                          <p className={`text-lg font-bold ${colors.text}`}>
-                            {getMarkLabel(evaluation.mark) === "Poor"
-                              ? "☹️"
-                              : getMarkLabel(evaluation.mark) === "Good"
-                              ? "😐"
-                              : "🙂"}{" "}
-                            {getMarkLabel(evaluation.mark)}
+                          <p
+                            className={`text-lg font-bold`}
+                            style={{ color: `${colors}` }}
+                          >
+                            {/* {getMarkEmoji(evaluation.mark, gradingLevels)}{" "} */}
+                            {getMarkLabelForHistory(evaluation.mark)}
                           </p>
                         </div>
                       </div>
