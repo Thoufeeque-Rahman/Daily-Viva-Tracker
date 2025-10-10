@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import axios from "@/lib/axios";
@@ -27,12 +27,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Delete, Loader2, Trash2 } from "lucide-react";
+import { SubjectSelector } from "@/components/SubjectSelector";
 
 export default function TeacherDetails() {
   const params = useParams();
   const id = params?.id;
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [selectedSubject, setSelectedSubject] = useState("");
 
   console.log("Teacher ID:", id); // Debug log
 
@@ -248,21 +250,31 @@ export default function TeacherDetails() {
                   onSubmit={(e) => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
-                    addSubject.mutate({
-                      class: Number(formData.get("class")),
-                      subject: formData.get("subject"),
-                      periodsInSemester: Number(formData.get("periods")),
-                    });
-                    e.currentTarget.reset();
+                    const classValue = formData.get("class");
+                    
+                    if (classValue && selectedSubject) {
+                      addSubject.mutate({
+                        class: Number(classValue),
+                        subject: selectedSubject,
+                      });
+                      e.currentTarget.reset();
+                      setSelectedSubject("");
+                    } else {
+                      toast({
+                        title: "Error",
+                        description: "Please fill in all fields",
+                        variant: "destructive",
+                      });
+                    }
                   }}
                   className="space-y-4"
                 >
                   <Input name="class" type="number" placeholder="Class" />
-                  <Input name="subject" placeholder="Subject Name" />
-                  <Input
-                    name="periods"
-                    type="number"
-                    placeholder="Periods per Semester"
+                  <SubjectSelector
+                    selectedSubject={selectedSubject}
+                    onSubjectSelect={setSelectedSubject}
+                    label="Lesson"
+                    placeholder="Select lesson..."
                   />
                   <Button type="submit">Add Lesson</Button>
                 </form>

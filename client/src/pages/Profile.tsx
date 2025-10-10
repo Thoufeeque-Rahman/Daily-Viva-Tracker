@@ -18,7 +18,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { User, Mail, Phone, GraduationCap, Calendar, Shield, Key, Plus, Trash2 } from "lucide-react";
+import {
+  User,
+  Mail,
+  Phone,
+  GraduationCap,
+  Calendar,
+  Shield,
+  Key,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { User as UserType } from "@/types";
 import {
@@ -38,9 +48,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { SubjectSelector } from "@/components/SubjectSelector";
 
 export default function Profile() {
-  const { user, login } = useAuth();
+  const { user, updateUser } = useAuth();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState({
@@ -59,9 +70,11 @@ export default function Profile() {
     confirmPassword: "",
   });
 
+  const [selectedSubject, setSelectedSubject] = useState("");
+
   const handleSave = async () => {
     try {
-      await axios.put('/api/teachers/profile', profileData);
+      await axios.put("/api/teachers/profile", profileData);
       toast({
         title: "Profile Updated",
         description: "Your profile has been updated successfully.",
@@ -88,11 +101,11 @@ export default function Profile() {
     }
 
     try {
-      await axios.put('/api/teachers/change-password', {
+      await axios.put("/api/teachers/change-password", {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword,
       });
-      
+
       toast({
         title: "Success",
         description: "Password updated successfully.",
@@ -106,7 +119,8 @@ export default function Profile() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update password. Please check your current password and try again.",
+        description:
+          "Failed to update password. Please check your current password and try again.",
         variant: "destructive",
       });
     }
@@ -115,45 +129,88 @@ export default function Profile() {
   const handleAddSubject = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    try {
-      const response = await axios.post(`/api/teachers/${user?._id}/subjects`, {
-        class: Number(formData.get("class")),
-        subject: formData.get("subject"),
-        periodsInSemester: Number(formData.get("periods")),
-      });
-      // Update the user context with the new data
-      if (login) {
-        login(response.data);
+    const classValue = formData.get("class");
+    console.log(classValue, selectedSubject);
+
+    if (classValue && selectedSubject) {
+      try {
+        const response = await axios.post(
+          `/api/teachers/${user?._id}/subjects`,
+          {
+            class: Number(classValue),
+            subject: selectedSubject,
+          }
+        );
+
+        console.log("Add subject response:", response);
+
+        if (response.status === 200 || response.status === 201) {
+          // Update user state with the new subject
+          if (user && response.data) {
+            updateUser(response.data);
+          }
+
+          toast({
+            title: "Success",
+            description: "Subject added successfully",
+          });
+
+          // Reset form safely
+          const form = e.currentTarget;
+          if (form) {
+            form.reset();
+          }
+          setSelectedSubject("");
+        }
+      } catch (error) {
+        console.error("Add subject error:", error);
+        toast({
+          title: "Error",
+          description:
+            "Failed to add subject: " +
+            ((error as any)?.response?.data?.error ||
+              (error as any)?.message ||
+              "Unknown error"),
+          variant: "destructive",
+        });
       }
-      toast({
-        title: "Success",
-        description: "Subject added successfully",
-      });
-      e.currentTarget.reset();
-    } catch (error) {
+    } else {
       toast({
         title: "Error",
-        description: "Failed to add subject",
+        description: "Please fill in all fields",
         variant: "destructive",
       });
     }
   };
 
+
+
   const handleRemoveSubject = async (subjectId: string) => {
     try {
-      const response = await axios.delete(`/api/teachers/${user?._id}/subjects/${subjectId}`);
-      // Update the user context with the new data
-      if (login) {
-        login(response.data);
+      const response = await axios.delete(
+        `/api/teachers/${user?._id}/subjects/${subjectId}`
+      );
+
+      if (response.status === 200) {
+        // Update user state by removing the subject
+        if (user && response.data) {
+          updateUser(response.data);
+        }
+
+        toast({
+          title: "Success",
+          description: "Subject removed successfully",
+        });
       }
-      toast({
-        title: "Success",
-        description: "Subject removed successfully",
-      });
     } catch (error) {
+      console.error("Remove subject error:", error);
       toast({
         title: "Error",
-        description: "Failed to remove subject",
+        description:
+          "Failed to remove subject: " +
+          ((error as any)?.response?.data?.error ||
+            (error as any)?.message ||
+            "Unknown error"),
         variant: "destructive",
       });
     }
@@ -172,7 +229,7 @@ export default function Profile() {
   return (
     <div className="mx-auto max-w-md bg-white min-h-screen shadow-lg relative h-full flex flex-col">
       <Header showContext={false} onHomeClick={() => {}} />
-      
+
       <main className="flex-1 p-6">
         <div className="flex justify-start items-center mb-6">
           <h1 className="text-2xl font-bold text-blue-600">Profile</h1>
@@ -192,11 +249,15 @@ export default function Profile() {
                 <h3 className="font-semibold text-lg">{user?.name || "N/A"}</h3>
                 <p className="text-sm text-gray-600">{user?.email || "N/A"}</p>
               </div>
-              <Badge variant={user?.role === "super_admin" ? "destructive" : "default"}>
+              <Badge
+                variant={
+                  user?.role === "super_admin" ? "destructive" : "default"
+                }
+              >
                 {user?.role === "super_admin" ? "Super Admin" : "Teacher"}
               </Badge>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-gray-500" />
@@ -208,7 +269,11 @@ export default function Profile() {
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-gray-500" />
-                <span>{user?.joinedAt ? new Date(user.joinedAt).toLocaleDateString() : "N/A"}</span>
+                <span>
+                  {user?.joinedAt
+                    ? new Date(user.joinedAt).toLocaleDateString()
+                    : "N/A"}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Shield className="h-4 w-4 text-gray-500" />
@@ -230,7 +295,10 @@ export default function Profile() {
             <CardContent>
               <div className="space-y-2">
                 {user.subjectsTaught.map((subject, index) => (
-                  <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                  <div
+                    key={index}
+                    className="flex justify-between items-center p-2 bg-gray-50 rounded"
+                  >
                     <span className="font-medium">{subject.subject}</span>
                     <Badge variant="outline">Class {subject.class}</Badge>
                   </div>
@@ -251,10 +319,17 @@ export default function Profile() {
               <div className="flex gap-2">
                 {!isEditing ? (
                   <>
-                    <Button onClick={() => setIsEditing(true)} variant="outline" size="sm">
+                    <Button
+                      onClick={() => setIsEditing(true)}
+                      variant="outline"
+                      size="sm"
+                    >
                       Edit Profile
                     </Button>
-                    <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+                    <Dialog
+                      open={showPasswordDialog}
+                      onOpenChange={setShowPasswordDialog}
+                    >
                       <DialogTrigger asChild>
                         <Button variant="outline" size="sm">
                           <Key className="h-4 w-4 mr-2" />
@@ -265,17 +340,25 @@ export default function Profile() {
                         <DialogHeader>
                           <DialogTitle>Change Password</DialogTitle>
                           <DialogDescription>
-                            Enter your current password and new password to update.
+                            Enter your current password and new password to
+                            update.
                           </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
                           <div className="space-y-2">
-                            <Label htmlFor="currentPassword">Current Password</Label>
+                            <Label htmlFor="currentPassword">
+                              Current Password
+                            </Label>
                             <Input
                               id="currentPassword"
                               type="password"
                               value={passwordData.currentPassword}
-                              onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                              onChange={(e) =>
+                                setPasswordData({
+                                  ...passwordData,
+                                  currentPassword: e.target.value,
+                                })
+                              }
                             />
                           </div>
                           <div className="space-y-2">
@@ -284,19 +367,34 @@ export default function Profile() {
                               id="newPassword"
                               type="password"
                               value={passwordData.newPassword}
-                              onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                              onChange={(e) =>
+                                setPasswordData({
+                                  ...passwordData,
+                                  newPassword: e.target.value,
+                                })
+                              }
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                            <Label htmlFor="confirmPassword">
+                              Confirm New Password
+                            </Label>
                             <Input
                               id="confirmPassword"
                               type="password"
                               value={passwordData.confirmPassword}
-                              onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                              onChange={(e) =>
+                                setPasswordData({
+                                  ...passwordData,
+                                  confirmPassword: e.target.value,
+                                })
+                              }
                             />
                           </div>
-                          <Button onClick={handlePasswordChange} className="w-full">
+                          <Button
+                            onClick={handlePasswordChange}
+                            className="w-full"
+                          >
                             Update Password
                           </Button>
                         </div>
@@ -322,38 +420,49 @@ export default function Profile() {
               <Input
                 id="name"
                 value={profileData.name}
-                onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                onChange={(e) =>
+                  setProfileData({ ...profileData, name: e.target.value })
+                }
                 disabled={!isEditing}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
                 value={profileData.email}
-                onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                onChange={(e) =>
+                  setProfileData({ ...profileData, email: e.target.value })
+                }
                 disabled={!isEditing}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="phone">Phone</Label>
               <Input
                 id="phone"
                 value={profileData.phone}
-                onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                onChange={(e) =>
+                  setProfileData({ ...profileData, phone: e.target.value })
+                }
                 disabled={!isEditing}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="qualification">Qualification</Label>
               <Textarea
                 id="qualification"
                 value={profileData.qualification}
-                onChange={(e) => setProfileData({ ...profileData, qualification: e.target.value })}
+                onChange={(e) =>
+                  setProfileData({
+                    ...profileData,
+                    qualification: e.target.value,
+                  })
+                }
                 disabled={!isEditing}
                 rows={3}
               />
@@ -393,8 +502,9 @@ export default function Profile() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This will remove {subject.subject} for class {subject.class} from your subjects.
-                              This action cannot be undone.
+                              This will remove {subject.subject} for class{" "}
+                              {subject.class} from your subjects. This action
+                              cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -417,19 +527,22 @@ export default function Profile() {
             <div className="mt-4">
               <h3 className="text-lg font-semibold mb-2">Add New Lesson</h3>
               <form onSubmit={handleAddSubject} className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="flex flex-col gap-4 ">
                   <div>
                     <Label htmlFor="class">Class</Label>
-                    <Input id="class" name="class" type="number" placeholder="Class" />
+                    <Input
+                      id="class"
+                      name="class"
+                      type="number"
+                      placeholder="Class"
+                    />
                   </div>
-                  <div>
-                    <Label htmlFor="subject">Lesson</Label>
-                    <Input id="subject" name="subject" placeholder="Lesson Name" />
-                  </div>
-                  <div>
-                    <Label htmlFor="periods">Periods</Label>
-                    <Input id="periods" name="periods" type="number" placeholder="Periods per Semester" />
-                  </div>
+                  <SubjectSelector
+                    selectedSubject={selectedSubject}
+                    onSubjectSelect={setSelectedSubject}
+                    label="Lesson"
+                    placeholder="Select lesson..."
+                  />
                 </div>
                 <Button type="submit">
                   <Plus className="h-4 w-4 mr-2" />
@@ -443,5 +556,3 @@ export default function Profile() {
     </div>
   );
 }
-
-

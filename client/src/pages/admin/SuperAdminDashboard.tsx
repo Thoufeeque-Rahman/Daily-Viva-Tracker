@@ -489,7 +489,7 @@ export default function SuperAdminDashboard() {
                   <CardTitle>Teachers</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <a href="/admin/teachers">teachers</a>
+                  {/* <a href="/admin/teachers">teachers</a> */}
                   <div className="space-y-2">
                     {teachers.map((teacher) => (
                       <div

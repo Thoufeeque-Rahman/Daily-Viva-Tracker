@@ -272,10 +272,10 @@ export default function EvaluationScreen({
                   setCurrentEvaluation(evaluation);
                 }}
               > 
-                <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1">
-                  <span className="text-white text-4xl">{level.emoji || getDefaultEmoji(level.name)}</span>
+                <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1"> 
+                  <span className="text-white text-4xl">{level.emoji || getDefaultEmoji(level.name)}</span>  
                 </div>  
-                <span className="text-base font-medium text-white">{level.name}</span>
+                <span className="text-base font-medium text-white" style={{ textShadow: `0.5px 0.5px 2px #000` }}>{level.name}</span> 
               </button>
             );
           })}

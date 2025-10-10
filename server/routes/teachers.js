@@ -240,7 +240,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
 // Add subject to teacher
 router.post('/:teacherId/subjects', authenticateToken, async (req, res) => {
   try {
-    const { class: classNum, subject, periodsInSemester } = req.body;
+    const { class: classNum, subject } = req.body;
     const teacherId = req.params.teacherId;
 
     // Check if the user is updating their own profile or is a super admin
@@ -257,9 +257,8 @@ router.post('/:teacherId/subjects', authenticateToken, async (req, res) => {
     teacher.subjectsTaught.push({
       class: classNum,
       subject,
-      periodsInSemester
     });
-
+ 
     await teacher.save();
     res.json(teacher);
   } catch (error) {

@@ -7,6 +7,7 @@ interface Subject {
 
 interface User {
   id: number;
+  _id: number;
   name: string;
   username: string;
   email: string;
@@ -23,6 +24,7 @@ interface AuthContextType {
   user: User | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
+  updateUser: (userData: User) => void;
   isAuthenticated: boolean;
 }
 
@@ -87,12 +89,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateUser = (userData: User) => {
+    setUser(userData);
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
         login,
         logout,
+        updateUser,
         isAuthenticated: !!user,
       }}
     >

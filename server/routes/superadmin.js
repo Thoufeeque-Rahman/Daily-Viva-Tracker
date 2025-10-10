@@ -55,17 +55,17 @@ router.post('/teachers/:id/subjects', authenticateToken, isSuperAdmin, async (re
         }
         
         // Validate required fields
-        const { class: classNum, subject, periodsInSemester } = req.body;
-        if (!classNum || !subject || periodsInSemester === undefined) {
+        const { class: classNum, subject } = req.body;
+        if (!classNum || !subject === undefined) {
             return res.status(400).json({ 
-                message: 'Missing required fields. Class, subject, and periodsInSemester are required.' 
+                message: 'Missing required fields. Class and subject are required.' 
             });
         }
 
         // Validate data types
-        if (typeof classNum !== 'number' || typeof subject !== 'string' || typeof periodsInSemester !== 'number') {
+        if (typeof classNum !== 'number' || typeof subject !== 'string') {
             return res.status(400).json({ 
-                message: 'Invalid data types. Class and periodsInSemester must be numbers, subject must be a string.' 
+                message: 'Invalid data types. Class must be a number, subject must be a string.' 
             });
         }
 
@@ -83,7 +83,6 @@ router.post('/teachers/:id/subjects', authenticateToken, isSuperAdmin, async (re
         teacher.subjectsTaught.push({
             class: classNum,
             subject,
-            periodsInSemester
         });
 
         const updatedTeacher = await teacher.save();

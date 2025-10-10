@@ -136,25 +136,25 @@ export default function StartScreen({
           Select Lesson
         </label>
         <div className="grid grid-cols-2 gap-3">
-          {user?.subjectsTaught?.map((subject, index) => (
-            <button
-              key={index}
-              className={`border bg-gradient-to-r ${colorClasses[index].bg} text-white font-medium border-gray-200 rounded-lg py-3 px-4 text-center hover:bg-gray-50 focus:outline-none transition-all`}
-              // style={{
-              //   backgroundColor: `hsl(${(index * 40) % 360}, 70%, 90%)`,
-              //   borderColor: `hsl(${(index * 40) % 360}, 70%, 50%)`,
-              //   color: `hsl(${(index * 40) % 360}, 70%, 20%)`,
-              // }}
-              onClick={() => {
-                onSubjectSelect({
-                  subject: subject.subject,
-                  class: subject.class,
-                });
-              }}
-            >
-              {subject.subject} - {subject.class}
-            </button>
-          ))}
+          {user?.subjectsTaught?.map((subject, index) => {
+            const colorIndex = index % colorClasses.length; // Cycle through colors
+            const colors = colorClasses[colorIndex];
+            
+            return (
+              <button
+                key={index}
+                className={`border bg-gradient-to-r ${colors.bg} text-white font-medium border-gray-200 rounded-lg py-3 px-4 text-center hover:bg-gray-50 focus:outline-none transition-all`}
+                onClick={() => {
+                  onSubjectSelect({
+                    subject: subject.subject,
+                    class: subject.class,
+                  });
+                }}
+              >
+                {subject.subject} - {subject.class}
+              </button>
+            );
+          })}
         </div>
       </div>
 
