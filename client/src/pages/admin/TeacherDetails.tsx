@@ -145,6 +145,10 @@ export default function TeacherDetails() {
     );
   }
 
+  const sortedSubjects = [...(teacher.subjectsTaught || [])].sort((a, b) =>
+    b.class - a.class
+  );
+
   return (
     <div className="mx-auto max-w-md bg-white min-h-screen shadow-lg relative h-full flex flex-col">
       <Header showContext={false} onHomeClick={() => {}} />
@@ -197,7 +201,7 @@ export default function TeacherDetails() {
             </div>
 
             <div className="mt-8">
-              <h2 className="text-xl font-semibold mb-4">Lessons Taught</h2>
+              <h2 className="text-xl font-semibold mb-4">Lessons Teaching</h2>
               <Table>
                 <TableHeader>
                   <TableRow> 
@@ -207,7 +211,7 @@ export default function TeacherDetails() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {teacher.subjectsTaught?.map((subject: any) => (
+                  {sortedSubjects.map((subject: any) => (
                     <TableRow key={subject._id}>
                       <TableCell>{subject.class}</TableCell>
                       <TableCell>{subject.subject}</TableCell>

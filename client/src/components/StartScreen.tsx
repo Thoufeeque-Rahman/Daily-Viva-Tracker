@@ -113,6 +113,10 @@ export default function StartScreen({
     },
   ];
 
+  const sortedSubjects = [...(user?.subjectsTaught || [])].sort((a, b) =>
+    b.class - a.class
+  );
+
   return (
     <div className="p-6 transition-all duration-300 transform bg-white shadow-lg h-[91vh] overflow-hidden">
       <div className="text-start mb-8 mt-4 flex gap-3 items-center">
@@ -136,7 +140,7 @@ export default function StartScreen({
           Select Lesson
         </label>
         <div className="grid grid-cols-2 gap-3">
-          {user?.subjectsTaught?.map((subject, index) => {
+          {sortedSubjects.map((subject, index) => {
             const colorIndex = index % colorClasses.length; // Cycle through colors
             const colors = colorClasses[colorIndex];
             

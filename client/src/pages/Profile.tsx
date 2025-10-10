@@ -226,6 +226,12 @@ export default function Profile() {
     setIsEditing(false);
   };
 
+  const sortedSubjects = [...(user?.subjectsTaught || [])].sort((a, b) => b.class - a.class);
+
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="mx-auto max-w-md bg-white min-h-screen shadow-lg relative h-full flex flex-col">
       <Header showContext={false} onHomeClick={() => {}} />
@@ -294,7 +300,7 @@ export default function Profile() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {user.subjectsTaught.map((subject, index) => (
+                {sortedSubjects.map((subject, index) => (
                   <div
                     key={index}
                     className="flex justify-between items-center p-2 bg-gray-50 rounded"
