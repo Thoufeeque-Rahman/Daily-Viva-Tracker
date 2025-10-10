@@ -72,7 +72,7 @@ router.get("/student/:studentId/:subject/:class", async (req, res) => {
     
     console.log("Fetching student marks history:", {
       studentId,
-      subject,
+      subject, 
       class: classNumber,
     });
 

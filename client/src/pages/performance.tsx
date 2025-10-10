@@ -64,9 +64,7 @@ export default function Performance() {
   const fetchStudents = async () => {
     try {
       const response = await fetch(`${baseUrl}/api/students`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to fetch students");
       const data = await response.json();
@@ -85,9 +83,7 @@ export default function Performance() {
   const fetchDvtMarks = async () => {
     try {
       const response = await fetch(`${baseUrl}/api/dvtmarks`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to fetch DVT marks");
       const data = await response.json();
@@ -188,8 +184,8 @@ export default function Performance() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
+        credentials: "include",
         body: JSON.stringify({
           studentId: selectedStudent._id,
           subject: subject,

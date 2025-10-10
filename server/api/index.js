@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
 const session = require("express-session");
-const sessionConfig = require("./config/session");
+const sessionConfig = require("../config/session");
 const cookieParser = require('cookie-parser');
 require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 
@@ -62,18 +62,18 @@ app.get("/api/test", (req, res) => {
 });
 
 // Import routes
-const studentRoutes = require("./routes/students");
-const teachersRoutes = require("./routes/teachers");
-const roundsRoutes = require("./routes/rounds");
-const dvtMarksRoutes = require("./routes/dvtmarks");
-const semestersRoutes = require("./routes/semesters");
-const subjectsRoutes = require("./routes/subjects");
-const gradingConfigsRoutes = require("./routes/gradingConfigs");
-const exportsRoutes = require("./routes/exports");
-const superadminRoutes = require("./routes/superadmin");
+const studentRoutes = require("../routes/students");
+const teachersRoutes = require("../routes/teachers");
+const roundsRoutes = require("../routes/rounds");
+const dvtMarksRoutes = require("../routes/dvtmarks");
+const semestersRoutes = require("../routes/semesters");
+const subjectsRoutes = require("../routes/subjects");
+const gradingConfigsRoutes = require("../routes/gradingConfigs");
+const exportsRoutes = require("../routes/exports");
+const superadminRoutes = require("../routes/superadmin");
 
 // Import auth middleware
-const { authenticateToken } = require('./middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 
 // Public routes
 app.use("/api/teachers", teachersRoutes); // Keep this public for login/register
@@ -128,6 +128,8 @@ app.get(/^(?!\/?api).*/, (req, res) => {
 
 // Start the server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// app.listen(PORT, () => {
+//   console.log(`Server running on port ${PORT}`);
+// });
+
+module.exports = app;
