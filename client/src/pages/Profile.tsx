@@ -28,6 +28,7 @@ import {
   Key,
   Plus,
   Trash2,
+  Edit,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { User as UserType } from "@/types";
@@ -48,6 +49,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { SubjectSelector } from "@/components/SubjectSelector";
 
 export default function Profile() {
@@ -64,6 +71,8 @@ export default function Profile() {
   const baseUrl = import.meta.env.VITE_BASE_URL;
 
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [showLessonsDialog, setShowLessonsDialog] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -80,6 +89,7 @@ export default function Profile() {
         description: "Your profile has been updated successfully.",
       });
       setIsEditing(false);
+      setShowProfileDialog(false);
     } catch (error) {
       console.error("Error updating profile:", error);
       toast({
@@ -111,6 +121,7 @@ export default function Profile() {
         description: "Password updated successfully.",
       });
       setShowPasswordDialog(false);
+      setShowProfileDialog(false);
       setPasswordData({
         currentPassword: "",
         newPassword: "",
@@ -244,9 +255,144 @@ export default function Profile() {
         {/* Profile Overview Card */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Profile Overview
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Profile Overview
+              </div>
+              <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <User className="h-4 w-4 mr-2" />
+                    Edit Profile
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[500px]">
+                  <DialogHeader>
+                    <DialogTitle>Edit Profile</DialogTitle>
+                    <DialogDescription>
+                      Update your profile information or change your password.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Tabs defaultValue="profile" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="profile">Profile Info</TabsTrigger>
+                      <TabsTrigger value="password">Change Password</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="profile" className="space-y-4 mt-6">
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="dialog-name">Name</Label>
+                          <Input
+                            id="dialog-name"
+                            value={profileData.name}
+                            onChange={(e) =>
+                              setProfileData({ ...profileData, name: e.target.value })
+                            }
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="dialog-email">Email</Label>
+                          <Input
+                            id="dialog-email"
+                            type="email"
+                            value={profileData.email}
+                            onChange={(e) =>
+                              setProfileData({ ...profileData, email: e.target.value })
+                            }
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="dialog-phone">Phone</Label>
+                          <Input
+                            id="dialog-phone"
+                            value={profileData.phone}
+                            onChange={(e) =>
+                              setProfileData({ ...profileData, phone: e.target.value })
+                            }
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="dialog-qualification">Qualification</Label>
+                          <Textarea
+                            id="dialog-qualification"
+                            value={profileData.qualification}
+                            onChange={(e) =>
+                              setProfileData({
+                                ...profileData,
+                                qualification: e.target.value,
+                              })
+                            }
+                            rows={3}
+                          />
+                        </div>
+
+                        <Button onClick={handleSave} className="w-full">
+                          Update Profile
+                        </Button>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="password" className="space-y-4 mt-6">
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="dialog-currentPassword">
+                            Current Password
+                          </Label>
+                          <Input
+                            id="dialog-currentPassword"
+                            type="password"
+                            value={passwordData.currentPassword}
+                            onChange={(e) =>
+                              setPasswordData({
+                                ...passwordData,
+                                currentPassword: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dialog-newPassword">New Password</Label>
+                          <Input
+                            id="dialog-newPassword"
+                            type="password"
+                            value={passwordData.newPassword}
+                            onChange={(e) =>
+                              setPasswordData({
+                                ...passwordData,
+                                newPassword: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dialog-confirmPassword">
+                            Confirm New Password
+                          </Label>
+                          <Input
+                            id="dialog-confirmPassword"
+                            type="password"
+                            value={passwordData.confirmPassword}
+                            onChange={(e) =>
+                              setPasswordData({
+                                ...passwordData,
+                                confirmPassword: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                        <Button onClick={handlePasswordChange} className="w-full">
+                          Update Password
+                        </Button>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </DialogContent>
+              </Dialog>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -293,9 +439,108 @@ export default function Profile() {
         {user?.subjectsTaught && user.subjectsTaught.length > 0 && (
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GraduationCap className="h-5 w-5" />
-                Subjects Taught
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="h-5 w-5" />
+                  Lessons Teaching
+                </div>
+                <Dialog open={showLessonsDialog} onOpenChange={setShowLessonsDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Lessons
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Manage Lessons</DialogTitle>
+                      <DialogDescription>
+                        Add or remove lessons that you teach.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="mt-6">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Current Lessons</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Class</TableHead>
+                                <TableHead>Lesson</TableHead>
+                                <TableHead>Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {sortedSubjects?.map((subject: any) => (
+                                <TableRow key={subject._id}>
+                                  <TableCell>{subject.class}</TableCell>
+                                  <TableCell>{subject.subject}</TableCell>
+                                  <TableCell>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="destructive" size="sm">
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            This will remove {subject.subject} for class{" "}
+                                            {subject.class} from your subjects. This action
+                                            cannot be undone.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() => handleRemoveSubject(subject._id)}
+                                            className="bg-red-500 hover:bg-red-600"
+                                          >
+                                            Delete
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+
+                          <div className="mt-4">
+                            <h3 className="text-lg font-semibold mb-2">Add New Lesson</h3>
+                            <form onSubmit={handleAddSubject} className="space-y-4">
+                              <div className="flex flex-col gap-4">
+                                <div>
+                                  <Label htmlFor="dialog-class">Class</Label>
+                                  <Input
+                                    id="dialog-class"
+                                    name="class"
+                                    type="number"
+                                    placeholder="Class"
+                                  />
+                                </div>
+                                <SubjectSelector
+                                  selectedSubject={selectedSubject}
+                                  onSubjectSelect={setSelectedSubject}
+                                  label="Lesson"
+                                  placeholder="Select lesson..."
+                                />
+                              </div>
+                              <Button type="submit">
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Lesson
+                              </Button>
+                            </form>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -315,7 +560,7 @@ export default function Profile() {
         )}
 
         {/* Edit Profile Form */}
-        <Card className="mb-6">
+        {/* <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex flex-wrap gap-2 items-center justify-between">
               <span className="flex items-center gap-2">
@@ -474,90 +719,9 @@ export default function Profile() {
               />
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
-        {/* Subjects Management */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Lessons Taught</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Class</TableHead>
-                  <TableHead>Lesson</TableHead>
-                  {/* <TableHead>Periods/Semester</TableHead> */}
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {user?.subjectsTaught?.map((subject: any) => (
-                  <TableRow key={subject._id}>
-                    <TableCell>{subject.class}</TableCell>
-                    <TableCell>{subject.subject}</TableCell>
-                    {/* <TableCell>{subject.periodsInSemester}</TableCell> */}
-                    <TableCell>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="sm">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This will remove {subject.subject} for class{" "}
-                              {subject.class} from your subjects. This action
-                              cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleRemoveSubject(subject._id)}
-                              className="bg-red-500 hover:bg-red-600"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
 
-            <div className="mt-4">
-              <h3 className="text-lg font-semibold mb-2">Add New Lesson</h3>
-              <form onSubmit={handleAddSubject} className="space-y-4">
-                <div className="flex flex-col gap-4 ">
-                  <div>
-                    <Label htmlFor="class">Class</Label>
-                    <Input
-                      id="class"
-                      name="class"
-                      type="number"
-                      placeholder="Class"
-                    />
-                  </div>
-                  <SubjectSelector
-                    selectedSubject={selectedSubject}
-                    onSubjectSelect={setSelectedSubject}
-                    label="Lesson"
-                    placeholder="Select lesson..."
-                  />
-                </div>
-                <Button type="submit">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Lesson
-                </Button>
-              </form>
-            </div>
-          </CardContent>
-        </Card>
       </main>
     </div>
   );

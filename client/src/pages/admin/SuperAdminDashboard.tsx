@@ -27,6 +27,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   Users,
   BookOpen,
   Calendar,
@@ -114,6 +122,9 @@ export default function SuperAdminDashboard() {
     levels: [],
     isActive: false,
   });
+
+  // Dialog states
+  const [showGradingConfigDialog, setShowGradingConfigDialog] = useState(false);
 
   // Check if user is super admin
   useEffect(() => {
@@ -287,6 +298,7 @@ export default function SuperAdminDashboard() {
         levels: [],
         isActive: false,
       });
+      setShowGradingConfigDialog(false);
       fetchGradingConfigs();
     } catch (error) {
       toast({
@@ -723,202 +735,9 @@ export default function SuperAdminDashboard() {
             <TabsContent value="grading" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="h-5 w-5" />
-                    Create New Grading Configuration
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Grading Configurations</span>
                   </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="grading-name">Template Name</Label>
-                    <Input
-                      id="grading-name"
-                      value={newGradingConfig.name}
-                      onChange={(e) =>
-                        setNewGradingConfig({
-                          ...newGradingConfig,
-                          name: e.target.value,
-                        })
-                      }
-                      placeholder="e.g., Standard Grading"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={newGradingConfig.description || ""}
-                      onChange={(e) =>
-                        setNewGradingConfig({
-                          ...newGradingConfig,
-                          description: e.target.value,
-                        })
-                      }
-                      placeholder="Template description..."
-                    />
-                  </div>
-                  <div>
-                    <Label>Levels</Label>
-                    <div className="space-y-2 mt-2">
-                      {newGradingConfig.levels.map((level, index) => (
-                        <div
-                          key={index}
-                          className="flex items-start gap-2 p-2 border rounded-lg"
-                        >
-                          <div className="flex-1 flex flex-wrap gap-2">
-                            <div className="w-20">
-                              <Label>Emoji</Label>
-                              <Input
-                                value={level.emoji}
-                                onChange={(e) => {
-                                  const newLevels = [
-                                    ...newGradingConfig.levels,
-                                  ];
-                                  newLevels[index] = {
-                                    ...newLevels[index],
-                                    emoji: e.target.value,
-                                  };
-                                  setNewGradingConfig({
-                                    ...newGradingConfig,
-                                    levels: newLevels,
-                                  });
-                                }}
-                                placeholder="e.g., 🙂"
-                              />
-                            </div>
-                            <div className="col-span-3">
-                              <Label>Name</Label>
-                              <Input
-                                value={level.name}
-                                onChange={(e) => {
-                                  const newLevels = [
-                                    ...newGradingConfig.levels,
-                                  ];
-                                  newLevels[index] = {
-                                    ...newLevels[index],
-                                    name: e.target.value,
-                                  };
-                                  setNewGradingConfig({
-                                    ...newGradingConfig,
-                                    levels: newLevels,
-                                  });
-                                }}
-                                placeholder="e.g., Excellent"
-                              />
-                            </div>
-                            <div className="col-span-2">
-                              <Label>Mark</Label>
-                              <Input
-                                type="number"
-                                value={level.mark}
-                                className="w-12 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none appearance-none"
-                                onChange={(e) => {
-                                  const newLevels = [
-                                    ...newGradingConfig.levels,
-                                  ];
-                                  newLevels[index] = {
-                                    ...newLevels[index],
-                                    mark: Number(e.target.value),
-                                  };
-                                  setNewGradingConfig({
-                                    ...newGradingConfig,
-                                    levels: newLevels,
-                                  });
-                                }}
-                                placeholder="0-100"
-                              />
-                            </div>
-                            <div className="col-span-5">
-                              <Label>Color</Label>
-                              <div className="flex gap-2">
-                                <Input
-                                  type="color"
-                                  value={level.color}
-                                  onChange={(e) => {
-                                    const newLevels = [
-                                      ...newGradingConfig.levels,
-                                    ];
-                                    newLevels[index] = {
-                                      ...newLevels[index],
-                                      color: e.target.value,
-                                    };
-                                    setNewGradingConfig({
-                                      ...newGradingConfig,
-                                      levels: newLevels,
-                                    });
-                                  }}
-                                  className="w-14"
-                                />
-                                <Input
-                                  value={level.color}
-                                  className="w-24" 
-                                  onChange={(e) => {
-                                    const newLevels = [
-                                      ...newGradingConfig.levels,
-                                    ];
-                                    newLevels[index] = {
-                                      ...newLevels[index],
-                                      color: e.target.value,
-                                    };
-                                    setNewGradingConfig({
-                                      ...newGradingConfig,
-                                      levels: newLevels,
-                                    });
-                                  }}
-                                  placeholder="#000000"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            className=""
-                            size="icon"
-                            onClick={() => {
-                              const newLevels = newGradingConfig.levels.filter(
-                                (_, i) => i !== index
-                              );
-                              setNewGradingConfig({
-                                ...newGradingConfig,
-                                levels: newLevels,
-                              });
-                            }}
-                          >
-                            <Trash2 className="h-1 w-1" />
-                          </Button>
-                        </div>
-                      ))}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setNewGradingConfig({
-                            ...newGradingConfig,
-                            levels: [
-                              ...newGradingConfig.levels,
-                              { name: "", mark: 0, color: "#000000" },
-                            ],
-                          });
-                        }}
-                      >
-                        <Plus className="h-4 w-4 mr-2" /> Add Level
-                      </Button>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={handleCreateGradingConfig}
-                    className="w-full"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Template
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Grading Configurations</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -988,6 +807,210 @@ export default function SuperAdminDashboard() {
                         </Table>
                       </Card>
                     ))}
+                    <Dialog open={showGradingConfigDialog} onOpenChange={setShowGradingConfigDialog}>
+                      <DialogTrigger asChild>
+                        <Button className="w-full mt-2">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create New Grading Configuration
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center gap-2">
+                            <Settings className="h-5 w-5" />
+                            Create New Grading Configuration
+                          </DialogTitle>
+                          <DialogDescription>
+                            Create a new grading template with custom levels, marks, and colors.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 mt-6">
+                          <div>
+                            <Label htmlFor="dialog-grading-name">Template Name</Label>
+                            <Input
+                              id="dialog-grading-name"
+                              value={newGradingConfig.name}
+                              onChange={(e) =>
+                                setNewGradingConfig({
+                                  ...newGradingConfig,
+                                  name: e.target.value,
+                                })
+                              }
+                              placeholder="e.g., Standard Grading"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="dialog-description">Description</Label>
+                            <Textarea
+                              id="dialog-description"
+                              value={newGradingConfig.description || ""}
+                              onChange={(e) =>
+                                setNewGradingConfig({
+                                  ...newGradingConfig,
+                                  description: e.target.value,
+                                })
+                              }
+                              placeholder="Template description..."
+                            />
+                          </div>
+                          <div>
+                            <Label>Levels</Label>
+                            <div className="space-y-2 mt-2">
+                              {newGradingConfig.levels.map((level, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-start gap-2 p-2 border rounded-lg"
+                                >
+                                  <div className="flex-1 flex flex-wrap gap-2">
+                                    <div className="w-20">
+                                      <Label>Emoji</Label>
+                                      <Input
+                                        value={level.emoji}
+                                        onChange={(e) => {
+                                          const newLevels = [
+                                            ...newGradingConfig.levels,
+                                          ];
+                                          newLevels[index] = {
+                                            ...newLevels[index],
+                                            emoji: e.target.value,
+                                          };
+                                          setNewGradingConfig({
+                                            ...newGradingConfig,
+                                            levels: newLevels,
+                                          });
+                                        }}
+                                        placeholder="e.g., 🙂"
+                                      />
+                                    </div>
+                                    <div className="col-span-3">
+                                      <Label>Name</Label>
+                                      <Input
+                                        value={level.name}
+                                        onChange={(e) => {
+                                          const newLevels = [
+                                            ...newGradingConfig.levels,
+                                          ];
+                                          newLevels[index] = {
+                                            ...newLevels[index],
+                                            name: e.target.value,
+                                          };
+                                          setNewGradingConfig({
+                                            ...newGradingConfig,
+                                            levels: newLevels,
+                                          });
+                                        }}
+                                        placeholder="e.g., Excellent"
+                                      />
+                                    </div>
+                                    <div className="col-span-2">
+                                      <Label>Mark</Label>
+                                      <Input
+                                        type="number"
+                                        value={level.mark}
+                                        className="w-12 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none appearance-none"
+                                        onChange={(e) => {
+                                          const newLevels = [
+                                            ...newGradingConfig.levels,
+                                          ];
+                                          newLevels[index] = {
+                                            ...newLevels[index],
+                                            mark: Number(e.target.value),
+                                          };
+                                          setNewGradingConfig({
+                                            ...newGradingConfig,
+                                            levels: newLevels,
+                                          });
+                                        }}
+                                        placeholder="0-100"
+                                      />
+                                    </div>
+                                    <div className="col-span-5">
+                                      <Label>Color</Label>
+                                      <div className="flex gap-2">
+                                        <Input
+                                          type="color"
+                                          value={level.color}
+                                          onChange={(e) => {
+                                            const newLevels = [
+                                              ...newGradingConfig.levels,
+                                            ];
+                                            newLevels[index] = {
+                                              ...newLevels[index],
+                                              color: e.target.value,
+                                            };
+                                            setNewGradingConfig({
+                                              ...newGradingConfig,
+                                              levels: newLevels,
+                                            });
+                                          }}
+                                          className="w-14"
+                                        />
+                                        <Input
+                                          value={level.color}
+                                          className="w-24" 
+                                          onChange={(e) => {
+                                            const newLevels = [
+                                              ...newGradingConfig.levels,
+                                            ];
+                                            newLevels[index] = {
+                                              ...newLevels[index],
+                                              color: e.target.value,
+                                            };
+                                            setNewGradingConfig({
+                                              ...newGradingConfig,
+                                              levels: newLevels,
+                                            });
+                                          }}
+                                          placeholder="#000000"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      const newLevels = newGradingConfig.levels.filter(
+                                        (_, i) => i !== index
+                                      );
+                                      setNewGradingConfig({
+                                        ...newGradingConfig,
+                                        levels: newLevels,
+                                      });
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                  setNewGradingConfig({
+                                    ...newGradingConfig,
+                                    levels: [
+                                      ...newGradingConfig.levels,
+                                      { name: "", mark: 0, color: "#000000" },
+                                    ],
+                                  });
+                                }}
+                              >
+                                <Plus className="h-4 w-4 mr-2" /> Add Level
+                              </Button>
+                            </div>
+                          </div>
+                          <Button
+                            onClick={handleCreateGradingConfig}
+                            className="w-full"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create Template
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </CardContent>
               </Card>
