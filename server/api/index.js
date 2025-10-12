@@ -140,8 +140,12 @@ app.use(express.static(path.join(__dirname, '../client/dist')));
 const staticPath = path.join(__dirname, '../client/dist/index.html');
 console.log('Serving static files from:', staticPath);
 
-// THEN catch-all route
-app.get(/^(?!\/?api).*/, (req, res) => {
+// THEN catch-all route (for SPA routing)
+app.get('*', (req, res) => {
+  // Don't handle API routes
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ message: 'API route not found' });
+  }
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
