@@ -71,6 +71,8 @@ const subjectsRoutes = require("../routes/subjects");
 const gradingConfigsRoutes = require("../routes/gradingConfigs");
 const exportsRoutes = require("../routes/exports");
 const superadminRoutes = require("../routes/superadmin");
+const improvementsRoutes = require("./routes/improvements");
+
 
 // Import auth middleware
 const { authenticateToken } = require('../middleware/auth');
@@ -87,6 +89,7 @@ app.use("/api/subjects", authenticateToken, subjectsRoutes);
 app.use("/api/grading-configs", authenticateToken, gradingConfigsRoutes);
 app.use("/api/exports", authenticateToken, exportsRoutes);
 app.use("/api/superadmin", authenticateToken, superadminRoutes); // This route also has isSuperAdmin middleware inside
+app.use("/api/improvements", authenticateToken, improvementsRoutes);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
