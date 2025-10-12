@@ -74,7 +74,7 @@ app.use((req, res, next) => {
 
 // Define routes
 app.get("/api/test", (req, res) => {
-  res.send("API is running...");
+  res.json({ message: "API is running with CORS fixes!", timestamp: new Date().toISOString() });
 });
 
 // Import routes
