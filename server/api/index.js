@@ -25,14 +25,30 @@ app.use(
       'http://127.0.0.1:5173',
       'http://localhost:3000',
       'https://daily-viva-tracker.onrender.com', // Add Render deployment URL
-      'https://daily-viva-tracker.vercel.app', // Add Vercel deployment URL
-      'https://v6xrx50k-5000.inc1.devtunnels.ms'
+      'https://daily-viva-tracker.vercel.app', // Frontend Vercel deployment URL
+      'https://daily-viva-tracker-3p9w.vercel.app', // Backend Vercel deployment URL
+      'https://v6xrx50k-5000.inc1.devtunnels.ms',
+      // Allow any vercel.app subdomain for flexibility
+      /^https:\/\/.*\.vercel\.app$/,
+      /^https:\/\/daily-viva-tracker.*\.vercel\.app$/
     ],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    exposedHeaders: ['Set-Cookie']
   })
 );
 app.use(express.json());
 app.use(cookieParser());
+
+// Handle preflight OPTIONS requests
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200);
+});
 
 // Configure cookie settings
 app.use((req, res, next) => {
@@ -71,7 +87,7 @@ const subjectsRoutes = require("../routes/subjects");
 const gradingConfigsRoutes = require("../routes/gradingConfigs");
 const exportsRoutes = require("../routes/exports");
 const superadminRoutes = require("../routes/superadmin");
-const improvementsRoutes = require("./routes/improvements");
+const improvementsRoutes = require("../routes/improvements");
 
 
 // Import auth middleware
@@ -130,10 +146,10 @@ app.get(/^(?!\/?api).*/, (req, res) => {
 });
 
 // Start the server
-// const PORT = process.env.PORT || 5000;
-// app.listen(PORT, () => {
-//   console.log(`Server running on port ${PORT}`);
-// });
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
-module.exports = app; 
+// module.exports = app;
  
