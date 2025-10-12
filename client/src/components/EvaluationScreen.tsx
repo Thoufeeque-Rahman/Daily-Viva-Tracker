@@ -118,7 +118,7 @@ export default function EvaluationScreen({
   };
 
   // Filter students based on search query
-  console.log(allStudents);
+  // console.log(allStudents);
   const filteredStudents = allStudents.filter((student) =>
     student.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -127,6 +127,8 @@ export default function EvaluationScreen({
   const requiresImprovement = (mark: number) => {
     const maxMark = Math.max(...gradingLevels.map(level => level.mark));
     const threshold = maxMark * 0.5; // 50% threshold
+    console.log("Max Mark:", maxMark, "Threshold:", threshold, "Given Mark:", mark, mark < threshold);
+    
     return mark < threshold;
   };
 
@@ -134,10 +136,14 @@ export default function EvaluationScreen({
   const handleEvaluation = (evaluation: string, mark: number) => {
     if (requiresImprovement(mark) && currentStudent) {
       // Store pending evaluation and show confirmation dialog
+      console.log("Mark requires improvement:", mark);
+      
       setPendingEvaluation({ evaluation, mark });
       setShowImprovementConfirm(true);
     } else {
       // Direct evaluation for good marks
+      console.log("Mark requires improvement:", mark);
+
       onEvaluate(evaluation, mark);
       setCurrentEvaluation(evaluation);
     }
@@ -148,15 +154,26 @@ export default function EvaluationScreen({
     setShowImprovementConfirm(false);
     
     if (pendingEvaluation) {
-      // Always evaluate the student first
+      if (addImprovement) {
+        // Show improvement modal first, save evaluation later
+        setShowImprovementModal(true);
+      } else {
+        // No improvement needed, save evaluation immediately
+        onEvaluate(pendingEvaluation.evaluation, pendingEvaluation.mark);
+        setCurrentEvaluation(pendingEvaluation.evaluation);
+        setPendingEvaluation(null);
+      }
+    }
+  };
+
+  // Handle improvement modal success - save evaluation after task is assigned
+  const handleImprovementSuccess = () => {
+    setShowImprovementModal(false);
+    
+    if (pendingEvaluation) {
+      // Now save the evaluation after improvement task is assigned
       onEvaluate(pendingEvaluation.evaluation, pendingEvaluation.mark);
       setCurrentEvaluation(pendingEvaluation.evaluation);
-      
-      if (addImprovement) {
-        // Show improvement modal
-        setShowImprovementModal(true);
-      }
-      
       setPendingEvaluation(null);
     }
   };
@@ -322,6 +339,8 @@ export default function EvaluationScreen({
                 }`}
                 onClick={() => {
                   const evaluation = level.name.toLowerCase();
+                  console.log("Evaluating with:", evaluation, level.mark);
+                  
                   handleEvaluation(evaluation, level.mark);
                 }}
               > 
@@ -408,15 +427,12 @@ export default function EvaluationScreen({
       {/* Improvement Modal */}
       {currentStudent && selectedSubject && (
         <ImprovementModal
-          open={showImprovementModal}
-          onOpenChange={setShowImprovementModal}
+          isOpen={showImprovementModal}
+          onClose={() => setShowImprovementModal(false)}
           student={currentStudent}
           subject={selectedSubject.subject}
           classNumber={selectedSubject.class}
-          onSuccess={() => {
-            setShowImprovementModal(false);
-            // The improvement list will auto-update via React Query
-          }}
+          onSuccess={handleImprovementSuccess}
         />
       )}
     </div>

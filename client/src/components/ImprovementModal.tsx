@@ -34,9 +34,17 @@ export function ImprovementModal({
 }: ImprovementModalProps) {
   const { toast } = useToast();
   const createImprovement = useCreateImprovement();
+  
+  // Get tomorrow's date as default
+  const getTomorrowDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  };
+
   const [formData, setFormData] = useState({
     description: "",
-    dueDate: "",
+    dueDate: getTomorrowDate(),
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,7 +76,7 @@ export function ImprovementModal({
       // Reset form
       setFormData({
         description: "",
-        dueDate: "",
+        dueDate: getTomorrowDate(),
       });
 
       onSuccess?.();
@@ -87,7 +95,7 @@ export function ImprovementModal({
     if (!createImprovement.isPending) {
       setFormData({
         description: "",
-        dueDate: "",
+        dueDate: getTomorrowDate(),
       });
       onClose();
     }
