@@ -15,6 +15,7 @@ import { Label } from "@radix-ui/react-label";
 import { useActiveGradingConfig, getDefaultGradingLevels } from "@/hooks/use-grading-config";
 import { GradingLevel } from "@/types";
 import { ImprovementList } from "./ImprovementList";
+import { ImprovementModal } from "./ImprovementModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,6 +76,9 @@ export default function EvaluationScreen({
   const [studentKey, setStudentKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [showImprovementConfirm, setShowImprovementConfirm] = useState(false);
+  const [showImprovementModal, setShowImprovementModal] = useState(false);
+  const [pendingEvaluation, setPendingEvaluation] = useState<{evaluation: string, mark: number} | null>(null);
 
   // Get active grading configuration
   const { data: gradingConfig } = useActiveGradingConfig();
@@ -118,6 +122,44 @@ export default function EvaluationScreen({
   const filteredStudents = allStudents.filter((student) =>
     student.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Helper function to check if mark requires improvement
+  const requiresImprovement = (mark: number) => {
+    const maxMark = Math.max(...gradingLevels.map(level => level.mark));
+    const threshold = maxMark * 0.5; // 50% threshold
+    return mark < threshold;
+  };
+
+  // Helper function to handle evaluation with improvement check
+  const handleEvaluation = (evaluation: string, mark: number) => {
+    if (requiresImprovement(mark) && currentStudent) {
+      // Store pending evaluation and show confirmation dialog
+      setPendingEvaluation({ evaluation, mark });
+      setShowImprovementConfirm(true);
+    } else {
+      // Direct evaluation for good marks
+      onEvaluate(evaluation, mark);
+      setCurrentEvaluation(evaluation);
+    }
+  };
+
+  // Handle improvement confirmation
+  const handleImprovementConfirm = (addImprovement: boolean) => {
+    setShowImprovementConfirm(false);
+    
+    if (pendingEvaluation) {
+      // Always evaluate the student first
+      onEvaluate(pendingEvaluation.evaluation, pendingEvaluation.mark);
+      setCurrentEvaluation(pendingEvaluation.evaluation);
+      
+      if (addImprovement) {
+        // Show improvement modal
+        setShowImprovementModal(true);
+      }
+      
+      setPendingEvaluation(null);
+    }
+  };
 
   // Update key when student changes to trigger animation
   useEffect(() => {
@@ -280,8 +322,7 @@ export default function EvaluationScreen({
                 }`}
                 onClick={() => {
                   const evaluation = level.name.toLowerCase();
-                  onEvaluate(evaluation, level.mark);
-                  setCurrentEvaluation(evaluation);
+                  handleEvaluation(evaluation, level.mark);
                 }}
               > 
                 <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1"> 
@@ -342,6 +383,42 @@ export default function EvaluationScreen({
           Finish Evaluation
         </Button>
       </div> */}
+
+      {/* Improvement Confirmation Dialog */}
+      <AlertDialog open={showImprovementConfirm} onOpenChange={setShowImprovementConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Low Performance Detected</AlertDialogTitle>
+            <AlertDialogDescription>
+              {currentStudent?.name} scored {pendingEvaluation?.mark} marks, which is below 50% of the maximum possible score. 
+              Would you like to assign an improvement task to help them improve?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => handleImprovementConfirm(false)}>
+              No, Continue
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleImprovementConfirm(true)}>
+              Yes, Assign Task
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Improvement Modal */}
+      {currentStudent && selectedSubject && (
+        <ImprovementModal
+          open={showImprovementModal}
+          onOpenChange={setShowImprovementModal}
+          student={currentStudent}
+          subject={selectedSubject.subject}
+          classNumber={selectedSubject.class}
+          onSuccess={() => {
+            setShowImprovementModal(false);
+            // The improvement list will auto-update via React Query
+          }}
+        />
+      )}
     </div>
   );
 }
