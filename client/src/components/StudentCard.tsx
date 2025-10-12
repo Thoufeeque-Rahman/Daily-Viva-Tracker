@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "./ui/button";
 import { Book, Forward, ForwardIcon, History, SkipForward } from "lucide-react";
 import { StudentHistoryModal } from "./StudentHistoryModal";
+import { ImprovementModal } from "./ImprovementModal";
 
 interface StudentCardProps {
   student: Student | undefined;
@@ -12,6 +13,7 @@ interface StudentCardProps {
   animate?: boolean;
   subject?: string;
   classNumber?: number;
+  onImprovementAssigned?: () => void;
 }
 
 export default function StudentCard({
@@ -20,8 +22,10 @@ export default function StudentCard({
   animate = false,
   subject,
   classNumber,
+  onImprovementAssigned,
 }: StudentCardProps) {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isImprovementModalOpen, setIsImprovementModalOpen] = useState(false);
   if (!student) {
     return (
       <Card className="bg-white rounded-xl shadow-md h-[420px] overflow-hidden mb-6">
@@ -48,28 +52,6 @@ export default function StudentCard({
           </div>
         </div>
       </Card>
-      // <Card className="bg-white rounded-xl shadow-md overflow-hidden mb-6 p-6 flex flex-col items-center">
-      //   <div className="mb-4">
-      //     <Avatar className="w-24 h-24 border-4 border-primary">
-      //       <AvatarFallback>
-      //         <h3>20</h3>
-      //       </AvatarFallback>
-      //     </Avatar>
-      //   </div>
-      //   <div className="w-full text-center">
-      //     <div className="h-6 bg-gray-200 rounded animate-pulse mb-3 w-2/3 mx-auto"></div>
-      //     <div className="mt-3 w-full space-y-2">
-      //       <div className="flex justify-between text-sm">
-      //         <span className="text-gray-500">Roll Number:</span>
-      //         <div className="h-4 bg-gray-200 rounded animate-pulse w-1/4"></div>
-      //       </div>
-      //       <div className="flex justify-between text-sm">
-      //         <span className="text-gray-500">Admission No.:</span>
-      //         <div className="h-4 bg-gray-200 rounded animate-pulse w-1/4"></div>
-      //       </div>
-      //     </div>
-      //   </div>
-      // </Card>
     );
   }
 
@@ -186,8 +168,8 @@ export default function StudentCard({
           <Button
             variant="outline"
             className="flex-1 bg-white/20 text-white rounded-md border-0 font-medium hover:bg-white/30 hover:text-white transition-colors"
-            onClick={onSkip}
-            disabled
+            onClick={() => setIsImprovementModalOpen(true)}
+            disabled={!subject || !classNumber}
           >
             Improvement <Book />
           </Button>
@@ -202,6 +184,20 @@ export default function StudentCard({
           student={student}
           subject={subject}
           classNumber={classNumber}
+        />
+      )}
+
+      {/* Improvement Modal */}
+      {student && subject && classNumber && (
+        <ImprovementModal
+          isOpen={isImprovementModalOpen}
+          onClose={() => setIsImprovementModalOpen(false)}
+          student={student}
+          subject={subject}
+          classNumber={classNumber}
+          onSuccess={() => {
+            onImprovementAssigned?.();
+          }}
         />
       )}
     </Card>

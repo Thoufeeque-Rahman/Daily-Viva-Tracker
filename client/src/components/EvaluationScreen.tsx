@@ -14,6 +14,7 @@ import { Input } from "./ui/input";
 import { Label } from "@radix-ui/react-label";
 import { useActiveGradingConfig, getDefaultGradingLevels } from "@/hooks/use-grading-config";
 import { GradingLevel } from "@/types";
+import { ImprovementList } from "./ImprovementList";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -234,6 +235,14 @@ export default function EvaluationScreen({
         )}
       </div>
 
+      {/* Improvements List */}
+      {selectedSubject?.subject && selectedSubject?.class && (
+        <ImprovementList
+          subject={selectedSubject.subject}
+          classNumber={selectedSubject.class}
+        />
+      )}
+
       {/* Student Card */}
       <div
         key={studentKey}
@@ -245,6 +254,9 @@ export default function EvaluationScreen({
           animate 
           subject={selectedSubject?.subject}
           classNumber={selectedSubject?.class}
+          onImprovementAssigned={() => {
+            // React Query will automatically update the list
+          }}
         />
       </div>
 

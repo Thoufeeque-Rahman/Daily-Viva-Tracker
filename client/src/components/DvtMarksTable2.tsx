@@ -338,7 +338,7 @@ const DvtMarksTable: React.FC = () => {
                           (totalPeriods * 2)) *
                         100
                       : 0;
-                  console.log("overallPercentage:", overallPercentage);
+                  // console.log("overallPercentage:", overallPercentage);
                   return (
                     <td
                       key={classNum}

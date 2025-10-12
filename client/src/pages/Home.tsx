@@ -396,7 +396,7 @@ export default function Home() {
   };
 
   return (
-    <div className="mx-auto max-w-md bg-white min-h-screen shadow-lg relative h-svh flex flex-col">
+    <div className="mx-auto max-w-md bg-white min-h-screen shadow-lg relative flex flex-col">
       <Header
         selectedClass={selectedClass?.name}
         selectedSubject={
