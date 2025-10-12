@@ -53,6 +53,8 @@ interface EvaluationScreenProps {
   onStudentSelect?: (student: Student) => void;
   onForceStop?: () => void;
   selectedSubject?: { subject: string; class: number };
+  isLoadingNext?: boolean;
+  isSaving?: boolean;
 }
 
 export default function EvaluationScreen({
@@ -72,6 +74,8 @@ export default function EvaluationScreen({
   allStudents,
   onStudentSelect,
   selectedSubject,
+  isLoadingNext = false,
+  isSaving = false,
 }: EvaluationScreenProps) {
   const [studentKey, setStudentKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
@@ -334,15 +338,15 @@ export default function EvaluationScreen({
               <button
                 key={level.name}
                 style={{ background: `linear-gradient(to right, ${level.color}80, ${level.color})`}}
-                className={`flex flex-col items-center p-3 rounded-xl shadow-lg transition-all ${
-                  isSelected ? `ring-2 ${ringClass}` : ""
-                }`}
+                className={`flex flex-col items-center p-3 rounded-xl shadow-lg transition-all ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
                 onClick={() => {
+                  if (isSaving) return;
                   const evaluation = level.name.toLowerCase();
                   console.log("Evaluating with:", evaluation, level.mark);
                   
                   handleEvaluation(evaluation, level.mark);
                 }}
+                disabled={isSaving}
               > 
                 <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1"> 
                   <span className="text-white text-4xl">{level.emoji || getDefaultEmoji(level.name)}</span>  
@@ -374,8 +378,10 @@ export default function EvaluationScreen({
               variant="outline"
               className="flex-1 py-3 bg-red-500 shadow-md rounded-xl text-white border-0 font-medium hover:bg-destructive hover:text-white transition-colors"
               onClick={onFinish}
+              loading={isLoadingNext}
+              disabled={isSaving}
             >
-              Finish Evaluation
+              {isLoadingNext ? "Finishing..." : "Finish Evaluation"}
             </Button> 
             {/* <div>
               <Button

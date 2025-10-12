@@ -191,9 +191,26 @@ const DvtMarksTable: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <RefreshCw className="animate-spin h-8 w-8 text-blue-500" />
-        <span className="ml-2 text-gray-600">Loading DVT marks...</span>
+      <div className="p-3 bg-white rounded-lg shadow-lg">
+        <div className="flex justify-between items-center mb-3">
+          <div className="h-6 bg-gray-200 rounded animate-pulse w-32"></div>
+          <div className="flex gap-2">
+            <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex justify-between items-center p-3 border rounded">
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
+              <div className="flex gap-2">
+                {Array.from({ length: 4 }).map((_, j) => (
+                  <div key={j} className="h-6 w-12 bg-gray-200 rounded animate-pulse"></div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

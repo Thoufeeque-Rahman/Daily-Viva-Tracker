@@ -80,8 +80,14 @@ export default function Profile() {
   });
 
   const [selectedSubject, setSelectedSubject] = useState("");
+  
+  // Loading states
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isDeletingSubject, setIsDeletingSubject] = useState<string | null>(null);
 
   const handleSave = async () => {
+    setIsSavingProfile(true);
     try {
       await axios.put("/api/teachers/profile", profileData);
       toast({
@@ -97,6 +103,8 @@ export default function Profile() {
         description: "Failed to update profile. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSavingProfile(false);
     }
   };
 
@@ -110,6 +118,7 @@ export default function Profile() {
       return;
     }
 
+    setIsChangingPassword(true);
     try {
       await axios.put("/api/teachers/change-password", {
         currentPassword: passwordData.currentPassword,
@@ -134,6 +143,8 @@ export default function Profile() {
           "Failed to update password. Please check your current password and try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -331,8 +342,8 @@ export default function Profile() {
                           />
                         </div>
 
-                        <Button onClick={handleSave} className="w-full">
-                          Update Profile
+                        <Button onClick={handleSave} className="w-full" loading={isSavingProfile}>
+                          {isSavingProfile ? "Updating..." : "Update Profile"}
                         </Button>
                       </div>
                     </TabsContent>
@@ -385,8 +396,8 @@ export default function Profile() {
                             }
                           />
                         </div>
-                        <Button onClick={handlePasswordChange} className="w-full">
-                          Update Password
+                        <Button onClick={handlePasswordChange} className="w-full" loading={isChangingPassword}>
+                          {isChangingPassword ? "Updating..." : "Update Password"}
                         </Button>
                       </div>
                     </TabsContent>
@@ -654,8 +665,8 @@ export default function Profile() {
                   </>
                 ) : (
                   <div className="flex gap-2">
-                    <Button onClick={handleSave} size="sm">
-                      Save
+                    <Button onClick={handleSave} size="sm" loading={isSavingProfile}>
+                      {isSavingProfile ? "Saving..." : "Save"}
                     </Button>
                     <Button onClick={handleCancel} variant="outline" size="sm">
                       Cancel

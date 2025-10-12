@@ -26,18 +26,25 @@ interface AuthContextType {
   logout: () => void;
   updateUser: (userData: User) => void;
   isAuthenticated: boolean;
+  isLoading: boolean;
+  isLoginLoading: boolean;
+  isLogoutLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoginLoading, setIsLoginLoading] = useState(false);
+  const [isLogoutLoading, setIsLogoutLoading] = useState(false);
   const baseUrl = import.meta.env.VITE_BASE_URL;
 
   useEffect(() => {
     // Check if user is already logged in
     const checkAuth = async () => {
       try {
+        setIsLoading(true);
         const response = await fetch(`${baseUrl}/api/teachers/me`, {
           credentials: "include",
         });
@@ -47,6 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error("Failed to check authentication:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -55,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (username: string, password: string) => {
     try {
+      setIsLoginLoading(true);
       const response = await fetch(`${baseUrl}/api/teachers/login`, {
         method: "POST",
         headers: {
@@ -74,11 +84,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Login error:", error);
       throw error;
+    } finally {
+      setIsLoginLoading(false);
     }
   };
 
   const logout = async () => {
     try {
+      setIsLogoutLoading(true);
       await fetch(`${baseUrl}/api/teachers/logout`, {
         method: "POST",
         credentials: "include",
@@ -86,6 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
     } catch (error) {
       console.error("Logout error:", error);
+    } finally {
+      setIsLogoutLoading(false);
     }
   };
 
@@ -101,6 +116,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         updateUser,
         isAuthenticated: !!user,
+        isLoading,
+        isLoginLoading,
+        isLogoutLoading,
       }}
     >
       {children}

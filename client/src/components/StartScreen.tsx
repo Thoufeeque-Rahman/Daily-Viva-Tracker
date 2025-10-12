@@ -23,6 +23,7 @@ interface StartScreenProps {
   onSubjectSelect: (subject: SubjectInfo) => void;
   onProceed: () => void;
   isProceedEnabled: boolean;
+  isLoading?: boolean;
 }
 
 export default function StartScreen({
@@ -32,6 +33,7 @@ export default function StartScreen({
   onSubjectSelect,
   onProceed,
   isProceedEnabled,
+  isLoading = false,
 }: StartScreenProps) {
   const { user, isAuthenticated } = useAuth();
   const [dvtMarks, setDvtMarks] = useState<any[]>([]);
@@ -117,6 +119,47 @@ export default function StartScreen({
     b.class - a.class
   );
 
+  if (isLoading) {
+    return (
+      <div className="p-6 transition-all duration-300 transform bg-white shadow-lg">
+        <div className="text-start mb-8 mt-4 flex gap-3 items-center">
+          <p className="font-medium mt-2 text-blue-600">
+            Hi,{" "}
+            {user?.name
+              ? user.name.charAt(0).toUpperCase() +
+                user.name.slice(1).toLowerCase()
+              : "there"}
+             👋!
+          </p>
+        </div>
+
+        {/* Loading State */}
+        <div className="mb-8 bg-white p-3 rounded-lg shadow-lg">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Select Lesson
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-12 bg-gray-200 rounded-lg animate-pulse"
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div className="h-6 bg-gray-200 rounded animate-pulse w-1/3" />
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 transition-all duration-300 transform bg-white shadow-lg ">
       <div className="text-start mb-8 mt-4 flex gap-3 items-center">
@@ -147,13 +190,18 @@ export default function StartScreen({
             return (
               <button
                 key={index}
-                className={`border bg-gradient-to-r ${colors.bg} text-white font-medium border-gray-200 rounded-lg py-3 px-4 text-center hover:bg-gray-50 focus:outline-none transition-all`}
+                className={`border bg-gradient-to-r ${colors.bg} text-white font-medium border-gray-200 rounded-lg py-3 px-4 text-center hover:bg-gray-50 focus:outline-none transition-all ${
+                  isLoading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
                 onClick={() => {
-                  onSubjectSelect({
-                    subject: subject.subject,
-                    class: subject.class,
-                  });
+                  if (!isLoading) {
+                    onSubjectSelect({
+                      subject: subject.subject,
+                      class: subject.class,
+                    });
+                  }
                 }}
+                disabled={isLoading}
               >
                 {subject.subject} - {subject.class}
               </button>

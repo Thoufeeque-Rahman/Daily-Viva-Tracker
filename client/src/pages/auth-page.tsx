@@ -20,8 +20,25 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { toast } = useToast();
-  const { user, isAuthenticated, login } = useAuth();
+  const { user, isAuthenticated, login, isLoading, isLoginLoading } = useAuth();
   const [, setLocation] = useLocation();
+
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="w-full max-w-md space-y-8 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary mb-2">
+            <GraduationCap className="h-8 w-8 text-white" />
+          </div>
+          <div className="space-y-4">
+            <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4 mx-auto"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Redirect if already logged in
   if (isAuthenticated) {
@@ -90,6 +107,7 @@ export default function AuthPage() {
                   placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoginLoading}
                   required
                 />
               </div>
@@ -101,13 +119,14 @@ export default function AuthPage() {
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoginLoading}
                   required
                 />
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" className="w-full">
-                Login
+              <Button type="submit" className="w-full" loading={isLoginLoading}>
+                {isLoginLoading ? "Signing in..." : "Login"}
               </Button>
             </CardFooter>
           </form>

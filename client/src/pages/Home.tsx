@@ -29,16 +29,34 @@ export default function Home() {
   const [students, setStudents] = useState<Student[]>([]);
   const [currentStudentIndex, setCurrentStudentIndex] = useState(0);
   const { toast } = useToast();
+  
+  // Loading states
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
+  const [isLoadingRound, setIsLoadingRound] = useState(false);
+  const [isLoadingNextStudent, setIsLoadingNextStudent] = useState(false);
+  const [isSavingEvaluation, setIsSavingEvaluation] = useState(false);
 
   const handleProceed = async () => {
     if (selectedSubject && selectedSubject.subject && selectedSubject.class) {
       //if (selectedClass && selectedSubject) {
       console.log("Evaluation started");
-      const students = await fetchStudents(selectedSubject.class);
-      console.log("Data:", students);
-      console.log("Students:", students);
-      fetchRound(selectedSubject, students);
-      // setActiveScreen("evaluation");
+      setIsLoadingStudents(true);
+      try {
+        const students = await fetchStudents(selectedSubject.class);
+        console.log("Data:", students);
+        console.log("Students:", students);
+        await fetchRound(selectedSubject, students);
+        // setActiveScreen("evaluation");
+      } catch (error) {
+        console.error("Error during proceed:", error);
+        toast({
+          title: "Error",
+          description: "Failed to start evaluation. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingStudents(false);
+      }
     }
   };
 
@@ -98,29 +116,35 @@ export default function Home() {
   // Fetch round based on selected subject and class
   const fetchRound = async (subject: SubjectInfo, students: Student[]) => {
     console.log("Fetching round for subject:", subject);
-    const response = await fetch(
-      `${baseUrl}/api/rounds/${subject.subject}/${subject.class}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
+    setIsLoadingRound(true);
+    try {
+      const response = await fetch(
+        `${baseUrl}/api/rounds/${subject.subject}/${subject.class}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
+      if (!response.ok) {
+        console.log(students);
+        await createRound(subject, students);
+        // throw new Error("Failed to fetch round");
+      } else {
+        const data = await response.json();
+        setRounds(data);
+
+        const currentStudent = await getRandomStudent(data);
+        setActiveScreen("evaluation");
+
+        console.log("Random Student:", currentStudent);
+        console.log("Fetched Round:", data);
       }
-    );
-    if (!response.ok) {
-      console.log(students);
-      createRound(subject, students);
-      // throw new Error("Failed to fetch round");
+    } finally {
+      setIsLoadingRound(false);
     }
-    const data = await response.json();
-    setRounds(data);
-
-    const currentStudent = await getRandomStudent(data);
-    setActiveScreen("evaluation");
-
-    console.log("Random Student:", currentStudent);
-    console.log("Fetched Round:", data);
   };
 
   const getRandomStudent = async (fetchedRounds: string | any[]) => {
@@ -305,10 +329,22 @@ export default function Home() {
   };
 
   const handleNext = async () => {
-    removeStudentFromRound(String(currentStudent?._id));
+    setIsLoadingNextStudent(true);
+    try {
+      await removeStudentFromRound(String(currentStudent?._id));
 
-    // Move to next student
-    getRandomStudent(rounds);
+      // Move to next student
+      await getRandomStudent(rounds);
+    } catch (error) {
+      console.error("Error moving to next student:", error);
+      toast({
+        title: "Error",
+        description: "Failed to move to next student. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingNextStudent(false);
+    }
   };
 
   const handleFinish = () => {
@@ -351,6 +387,7 @@ export default function Home() {
       return;
     }
 
+    setIsSavingEvaluation(true);
     try {
         const response = await fetch(`${baseUrl}/api/dvtmarks`, {
         method: "POST",
@@ -391,6 +428,7 @@ export default function Home() {
         variant: "destructive",
       });
     } finally {
+      setIsSavingEvaluation(false);
       setCurrentEvaluation(null);
     }
   };
@@ -415,6 +453,7 @@ export default function Home() {
             onSubjectSelect={handleSubjectSelect}
             onProceed={handleProceed}
             isProceedEnabled={!!selectedSubject}
+            isLoading={isLoadingStudents || isLoadingRound}
           />
         ) : (
           <EvaluationScreen
@@ -433,7 +472,9 @@ export default function Home() {
             onFinish={handleFinish}
             setPunishmentModalOpen={setPunishmentModalOpen}
             isNextEnabled={!!currentEvaluation}
-            selectedSubject={selectedSubject}
+            selectedSubject={selectedSubject || undefined}
+            isLoadingNext={isLoadingNextStudent}
+            isSaving={isSavingEvaluation}
           />
         )}
       </main>
