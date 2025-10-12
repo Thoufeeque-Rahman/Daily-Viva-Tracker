@@ -31,7 +31,7 @@ export function ImprovementList({
   const improvements = allImprovements
     .filter((improvement) => improvement.status === "given")
     .sort(
-      (a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
+      (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
     );
 
   // Debug logging
