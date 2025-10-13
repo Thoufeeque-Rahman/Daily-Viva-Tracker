@@ -122,7 +122,7 @@ export default function StartScreen({
   if (isLoading) {
     return (
       <div className="p-6 transition-all duration-300 transform bg-white shadow-lg">
-        <div className="text-start mb-8 mt-4 flex gap-3 items-center">
+        {/* <div className="text-start mb-8 mt-4 flex gap-3 items-center">
           <p className="font-medium mt-2 text-blue-600">
             Hi,{" "}
             {user?.name
@@ -131,7 +131,7 @@ export default function StartScreen({
               : "there"}
              👋!
           </p>
-        </div>
+        </div> */}
 
         {/* Loading State */}
         <div className="mb-8 bg-white p-3 rounded-lg shadow-lg">
@@ -162,20 +162,20 @@ export default function StartScreen({
 
   return (
     <div className="p-6 transition-all duration-300 transform bg-white shadow-lg ">
-      <div className="text-start mb-8 mt-4 flex gap-3 items-center">
+      {/* <div className="text-start mb-8 mt-4 flex gap-3 items-center"> */}
         {/* <div className="bg-blue-500 inline-block p-3 rounded-full">
           <User className="text-white w-3 h-3" />
         </div> */}
         {/*<h2 className="text-2xl font-bold text-blue-600">Daily Viva Tracker</h2> */}
-        <p className="font-medium mt-2 text-blue-600">
+        {/* <p className="font-medium mt-2 text-blue-600">
           Hi,{" "}
           {user?.name
             ? user.name.charAt(0).toUpperCase() +
               user.name.slice(1).toLowerCase()
             : "there"}
            👋!
-        </p>
-      </div>
+        </p> */}
+      {/* </div> */}
 
       {/* Subject Selection */}
       <div className="mb-8 bg-white p-3 rounded-lg shadow-lg">
