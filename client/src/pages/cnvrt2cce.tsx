@@ -30,6 +30,7 @@ import { getPerformanceColors } from "@/lib/colors";
 import { AskMeModal } from "@/components/AskMeModal";
 import { useToast } from "@/hooks/use-toast";
 import { Student, DvtMark } from "@/types";
+import { CardSkeleton } from "@/components/SkeletonLoaders";
 
 interface StudentPerformance {
   student: Student;
@@ -48,8 +49,14 @@ type SortDirection = "asc" | "desc";
 
 export default function Cnvrt2CCE() {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
+
+  // Redirect to auth if not authenticated
+  if (!isAuthenticated) {
+    setLocation("/auth");
+    return null;
+  }
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [students, setStudents] = useState<Student[]>([]);
   const [dvtMarks, setDvtMarks] = useState<DvtMark[]>([]);
@@ -61,14 +68,20 @@ export default function Cnvrt2CCE() {
   const [isAskMeModalOpen, setIsAskMeModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [totalCceMark, setTotalCceMark] = useState<number | "">(10); // default 10, allow empty
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
+  const [isLoadingMarks, setIsLoadingMarks] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const baseUrl = import.meta.env.VITE_BASE_URL;
 
   const fetchStudents = async () => {
+    setIsLoadingStudents(true);
     try {
       const response = await fetch(`${baseUrl}/api/students`, {
+        method: "GET",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
         },
+        credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to fetch students");
       const data = await response.json();
@@ -81,15 +94,20 @@ export default function Cnvrt2CCE() {
         description: "Failed to fetch students. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoadingStudents(false);
     }
   };
 
   const fetchDvtMarks = async () => {
+    setIsLoadingMarks(true);
     try {
       const response = await fetch(`${baseUrl}/api/dvtmarks`, {
+        method: "GET",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
         },
+        credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to fetch DVT marks");
       const data = await response.json();
@@ -101,6 +119,8 @@ export default function Cnvrt2CCE() {
         description: "Failed to fetch DVT marks. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoadingMarks(false);
     }
   };
 
@@ -190,8 +210,8 @@ export default function Cnvrt2CCE() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
+        credentials: "include",
         body: JSON.stringify({
           studentId: selectedStudent._id,
           subject: subject,
@@ -224,6 +244,7 @@ export default function Cnvrt2CCE() {
   };
 
   const handleRefresh = async () => {
+    setIsRefreshing(true);
     try {
       await Promise.all([fetchStudents(), fetchDvtMarks()]);
       toast({
@@ -237,6 +258,8 @@ export default function Cnvrt2CCE() {
         description: "Failed to refresh data. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -328,10 +351,12 @@ export default function Cnvrt2CCE() {
                 variant="outline"
                 size="sm"
                 onClick={handleRefresh}
+                loading={isRefreshing}
+                disabled={isLoadingStudents || isLoadingMarks}
                 className="flex items-center gap-2 bg-blue-50 text-blue-600 font-medium border-blue-600 hover:bg-blue-100 hover:text-blue-600 hover:border-blue-600 focus:bg-blue-100 focus:text-blue-600 focus:border-blue-600 focus:outline-none"
               >
-                <RefreshCw className="h-4 w-4" />
-                Refresh
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                {isRefreshing ? "Refreshing..." : "Refresh"}
               </Button>
             </div>
           </div>
@@ -339,7 +364,14 @@ export default function Cnvrt2CCE() {
 
         {/* Student Performance Cards */}
         <div className="space-y-4">
-          {studentPerformance.map((performance) => {
+          {(isLoadingStudents || isLoadingMarks) && selectedSubject ? (
+            <>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <CardSkeleton key={i} />
+              ))}
+            </>
+          ) : (
+            studentPerformance.map((performance) => {
             const colors = getPerformanceColors(performance.percentage);
             return (
               <Card
@@ -437,9 +469,9 @@ export default function Cnvrt2CCE() {
                 </div>
               </Card>
             );
-          })}
+          }))}
 
-          {selectedSubject && studentPerformance.length === 0 && (
+          {selectedSubject && studentPerformance.length === 0 && !isLoadingStudents && !isLoadingMarks && (
             <p className="text-center text-gray-500 py-8">
               No performance data found for this subject
             </p>
