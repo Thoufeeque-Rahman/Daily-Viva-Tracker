@@ -16,6 +16,7 @@ import { useActiveGradingConfig, getDefaultGradingLevels } from "@/hooks/use-gra
 import { GradingLevel } from "@/types";
 import { ImprovementList } from "./ImprovementList";
 import { ImprovementModal } from "./ImprovementModal";
+import { PuzzleModal } from "./PuzzleModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,6 +56,12 @@ interface EvaluationScreenProps {
   selectedSubject?: { subject: string; class: number };
   isLoadingNext?: boolean;
   isSaving?: boolean;
+  // Puzzle modal props
+  showPuzzle?: boolean;
+  evaluationCount?: number;
+  puzzleFrequency?: number;
+  onPuzzleSolved?: () => void;
+  onPuzzleSkipped?: () => void;
 }
 
 export default function EvaluationScreen({
@@ -76,6 +83,12 @@ export default function EvaluationScreen({
   selectedSubject,
   isLoadingNext = false,
   isSaving = false,
+  // Puzzle modal props
+  showPuzzle = false,
+  evaluationCount = 0,
+  puzzleFrequency = 5,
+  onPuzzleSolved,
+  onPuzzleSkipped,
 }: EvaluationScreenProps) {
   const [studentKey, setStudentKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
@@ -209,6 +222,16 @@ export default function EvaluationScreen({
             </span>
           </div>
           <Progress value={progressPercent} className="w-full h-2.5 shadow-lg" />
+          
+          {/* Puzzle counter */}
+          {evaluationCount > 0 && (
+            <div className="flex justify-between items-center mt-2 p-2 bg-purple-50 rounded-lg border border-purple-200">
+              <span className="text-xs text-purple-700 font-medium">🧩 Evaluations: {evaluationCount}</span>
+              <span className="text-xs text-purple-700">
+                🎯 Puzzle in: {puzzleFrequency - (evaluationCount % puzzleFrequency)} more
+              </span>
+            </div>
+          )}
         </div>
         <div className="flex-none">
           <DropdownMenu>
@@ -441,6 +464,13 @@ export default function EvaluationScreen({
           onSuccess={handleImprovementSuccess}
         />
       )}
+
+      {/* Puzzle Modal */}
+      <PuzzleModal
+        isOpen={showPuzzle}
+        onClose={onPuzzleSkipped || (() => {})}
+        onSolved={onPuzzleSolved || (() => {})}
+      />
     </div>
   );
 }

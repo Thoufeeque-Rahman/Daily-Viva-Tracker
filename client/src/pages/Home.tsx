@@ -7,7 +7,6 @@ import FeedbackToast from "@/components/FeedbackToast";
 import { useQuery } from "@tanstack/react-query";
 import { type Student, type SubjectInfo, type ClassInfo } from "@/types";
 import PunishmentModal from "@/components/PunishmentModal";
-import { s } from "vite/dist/node/types.d-aGj9QkWt";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function Home() {
@@ -35,6 +34,11 @@ export default function Home() {
   const [isLoadingRound, setIsLoadingRound] = useState(false);
   const [isLoadingNextStudent, setIsLoadingNextStudent] = useState(false);
   const [isSavingEvaluation, setIsSavingEvaluation] = useState(false);
+
+  // Puzzle functionality state
+  const [evaluationCount, setEvaluationCount] = useState(0);
+  const [showPuzzle, setShowPuzzle] = useState(false);
+  const [puzzleFrequency] = useState(5); // Configurable: show puzzle every 5 evaluations (can be changed here or moved to settings)
 
   const handleProceed = async () => {
     if (selectedSubject && selectedSubject.subject && selectedSubject.class) {
@@ -288,6 +292,8 @@ export default function Home() {
     setActiveScreen("start");
     setCurrentStudentIndex(0);
     setCurrentEvaluation(null);
+    setEvaluationCount(0); // Reset puzzle counter
+    setShowPuzzle(false);
   };
 
   const handleEvaluate = (value: string, mark: number) => {
@@ -301,17 +307,24 @@ export default function Home() {
     );
     
     // Submit evaluation with the provided mark
-    submitEvaluation(mark, punishment);
-    
-    toast({
-      title: `${value.charAt(0).toUpperCase() + value.slice(1)} evaluation recorded`,
+    submitEvaluation(mark, punishment).then((success) => {
+      if (success) {
+        // Increment evaluation count and check for puzzle
+        const newCount = evaluationCount + 1;
+        setEvaluationCount(newCount);
+        
+        toast({
+          title: `${value.charAt(0).toUpperCase() + value.slice(1)} evaluation recorded`,
+        });
+        
+        // Check if we should show puzzle
+        if (newCount % puzzleFrequency === 0) {
+          setShowPuzzle(true);
+        } else {
+          handleNext();
+        }
+      }
     });
-    
-    handleNext();
-
-    // if (value !== "great") {
-    //   // setPunishmentModalOpen(true);
-    // }
   };
 
   const handlePunishmentSubmit = (punishment: string) => {
@@ -353,6 +366,8 @@ export default function Home() {
     setCurrentStudentIndex(0);
     setCurrentEvaluation(null);
     setCurrentStudent({} as Student);
+    setEvaluationCount(0); // Reset puzzle counter
+    setShowPuzzle(false);
 
     toast({
       title: "Evaluation session completed",
@@ -377,6 +392,16 @@ export default function Home() {
     });
   };
 
+  const handlePuzzleSolved = () => {
+    setShowPuzzle(false);
+    handleNext();
+  };
+
+  const handlePuzzleSkipped = () => {
+    setShowPuzzle(false);
+    handleNext();
+  };
+
   const submitEvaluation = async (mark: number, punishment?: string) => {
     if (!selectedSubject || !currentStudent) {
       toast({
@@ -384,7 +409,7 @@ export default function Home() {
         description: "No student or subject selected",
         variant: "destructive",
       });
-      return;
+      return false;
     }
 
     setIsSavingEvaluation(true);
@@ -409,16 +434,14 @@ export default function Home() {
       const data = await response.json();
       console.log("Evaluation saved successfully:", data);
       if (data.success) {
-      toast({
-        title: "Evaluation saved successfully",
-          description: "The student's performance has been recorded.",
-        });
+        return true;
       } else {
         toast({
           title: "Failed to save evaluation",
           description: "Please try again",
           variant: "destructive",
         });
+        return false;
       }
     } catch (error) {
       console.error("Failed to submit evaluation:", error);
@@ -427,6 +450,7 @@ export default function Home() {
         description: "Please try again",
         variant: "destructive",
       });
+      return false;
     } finally {
       setIsSavingEvaluation(false);
       setCurrentEvaluation(null);
@@ -475,6 +499,12 @@ export default function Home() {
             selectedSubject={selectedSubject || undefined}
             isLoadingNext={isLoadingNextStudent}
             isSaving={isSavingEvaluation}
+            // Puzzle modal props
+            showPuzzle={showPuzzle}
+            evaluationCount={evaluationCount}
+            puzzleFrequency={puzzleFrequency}
+            onPuzzleSolved={handlePuzzleSolved}
+            onPuzzleSkipped={handlePuzzleSkipped}
           />
         )}
       </main>
