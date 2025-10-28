@@ -16,6 +16,7 @@ import { useActiveGradingConfig, getDefaultGradingLevels } from "@/hooks/use-gra
 import { GradingLevel } from "@/types";
 import { ImprovementList } from "./ImprovementList";
 import { ImprovementModal } from "./ImprovementModal";
+import { BulkEvaluationModal } from "./BulkEvaluationModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -82,6 +83,7 @@ export default function EvaluationScreen({
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [showImprovementConfirm, setShowImprovementConfirm] = useState(false);
   const [showImprovementModal, setShowImprovementModal] = useState(false);
+  const [showBulkEvaluationModal, setShowBulkEvaluationModal] = useState(false);
   const [pendingEvaluation, setPendingEvaluation] = useState<{evaluation: string, mark: number} | null>(null);
 
   // Get active grading configuration
@@ -376,12 +378,21 @@ export default function EvaluationScreen({
           <div className="flex w-full space-x-3">
             <Button
               variant="outline"
+              className="flex-1 py-3 bg-blue-500 shadow-md rounded-xl text-white border-0 font-medium hover:bg-blue-600 hover:text-white transition-colors"
+              onClick={() => setShowBulkEvaluationModal(true)}
+              loading={false}
+              disabled={isSaving}
+            >
+              {"Bulk Eval. Entry"}
+            </Button> 
+            <Button
+              variant="outline"
               className="flex-1 py-3 bg-red-500 shadow-md rounded-xl text-white border-0 font-medium hover:bg-destructive hover:text-white transition-colors"
               onClick={onFinish}
               loading={isLoadingNext}
               disabled={isSaving}
             >
-              {isLoadingNext ? "Finishing..." : "Finish Evaluation"}
+              {"Finish Evaluation"}
             </Button> 
             {/* <div>
               <Button
@@ -441,6 +452,18 @@ export default function EvaluationScreen({
           onSuccess={handleImprovementSuccess}
         />
       )}
+
+      {/* Bulk Evaluation Modal */}
+      <BulkEvaluationModal
+        isOpen={showBulkEvaluationModal}
+        onClose={() => setShowBulkEvaluationModal(false)}
+        students={allStudents}
+        selectedSubject={selectedSubject}
+        onBulkEvaluate={(evaluations) => {
+          console.log('Bulk evaluations received:', evaluations);
+          // TODO: Implement backend integration for bulk evaluations
+        }}
+      />
     </div>
   );
 }
