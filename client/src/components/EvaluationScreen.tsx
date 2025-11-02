@@ -148,7 +148,7 @@ export default function EvaluationScreen({
       setShowImprovementConfirm(true);
     } else {
       // Direct evaluation for good marks
-      console.log("Mark requires improvement:", mark);
+      console.log("Direct evaluation - no improvement needed:", mark);
 
       onEvaluate(evaluation, mark);
       setCurrentEvaluation(evaluation);
@@ -164,9 +164,9 @@ export default function EvaluationScreen({
         // Show improvement modal first, save evaluation later
         setShowImprovementModal(true);
       } else {
-        // No improvement needed, save evaluation immediately
+        // No improvement needed, save evaluation immediately and move to next student
         onEvaluate(pendingEvaluation.evaluation, pendingEvaluation.mark);
-        setCurrentEvaluation(pendingEvaluation.evaluation);
+        // Don't set current evaluation as it will be cleared when moving to next student
         setPendingEvaluation(null);
       }
     }
@@ -177,15 +177,16 @@ export default function EvaluationScreen({
     setShowImprovementModal(false);
     
     if (pendingEvaluation) {
-      // Now save the evaluation after improvement task is assigned
+      // Now save the evaluation after improvement task is assigned and move to next student
       onEvaluate(pendingEvaluation.evaluation, pendingEvaluation.mark);
-      setCurrentEvaluation(pendingEvaluation.evaluation);
+      // Don't set the current evaluation here as it will be cleared when moving to next student
       setPendingEvaluation(null);
     }
   };
 
   // Update key when student changes to trigger animation
   useEffect(() => {
+    console.log("Student changed, updating key. New student:", currentStudent?.name);
     setStudentKey((prevKey) => prevKey + 1);
   }, [currentStudent]);
 

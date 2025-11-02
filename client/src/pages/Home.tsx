@@ -148,7 +148,7 @@ export default function Home() {
   };
 
   const getRandomStudent = async (fetchedRounds: string | any[]) => {
-    console.log(fetchedRounds);
+    console.log("getRandomStudent called with rounds:", fetchedRounds);
 
     if (fetchedRounds.length > 0) {
       const currentRound = fetchedRounds[0] as { studentsNotAsked: string[] }; // Assuming the first round is the active one
@@ -156,9 +156,11 @@ export default function Home() {
       console.log("Students Not Asked:", studentsNotAsked);
       if (studentsNotAsked && studentsNotAsked.length > 0) {
         const randomIndex = Math.floor(Math.random() * studentsNotAsked.length);
+        console.log("Selected random index:", randomIndex, "for student ID:", studentsNotAsked[randomIndex]);
         await fetchStudent(studentsNotAsked[randomIndex]);
         return studentsNotAsked[randomIndex];
       } else {
+        console.log("No students left in round, increasing round");
         increaseRound();
       }
     }
@@ -207,8 +209,11 @@ export default function Home() {
       throw new Error("Failed to fetch student" + response.statusText);
     }
     const data = await response.json();
-    console.log("Fetched Student:", data);
+    console.log("Fetched Student:", data.name, "ID:", data._id);
+    console.log("Setting current student to:", data.name);
     setCurrentStudent(data as Student);
+    // Clear any previous evaluation when switching to a new student
+    setCurrentEvaluation(null);
     return data;
   };
   // const getRandomStudentIndex = (rounds: { studentsNotAsked: string[] }[]) => {
@@ -290,7 +295,7 @@ export default function Home() {
     setCurrentEvaluation(null);
   };
 
-  const handleEvaluate = (value: string, mark: number) => {
+  const handleEvaluate = async (value: string, mark: number) => {
     setCurrentEvaluation(value);
 
     console.log(
@@ -300,14 +305,20 @@ export default function Home() {
       `Evaluation: ${value}, Mark: ${mark}`
     );
     
-    // Submit evaluation with the provided mark
-    submitEvaluation(mark, punishment);
+    // Submit evaluation with the provided mark and wait for it to complete
+    const success = await submitEvaluation(mark, punishment);
     
-    toast({
-      title: `${value.charAt(0).toUpperCase() + value.slice(1)} evaluation recorded`,
-    });
-    
-    handleNext();
+    if (success) {
+      toast({
+        title: `${value.charAt(0).toUpperCase() + value.slice(1)} evaluation recorded`,
+      });
+      
+      // Clear current evaluation state before moving to next student
+      setCurrentEvaluation(null);
+      
+      // Move to next student after evaluation is saved
+      await handleNext();
+    }
 
     // if (value !== "great") {
     //   // setPunishmentModalOpen(true);
@@ -323,18 +334,22 @@ export default function Home() {
     setPunishmentModalOpen(false);
   };
 
-  const handleSkip = () => {
-    // Move to next student
-    getRandomStudent(rounds);
+  const handleSkip = async () => {
+    // Move to next student without evaluation - just get a new random student
+    await getRandomStudent(rounds);
   };
 
   const handleNext = async () => {
+    console.log("handleNext called, current student:", currentStudent?.name);
     setIsLoadingNextStudent(true);
     try {
-      await removeStudentFromRound(String(currentStudent?._id));
+      // Remove student from round and get updated rounds
+      console.log("Removing student from round:", currentStudent?._id);
+      const updatedRounds = await removeStudentFromRound(String(currentStudent?._id));
 
-      // Move to next student
-      await getRandomStudent(rounds);
+      // Move to next student using the updated rounds
+      console.log("Getting next random student from updated rounds");
+      await getRandomStudent(updatedRounds);
     } catch (error) {
       console.error("Error moving to next student:", error);
       toast({
@@ -384,7 +399,7 @@ export default function Home() {
         description: "No student or subject selected",
         variant: "destructive",
       });
-      return;
+      return false;
     }
 
     setIsSavingEvaluation(true);
@@ -409,16 +424,15 @@ export default function Home() {
       const data = await response.json();
       console.log("Evaluation saved successfully:", data);
       if (data.success) {
-      toast({
-        title: "Evaluation saved successfully",
-          description: "The student's performance has been recorded.",
-        });
+        console.log("Evaluation submitted successfully, clearing state");
+        return true;
       } else {
         toast({
           title: "Failed to save evaluation",
           description: "Please try again",
           variant: "destructive",
         });
+        return false;
       }
     } catch (error) {
       console.error("Failed to submit evaluation:", error);
@@ -427,9 +441,9 @@ export default function Home() {
         description: "Please try again",
         variant: "destructive",
       });
+      return false;
     } finally {
       setIsSavingEvaluation(false);
-      setCurrentEvaluation(null);
     }
   };
 
