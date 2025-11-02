@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Student, GradingLevel } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,16 +9,27 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import {
   useActiveGradingConfig,
   getDefaultGradingLevels,
 } from "@/hooks/use-grading-config";
+import { 
+  saveBulkBatchEvaluations, 
+  saveIndividualEvaluation,
+  type BulkBatchEvaluationData,
+  type IndividualEvaluationData 
+} from "@/lib/bulk-evaluation-api";
+import { Package, Zap, Users, Clock } from "lucide-react";
 
 interface BulkEvaluationModalProps {
   isOpen: boolean;
   onClose: () => void;
   students: Student[];
   selectedSubject?: { subject: string; class: number };
+  teacherId?: string;
   onBulkEvaluate?: (
     studentEvaluations: Array<{
       studentId: string;
@@ -26,23 +37,44 @@ interface BulkEvaluationModalProps {
       mark: number;
     }>
   ) => void;
+  onIndividualEvaluate?: (
+    studentId: string,
+    evaluation: string,
+    mark: number
+  ) => Promise<boolean>;
+  onEvaluationComplete?: () => void;
 }
+
+type EvaluationMode = "batch" | "individual";
 
 export function BulkEvaluationModal({
   isOpen,
   onClose,
-  students,
+  students: initialStudents,
   selectedSubject,
+  teacherId,
   onBulkEvaluate,
+  onIndividualEvaluate,
+  onEvaluationComplete,
 }: BulkEvaluationModalProps) {
   // Get active grading configuration
   const { data: gradingConfig } = useActiveGradingConfig();
   const gradingLevels = gradingConfig?.levels || getDefaultGradingLevels();
+  const { toast } = useToast();
 
-  // State to track each student's selected evaluation
+  // Evaluation mode state
+  const [evaluationMode, setEvaluationMode] = useState<EvaluationMode>("batch");
+  
+  // State to track remaining students (for individual mode)
+  const [remainingStudents, setRemainingStudents] = useState<Student[]>(initialStudents);
+  
+  // State to track each student's selected evaluation (for batch mode)
   const [studentEvaluations, setStudentEvaluations] = useState<
     Record<string, { evaluation: string; mark: number } | null>
   >({});
+
+  // Loading states
+  const [savingStudentId, setSavingStudentId] = useState<string | null>(null);
 
   // Helper function to get default emoji for grading levels without emoji
   const getDefaultEmoji = (name: string) => {
@@ -55,19 +87,104 @@ export function BulkEvaluationModal({
     return "😐";
   };
 
+  // Reset students list when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setRemainingStudents(initialStudents);
+      setStudentEvaluations({});
+    }
+  }, [isOpen, initialStudents]);
+
   // Handle individual student evaluation
-  const handleStudentEvaluation = (studentId: string, level: GradingLevel) => {
-    setStudentEvaluations((prev) => ({
-      ...prev,
-      [studentId]: {
-        evaluation: level.name.toLowerCase(),
-        mark: level.mark,
-      },
-    }));
+  const handleStudentEvaluation = async (studentId: string, level: GradingLevel) => {
+    if (evaluationMode === "batch") {
+      // Batch mode: just store the evaluation
+      setStudentEvaluations((prev) => ({
+        ...prev,
+        [studentId]: {
+          evaluation: level.name.toLowerCase(),
+          mark: level.mark,
+        },
+      }));
+    } else {
+      // Individual mode: save immediately and remove from list
+      console.log("Individual evaluation debug:", {
+        selectedSubject,
+        teacherId,
+        hasSelectedSubject: !!selectedSubject,
+        hasTeacherId: !!teacherId
+      });
+      
+      if (!selectedSubject || !teacherId) {
+        console.error("Missing required data:", { selectedSubject, teacherId });
+        toast({
+          title: "Error",
+          description: `Subject and teacher information required. Missing: ${!selectedSubject ? 'subject' : ''} ${!teacherId ? 'teacher' : ''}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setSavingStudentId(studentId);
+      
+      try {
+        const evaluationData: IndividualEvaluationData = {
+          studentId,
+          evaluation: level.name.toLowerCase(),
+          mark: level.mark,
+          subject: selectedSubject.subject,
+          class: selectedSubject.class,
+          tId: teacherId,
+        };
+
+        const result = await saveIndividualEvaluation(evaluationData);
+
+        if (result.success) {
+          // Remove student from remaining list
+          setRemainingStudents(prev => 
+            prev.filter(student => student._id !== studentId)
+          );
+          
+          toast({
+            title: "✅ Evaluation Saved",
+            description: `${result.data.studentName} evaluated as ${level.name}`,
+            duration: 2000,
+          });
+
+          // Check if all students are evaluated
+          const newRemainingCount = remainingStudents.length - 1;
+          if (newRemainingCount === 0) {
+            toast({
+              title: "🎉 All Complete!",
+              description: `All ${initialStudents.length} students have been evaluated`,
+              duration: 4000,
+            });
+            onEvaluationComplete?.();
+          }
+        } else {
+          toast({
+            title: "❌ Save Failed",
+            description: result.message || "Could not save evaluation. Please try again.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error("Individual evaluation error:", error);
+        toast({
+          title: "❌ Error",
+          description: error instanceof Error ? error.message : "Failed to save evaluation. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setSavingStudentId(null);
+      }
+    }
   };
 
-  // Handle "Excellent for All" button
+  // Handle "Excellent for All" button (only for batch mode)
   const handleExcellentForAll = () => {
+    if (evaluationMode !== "batch") return;
+    
     const excellentLevel =
       gradingLevels.find(
         (level) =>
@@ -77,7 +194,7 @@ export function BulkEvaluationModal({
 
     const allEvaluations: Record<string, { evaluation: string; mark: number }> =
       {};
-    students.forEach((student) => {
+    remainingStudents.forEach((student) => {
       allEvaluations[student._id] = {
         evaluation: excellentLevel.name.toLowerCase(),
         mark: excellentLevel.mark,
@@ -86,72 +203,236 @@ export function BulkEvaluationModal({
     setStudentEvaluations(allEvaluations);
   };
 
-  // Handle save (placeholder for now)
-  const handleSave = () => {
-    if (onBulkEvaluate) {
-      const evaluationsArray = Object.entries(studentEvaluations)
-        .filter(([_, evaluation]) => evaluation !== null)
-        .map(([studentId, evaluation]) => ({
-          studentId,
-          evaluation: evaluation!.evaluation,
-          mark: evaluation!.mark,
-        }));
-
-      onBulkEvaluate(evaluationsArray);
-    }
-    console.log("Bulk evaluations:", studentEvaluations);
-    onClose();
+  // Handle mode toggle
+  const handleModeToggle = (checked: boolean) => {
+    const newMode: EvaluationMode = checked ? "individual" : "batch";
+    setEvaluationMode(newMode);
+    
+    // Clear evaluations when switching modes
+    setStudentEvaluations({});
+    
+    toast({
+      title: `Switched to ${newMode === "batch" ? "Batch" : "Individual"} Mode`,
+      description: newMode === "batch" 
+        ? "Evaluate all students then save together"
+        : "Each evaluation saves immediately and removes student from list",
+      duration: 3000,
+    });
   };
 
-  const sortedStudents = students.sort((a, b) => {
+  // Handle batch save
+  const handleSave = async () => {
+    console.log("Batch save debug:", {
+      selectedSubject,
+      teacherId,
+      hasSelectedSubject: !!selectedSubject,
+      hasTeacherId: !!teacherId
+    });
+    
+    if (!selectedSubject || !teacherId) {
+      console.error("Missing required data for batch save:", { selectedSubject, teacherId });
+      toast({
+        title: "Error",
+        description: `Subject and teacher information required. Missing: ${!selectedSubject ? 'subject' : ''} ${!teacherId ? 'teacher' : ''}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const evaluationsArray = Object.entries(studentEvaluations)
+      .filter(([_, evaluation]) => evaluation !== null)
+      .map(([studentId, evaluation]) => ({
+        studentId,
+        evaluation: evaluation!.evaluation,
+        mark: evaluation!.mark,
+      }));
+
+    if (evaluationsArray.length === 0) {
+      toast({
+        title: "No Evaluations",
+        description: "Please select evaluations for at least one student.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setSavingStudentId("batch_saving"); // Use a special ID for batch saving
+      
+      const batchData: BulkBatchEvaluationData = {
+        evaluations: evaluationsArray,
+        subject: selectedSubject.subject,
+        class: selectedSubject.class,
+        tId: teacherId,
+      };
+
+      const result = await saveBulkBatchEvaluations(batchData);
+
+      if (result.success) {
+        toast({
+          title: "✅ Bulk Evaluations Saved",
+          description: `Successfully saved ${result.data.summary.successful} out of ${result.data.summary.total} evaluations`,
+          duration: 4000,
+        });
+
+        if (result.data.errors.length > 0) {
+          toast({
+            title: "⚠️ Some Errors Occurred",
+            description: `${result.data.errors.length} evaluations failed to save. Check console for details.`,
+            variant: "destructive",
+            duration: 6000,
+          });
+          console.error("Bulk evaluation errors:", result.data.errors);
+        }
+
+        onEvaluationComplete?.();
+        onClose();
+      } else {
+        toast({
+          title: "❌ Save Failed",
+          description: result.message || "Could not save bulk evaluations. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Bulk batch evaluation error:", error);
+      toast({
+        title: "❌ Error",
+        description: error instanceof Error ? error.message : "Failed to save bulk evaluations. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingStudentId(null);
+    }
+  };
+
+  // Get current students list based on mode
+  const currentStudents = remainingStudents;
+  const sortedStudents = currentStudents.sort((a, b) => {
     return a.rollNumber - b.rollNumber;
   });
+
+  // Calculate statistics
+  const totalStudents = initialStudents.length;
+  const evaluatedCount = evaluationMode === "batch" 
+    ? Object.keys(studentEvaluations).filter(key => studentEvaluations[key] !== null).length
+    : totalStudents - remainingStudents.length;
+  const remainingCount = evaluationMode === "batch" 
+    ? totalStudents - evaluatedCount
+    : remainingStudents.length;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl h-screen overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">
-            Bulk Evaluation Entry
-          </DialogTitle>
-          <DialogDescription>
-            {selectedSubject && (
-              <>
-                Evaluate all students for {selectedSubject.subject} - Class{" "}
-                {selectedSubject.class}
-              </>
-            )}
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-xl font-semibold flex items-center gap-2">
+                {evaluationMode === "batch" ? (
+                  <><Package className="h-5 w-5" /> Batch Evaluation</>
+                ) : (
+                  <><Zap className="h-5 w-5" /> Individual Evaluation</>
+                )}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedSubject && (
+                  <>
+                    Evaluate students for {selectedSubject.subject} - Class{" "}
+                    {selectedSubject.class}
+                  </>
+                )}
+              </DialogDescription>
+            </div>
+            
+            {/* Mode Toggle */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 text-sm">
+                <Package className="h-4 w-4" />
+                <span>Batch</span>
+                <Switch
+                  checked={evaluationMode === "individual"}
+                  onCheckedChange={handleModeToggle}
+                />
+                <span>Individual</span>
+                <Zap className="h-4 w-4" />
+              </div>
+            </div>
+          </div>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Action Buttons */}
-          <div className="flex justify-between items-center py-2">
-            <div className="text-sm text-gray-600">
-              {students.length} students •{" "}
-              {
-                Object.keys(studentEvaluations).filter(
-                  (key) => studentEvaluations[key] !== null
-                ).length
-              }{" "}
-              evaluated
+          {/* Mode Description & Statistics */}
+          <div className="bg-gray-50 rounded-lg p-4 border">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                {evaluationMode === "batch" ? (
+                  <>
+                    <Package className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium text-gray-900">Batch Mode</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-4 w-4 text-orange-600" />
+                    <span className="font-medium text-gray-900">Individual Mode</span>
+                  </>
+                )}
+              </div>
+              
+              <div className="flex gap-2">
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  {totalStudents} total
+                </Badge>
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {evaluatedCount} evaluated
+                </Badge>
+                <Badge variant="default" className="flex items-center gap-1">
+                  {remainingCount} remaining
+                </Badge>
+              </div>
             </div>
-            <Button
-              onClick={handleExcellentForAll}
-              size="sm"
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 font-medium shadow-lg hover:shadow-xl transition-all"
-            >
-              ⭐ Excellent for All
-            </Button>
+            
+            <p className="text-sm text-gray-600">
+              {evaluationMode === "batch" 
+                ? "Select evaluations for all students, then click 'Save All Evaluations' to save them together."
+                : "Click any grade to immediately save and remove that student from the list. Perfect for quick evaluations."
+              }
+            </p>
           </div>
 
+          {/* Action Buttons (only for batch mode) */}
+          {evaluationMode === "batch" && (
+            <div className="flex justify-between items-center py-2">
+              <div className="text-sm text-gray-600">
+                Progress: {evaluatedCount}/{totalStudents} students evaluated
+              </div>
+              <Button
+                onClick={handleExcellentForAll}
+                size="sm"
+                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 font-medium shadow-lg hover:shadow-xl transition-all"
+              >
+                ⭐ Excellent for All
+              </Button>
+            </div>
+          )}
+
           {/* Students List */}
-          <ScrollArea className="h-[700px] border rounded-xl p-4 bg-white shadow-inner">
-            {students.length === 0 ? (
+          <ScrollArea className="h-[600px] border rounded-xl p-4 bg-white shadow-inner">
+            {sortedStudents.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                <div className="text-4xl mb-2">👥</div>
-                <div className="text-lg font-medium">No students found</div>
-                <div className="text-sm">Please check your student list</div>
+                <div className="text-4xl mb-2">
+                  {evaluationMode === "individual" ? "🎉" : "👥"}
+                </div>
+                <div className="text-lg font-medium">
+                  {evaluationMode === "individual" ? "All Students Evaluated!" : "No students found"}
+                </div>
+                <div className="text-sm">
+                  {evaluationMode === "individual" 
+                    ? "Great job! All students have been evaluated." 
+                    : "Please check your student list"
+                  }
+                </div>
               </div>
             ) : (
               <div className="space-y-3">
@@ -162,12 +443,13 @@ export function BulkEvaluationModal({
                     <div
                       key={student._id}
                       className={`
-                      flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl transition-all duration-200
+                      flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl transition-all duration-200 relative
                       ${
                         selectedEvaluation
                           ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 shadow-md"
                           : "bg-gray-50 hover:bg-gray-100 border-2 border-transparent"
                       }
+                      ${savingStudentId === student._id ? "opacity-75 pointer-events-none" : ""}
                     `}
                     >
                       {/* Student Info */}
@@ -195,10 +477,19 @@ export function BulkEvaluationModal({
 
                         {/* Grading Buttons */}
                         <div className="flex flex-wrap gap-1 items-center justify-end">
+                          {savingStudentId === student._id && (
+                            <div className="absolute inset-0 bg-white/50 flex items-center justify-center rounded-xl">
+                              <div className="flex items-center gap-2 text-blue-600 font-medium">
+                                <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                                Saving...
+                              </div>
+                            </div>
+                          )}
+                          
                           {gradingLevels.map((level) => {
-                            const isSelected =
-                              selectedEvaluation?.evaluation ===
-                              level.name.toLowerCase();
+                            const isSelected = evaluationMode === "batch" &&
+                              selectedEvaluation?.evaluation === level.name.toLowerCase();
+                            const isDisabled = savingStudentId === student._id;
 
                             return (
                               <button
@@ -206,6 +497,7 @@ export function BulkEvaluationModal({
                                 onClick={() =>
                                   handleStudentEvaluation(student._id, level)
                                 }
+                                disabled={isDisabled}
                                 className={`
                               w-9 h-9 rounded-full flex items-center justify-center transition-all text-2xl
                               ${
@@ -213,6 +505,7 @@ export function BulkEvaluationModal({
                                   ? "ring-3 ring-blue-500 ring-offset-2 shadow-lg"
                                   : "hover:scale-105 hover:shadow-md"
                               }
+                              ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}
                             `}
                                 style={{
                                   background: isSelected ?
@@ -222,7 +515,7 @@ export function BulkEvaluationModal({
                                     ? `0 8px 25px rgba(59, 130, 246, 0.3)`
                                     : "0 2px 8px rgba(0,0,0,0.1)",
                                 }}
-                                title={`${level.name} (${level.mark} marks)`}
+                                title={`${level.name} (${level.mark} marks)${evaluationMode === "individual" ? " - Click to save immediately" : ""}`}
                               >
                                 <span className="filter drop-shadow-sm text-base">
                                   {level.emoji || getDefaultEmoji(level.name)}
@@ -242,21 +535,38 @@ export function BulkEvaluationModal({
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSave}
-              className="bg-blue-600 hover:bg-blue-700"
-              disabled={Object.keys(studentEvaluations).length === 0}
-            >
-              Save Evaluations (
-              {
-                Object.keys(studentEvaluations).filter(
-                  (key) => studentEvaluations[key] !== null
-                ).length
+              {evaluationMode === "individual" && remainingStudents.length === 0 
+                ? "Done" 
+                : "Cancel"
               }
-              )
             </Button>
+            
+            {evaluationMode === "batch" && (
+              <Button
+                onClick={handleSave}
+                className="bg-blue-600 hover:bg-blue-700"
+                disabled={Object.keys(studentEvaluations).length === 0 || savingStudentId === "batch_saving"}
+              >
+                {savingStudentId === "batch_saving" ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    Saving...
+                  </div>
+                ) : (
+                  `Save All Evaluations (${evaluatedCount})`
+                )}
+              </Button>
+            )}
+            
+            {evaluationMode === "individual" && (
+              <Button
+                onClick={onClose}
+                className="bg-green-600 hover:bg-green-700"
+                disabled={remainingStudents.length > 0}
+              >
+                Complete ({totalStudents - remainingStudents.length}/{totalStudents})
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

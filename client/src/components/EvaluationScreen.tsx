@@ -17,6 +17,8 @@ import { GradingLevel } from "@/types";
 import { ImprovementList } from "./ImprovementList";
 import { ImprovementModal } from "./ImprovementModal";
 import { BulkEvaluationModal } from "./BulkEvaluationModal";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -89,6 +91,10 @@ export default function EvaluationScreen({
   // Get active grading configuration
   const { data: gradingConfig } = useActiveGradingConfig();
   const gradingLevels = gradingConfig?.levels || getDefaultGradingLevels();
+  
+  // Get auth context and toast
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   // Utility functions for styling
   const getGradientClass = (color: string) => {
@@ -455,14 +461,28 @@ export default function EvaluationScreen({
       )}
 
       {/* Bulk Evaluation Modal */}
+      {/* Debug log for checking data before passing to modal */}
+      {showBulkEvaluationModal && console.log("EvaluationScreen passing to BulkModal:", {
+        selectedSubject,
+        teacherId: user?.tId || user?._id,
+        userTId: user?.tId,
+        user_Id: user?._id,
+        fullUser: user,
+        allStudentsCount: allStudents.length
+      })}
       <BulkEvaluationModal
         isOpen={showBulkEvaluationModal}
         onClose={() => setShowBulkEvaluationModal(false)}
         students={allStudents}
         selectedSubject={selectedSubject}
-        onBulkEvaluate={(evaluations) => {
-          console.log('Bulk evaluations received:', evaluations);
-          // TODO: Implement backend integration for bulk evaluations
+        teacherId={user?.tId || user?._id?.toString()}
+        onEvaluationComplete={() => {
+          toast({
+            title: "🎉 Bulk Evaluation Complete",
+            description: "All evaluations have been saved successfully!",
+            duration: 4000,
+          });
+          setShowBulkEvaluationModal(false);
         }}
       />
     </div>

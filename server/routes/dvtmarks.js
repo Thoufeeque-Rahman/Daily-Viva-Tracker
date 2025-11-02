@@ -357,4 +357,145 @@ router.get("/dvtmarksbydate", authenticateToken, async (req, res) => {
   }
 });
 
+// Bulk Evaluation - Batch Mode (save multiple students at once)
+router.post("/bulk-batch", authenticateToken, async (req, res) => {
+  try {
+    const { evaluations, subject, class: classNumber, tId } = req.body;
+    
+    // Validate input
+    if (!evaluations || !Array.isArray(evaluations) || evaluations.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Evaluations array is required and must not be empty" 
+      });
+    }
+
+    const savedEvaluations = [];
+    const errors = [];
+
+    // Process each evaluation
+    for (const evaluation of evaluations) {
+      try {
+        const { studentId, evaluation: evalName, mark } = evaluation;
+        
+        // Find the student
+        const student = await Student.findOne({ _id: studentId });
+        if (!student) {
+          errors.push({ studentId, error: "Student not found" });
+          continue;
+        }
+
+        // Create a new DvtMarks document
+        const newDvtMark = new DvtMarks({
+          studentId: student._id,
+          class: classNumber,
+          subject,
+          mark,
+          date: new Date(),
+          adNumber: student.adNumber,
+          tId,
+        });
+
+        const savedMark = await newDvtMark.save();
+        savedEvaluations.push({
+          studentId,
+          studentName: student.name,
+          rollNumber: student.rollNumber,
+          evaluation: evalName,
+          mark,
+          savedId: savedMark._id
+        });
+
+      } catch (error) {
+        console.error(`Error saving evaluation for student ${evaluation.studentId}:`, error);
+        errors.push({ 
+          studentId: evaluation.studentId, 
+          error: error.message 
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully saved ${savedEvaluations.length} evaluations`,
+      data: {
+        saved: savedEvaluations,
+        errors: errors,
+        summary: {
+          total: evaluations.length,
+          successful: savedEvaluations.length,
+          failed: errors.length
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error("Bulk batch evaluation error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to save bulk evaluations",
+      error: error.message
+    });
+  }
+});
+
+// Bulk Evaluation - Individual Mode (save single student immediately)
+router.post("/bulk-individual", authenticateToken, async (req, res) => {
+  try {
+    const { studentId, evaluation, mark, subject, class: classNumber, tId } = req.body;
+    
+    // Validate input
+    if (!studentId || !evaluation || mark === undefined || !subject || !classNumber) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "All fields are required: studentId, evaluation, mark, subject, class" 
+      });
+    }
+
+    // Find the student
+    const student = await Student.findOne({ _id: studentId });
+    if (!student) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Student not found" 
+      });
+    }
+
+    // Create a new DvtMarks document
+    const newDvtMark = new DvtMarks({
+      studentId: student._id,
+      class: classNumber,
+      subject,
+      mark,
+      date: new Date(),
+      adNumber: student.adNumber,
+      tId,
+    });
+
+    const savedMark = await newDvtMark.save();
+
+    res.json({
+      success: true,
+      message: "Evaluation saved successfully",
+      data: {
+        studentId,
+        studentName: student.name,
+        rollNumber: student.rollNumber,
+        evaluation,
+        mark,
+        savedId: savedMark._id,
+        timestamp: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error("Individual evaluation error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to save evaluation",
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

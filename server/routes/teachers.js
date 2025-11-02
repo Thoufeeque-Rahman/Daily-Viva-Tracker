@@ -108,6 +108,9 @@ router.post('/login', async (req, res) => {
     // Return teacher data (excluding password)
     const teacherData = teacher.toObject();
     delete teacherData.password;
+    
+    // Add tId field for frontend compatibility
+    teacherData.tId = teacherData._id.toString();
 
     res.json({
       teacher: teacherData,
@@ -179,7 +182,11 @@ router.get('/me', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Teacher not found' });
     }
 
-    res.json(teacher);
+    // Transform teacher data to include tId for frontend compatibility
+    const teacherData = teacher.toObject();
+    teacherData.tId = teacherData._id.toString();
+
+    res.json(teacherData);
   } catch (error) {
     console.error('Fetch current teacher error:', error);
     res.status(500).json({ error: 'Failed to fetch teacher data' });
