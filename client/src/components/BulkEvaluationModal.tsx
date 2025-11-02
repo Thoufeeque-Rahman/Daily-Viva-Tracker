@@ -103,9 +103,13 @@ export function BulkEvaluationModal({
     onClose();
   };
 
+  const sortedStudents = students.sort((a, b) => {
+    return a.rollNumber - b.rollNumber;
+  });
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh]">
+      <DialogContent className="max-w-4xl h-screen overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">
             Bulk Evaluation Entry
@@ -142,7 +146,7 @@ export function BulkEvaluationModal({
           </div>
 
           {/* Students List */}
-          <ScrollArea className="h-[400px] border rounded-xl p-4 bg-white shadow-inner">
+          <ScrollArea className="h-[700px] border rounded-xl p-4 bg-white shadow-inner">
             {students.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500">
                 <div className="text-4xl mb-2">👥</div>
@@ -151,7 +155,7 @@ export function BulkEvaluationModal({
               </div>
             ) : (
               <div className="space-y-3">
-                {students.map((student) => {
+                {sortedStudents.map((student) => {
                   const selectedEvaluation = studentEvaluations[student._id];
 
                   return (
@@ -167,69 +171,66 @@ export function BulkEvaluationModal({
                     `}
                     >
                       {/* Student Info */}
-                      <div className="flex-1 flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                          {student.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")
-                            .slice(0, 2)}
-                        </div>
+                      <div className="flex-1 flex justify-between space-x-3">
                         <div>
-                          <div className="font-medium text-gray-900">
-                            {student.name}
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            Roll No: {student.rollNumber}
-                          </div>
-                        </div>
-                        {selectedEvaluation && (
-                          <div className="ml-auto mr-4">
-                            <div className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
-                              {selectedEvaluation.evaluation
-                                .charAt(0)
-                                .toUpperCase() +
-                                selectedEvaluation.evaluation.slice(1)}
+                          <div>
+                            <div className="font-medium text-gray-500 text-sm flex items-center justify-start gap-1">
+                              #{student.rollNumber}{" "}
+                              {selectedEvaluation && (
+                                <div className="max-w-14">
+                                  <div className="text-xs truncate font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                                    {selectedEvaluation.evaluation
+                                      .charAt(0)
+                                      .toUpperCase() +
+                                      selectedEvaluation.evaluation.slice(1)}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <div className="font-medium text-gray-900 max-w-24 truncate">
+                              {student.name}
                             </div>
                           </div>
-                        )}
-                      </div>
+                        </div>
 
-                      {/* Grading Buttons */}
-                      <div className="flex flex-wrap gap-2 items-center mt-4 md:mt-0 justify-evenly">
-                        {gradingLevels.map((level) => { 
-                          const isSelected =
-                            selectedEvaluation?.evaluation ===
-                            level.name.toLowerCase();
+                        {/* Grading Buttons */}
+                        <div className="flex flex-wrap gap-1 items-center justify-end">
+                          {gradingLevels.map((level) => {
+                            const isSelected =
+                              selectedEvaluation?.evaluation ===
+                              level.name.toLowerCase();
 
-                          return (
-                            <button
-                              key={level.name}
-                              onClick={() =>
-                                handleStudentEvaluation(student._id, level)
-                              }
-                              className={`
-                              w-12 h-12 rounded-full flex items-center justify-center transition-all text-2xl
+                            return (
+                              <button
+                                key={level.name}
+                                onClick={() =>
+                                  handleStudentEvaluation(student._id, level)
+                                }
+                                className={`
+                              w-9 h-9 rounded-full flex items-center justify-center transition-all text-2xl
                               ${
                                 isSelected
-                                  ? "ring-3 ring-blue-500 ring-offset-2 scale-110 shadow-lg"
+                                  ? "ring-3 ring-blue-500 ring-offset-2 shadow-lg"
                                   : "hover:scale-105 hover:shadow-md"
                               }
                             `}
-                              style={{
-                                background: `linear-gradient(135deg, ${level.color}90, ${level.color})`,
-                                boxShadow: isSelected
-                                  ? "0 8px 25px rgba(59, 130, 246, 0.3)"
-                                  : "0 2px 8px rgba(0,0,0,0.1)",
-                              }}
-                              title={`${level.name} (${level.mark} marks)`}
-                            >
-                              <span className="filter drop-shadow-sm">
-                                {level.emoji || getDefaultEmoji(level.name)}
-                              </span>
-                            </button>
-                          );
-                        })}
+                                style={{
+                                  background: isSelected ?
+                                  `linear-gradient(135deg, ${level.color}90, ${level.color})` :
+                                  `linear-gradient(135deg, rgb(107 114 128/90), rgb(107 114 128/90))`,
+                                  boxShadow: isSelected
+                                    ? `0 8px 25px rgba(59, 130, 246, 0.3)`
+                                    : "0 2px 8px rgba(0,0,0,0.1)",
+                                }}
+                                title={`${level.name} (${level.mark} marks)`}
+                              >
+                                <span className="filter drop-shadow-sm text-base">
+                                  {level.emoji || getDefaultEmoji(level.name)}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   );

@@ -121,7 +121,7 @@ export default function StartScreen({
 
   if (isLoading) {
     return (
-      <div className="p-6 transition-all duration-300 transform bg-white shadow-lg">
+      <div className="p-6 transition-all duration-300 transform bg-white shadow-lg min-h-dvh h-full">
         {/* <div className="text-start mb-8 mt-4 flex gap-3 items-center">
           <p className="font-medium mt-2 text-blue-600">
             Hi,{" "}
@@ -161,7 +161,7 @@ export default function StartScreen({
   }
 
   return (
-    <div className="p-6 transition-all duration-300 transform bg-white shadow-lg ">
+    <div className="p-6 transition-all duration-300 transform bg-white shadow-lg h-full min-h-dvh">
       {/* <div className="text-start mb-8 mt-4 flex gap-3 items-center"> */}
         {/* <div className="bg-blue-500 inline-block p-3 rounded-full">
           <User className="text-white w-3 h-3" />
