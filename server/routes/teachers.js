@@ -9,7 +9,7 @@ const { authenticateToken } = require('../middleware/auth');
 // Registration
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, name, phone, qualification } = req.body;
+    const { email, password, name, phone, qualification, dateOfBirth } = req.body;
     
     // Check if teacher already exists
     const existingTeacher = await Teachers.findOne({ email });
@@ -17,8 +17,8 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
-    // Create new teacher
-    const teacher = new Teachers({
+    // Create teacher data
+    const newTeacherData = {
       email,
       password,
       name,
@@ -26,7 +26,15 @@ router.post('/register', async (req, res) => {
       qualification,
       active: true,
       joinedAt: new Date()
-    });
+    };
+
+    // Only add dateOfBirth if it's provided
+    if (dateOfBirth) {
+      newTeacherData.dateOfBirth = dateOfBirth;
+    }
+
+    // Create new teacher
+    const teacher = new Teachers(newTeacherData);
 
     await teacher.save();
 
@@ -302,50 +310,7 @@ router.delete('/:teacherId/subjects/:subjectId', authenticateToken, async (req, 
   }
 });
 
-// Super admin: Create teacher (admin only)
-router.post('/register', authenticateToken, async (req, res) => {
-  try {
-    // Check if current user is super admin
-    const currentUser = await Teachers.findById(req.user.id);
-    if (!currentUser || currentUser.role !== 'super_admin') {
-      return res.status(403).json({ error: 'Access denied. Super admin privileges required.' });
-    }
 
-    const { name, email, password, phone, qualification } = req.body;
-    
-    // Check if teacher already exists
-    const existingTeacher = await Teachers.findOne({ email });
-    if (existingTeacher) {
-      return res.status(400).json({ error: 'Email already registered' });
-    }
-
-    // Create new teacher
-    const teacher = new Teachers({
-      email,
-      password,
-      name,
-      phone,
-      qualification,
-      role: 'teacher',
-      active: true,
-      joinedAt: new Date()
-    });
-
-    await teacher.save();
-
-    // Return teacher data (excluding password)
-    const teacherData = teacher.toObject();
-    delete teacherData.password;
-
-    res.status(201).json({
-      message: 'Teacher created successfully',
-      teacher: teacherData
-    });
-  } catch (error) {
-    console.error('Create teacher error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
 
 // Super admin: Update teacher
 router.put('/:teacherId', authenticateToken, async (req, res) => {
@@ -356,12 +321,19 @@ router.put('/:teacherId', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Access denied. Super admin privileges required.' });
     }
 
-    const { name, email, phone, qualification, role, active } = req.body;
+    const { name, email, phone, qualification, role, active, dateOfBirth } = req.body;
+
+    const updateData = { name, email, phone, qualification, role, active };
+    
+    // Only add dateOfBirth if it's provided
+    if (dateOfBirth) {
+      updateData.dateOfBirth = dateOfBirth;
+    }
 
     const teacher = await Teachers.findByIdAndUpdate(
       req.params.teacherId,
-      { name, email, phone, qualification, role, active },
-      { new: true }
+      updateData,
+      { new: true, runValidators: true }
     ).select('-password');
 
     if (!teacher) {

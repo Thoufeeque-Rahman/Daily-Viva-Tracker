@@ -108,6 +108,9 @@ export default function ManageStudents() {
 
   // Dialog states
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showViewDialog, setShowViewDialog] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importResults, setImportResults] = useState<BulkImportResult | null>(
     null
@@ -115,6 +118,16 @@ export default function ManageStudents() {
 
   // Form state
   const [newStudent, setNewStudent] = useState({
+    name: "",
+    fullName: "",
+    rollNumber: "",
+    adNumber: "",
+    class: "",
+    dateOfBirth: "",
+  });
+
+  // Edit form state
+  const [editStudent, setEditStudent] = useState({
     name: "",
     fullName: "",
     rollNumber: "",
@@ -229,7 +242,12 @@ export default function ManageStudents() {
         fullName: newStudent.fullName || newStudent.name,
       };
 
-      await axios.post("/api/students", studentData);
+      const response = await axios.post("/api/students", studentData);
+      const newStudentRecord = response.data;
+
+      // Add new student to local state instead of refetching
+      setStudents(prevStudents => [...prevStudents, newStudentRecord]);
+      setFilteredStudents(prevFiltered => [...prevFiltered, newStudentRecord]);
 
       toast({
         title: "Success",
@@ -246,7 +264,6 @@ export default function ManageStudents() {
       });
 
       setShowAddDialog(false);
-      fetchStudents();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -313,8 +330,10 @@ export default function ManageStudents() {
         description: response.data.message,
       });
 
-      // Refresh students list
-      fetchStudents();
+      // Refresh students list only if there were successful imports
+      if (response.data.results.successful.length > 0) {
+        fetchStudents();
+      }
     } catch (error: any) {
       console.error("Error importing students:", error);
       toast({
@@ -334,6 +353,101 @@ export default function ManageStudents() {
     if (file) {
       handleBulkImport(file);
     }
+  };
+
+  // Handle delete student
+  const handleDeleteStudent = async (studentId: string, studentName: string) => {
+    try {
+      await axios.delete(`/api/students/${studentId}`);
+      
+      // Remove student from local state instead of refetching
+      setStudents(prevStudents => prevStudents.filter(student => student._id !== studentId));
+      setFilteredStudents(prevFiltered => prevFiltered.filter(student => student._id !== studentId));
+      
+      toast({
+        title: "Success",
+        description: `${studentName} has been deleted successfully.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to delete student.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle edit student
+  const handleEditClick = (student: Student) => {
+    setSelectedStudent(student);
+    setEditStudent({
+      name: student.name || "",
+      fullName: student.fullName || "",
+      rollNumber: student.rollNumber?.toString() || "",
+      adNumber: student.adNumber?.toString() || "",
+      class: student.class?.toString() || "",
+      dateOfBirth: student.dateOfBirth ? student.dateOfBirth.split('T')[0] : "",
+    });
+    setShowEditDialog(true);
+  };
+
+  // Handle update student
+  const handleUpdateStudent = async () => {
+    if (!selectedStudent) return;
+
+    try {
+      if (!editStudent.name || !editStudent.rollNumber || !editStudent.adNumber || !editStudent.class) {
+        toast({
+          title: "Validation Error",
+          description: "Please fill in all required fields.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const studentData = {
+        ...editStudent,
+        rollNumber: parseInt(editStudent.rollNumber),
+        adNumber: parseInt(editStudent.adNumber),
+        class: parseInt(editStudent.class),
+        fullName: editStudent.fullName || editStudent.name,
+      };
+
+      const response = await axios.put(`/api/students/${selectedStudent._id}`, studentData);
+      const updatedStudent = response.data;
+
+      // Update student in local state instead of refetching
+      setStudents(prevStudents => 
+        prevStudents.map(student => 
+          student._id === selectedStudent._id ? updatedStudent : student
+        )
+      );
+      setFilteredStudents(prevFiltered => 
+        prevFiltered.map(student => 
+          student._id === selectedStudent._id ? updatedStudent : student
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: "Student has been updated successfully.",
+      });
+
+      setShowEditDialog(false);
+      setSelectedStudent(null);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to update student.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle view student
+  const handleViewClick = (student: Student) => {
+    setSelectedStudent(student);
+    setShowViewDialog(true);
   };
 
   if (user?.role !== "super_admin") {
@@ -483,6 +597,208 @@ export default function ManageStudents() {
             </Dialog>
           </div>
         </div>
+
+        {/* Edit Student Dialog */}
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Edit Student</DialogTitle>
+              <DialogDescription>
+                Update student information below.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">Name *</Label>
+                  <Input
+                    id="edit-name"
+                    value={editStudent.name}
+                    onChange={(e) =>
+                      setEditStudent({ ...editStudent, name: e.target.value })
+                    }
+                    placeholder="Student name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-fullName">Full Name</Label>
+                  <Input
+                    id="edit-fullName"
+                    value={editStudent.fullName}
+                    onChange={(e) =>
+                      setEditStudent({
+                        ...editStudent,
+                        fullName: e.target.value,
+                      })
+                    }
+                    placeholder="Full legal name"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-rollNumber">Roll Number *</Label>
+                  <Input
+                    id="edit-rollNumber"
+                    type="number"
+                    value={editStudent.rollNumber}
+                    onChange={(e) =>
+                      setEditStudent({
+                        ...editStudent,
+                        rollNumber: e.target.value,
+                      })
+                    }
+                    placeholder="Roll no."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-adNumber">Admission No. *</Label>
+                  <Input
+                    id="edit-adNumber"
+                    type="number"
+                    value={editStudent.adNumber}
+                    onChange={(e) =>
+                      setEditStudent({
+                        ...editStudent,
+                        adNumber: e.target.value,
+                      })
+                    }
+                    placeholder="Admission no."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-class">Class *</Label>
+                  <Input
+                    id="edit-class"
+                    type="number"
+                    value={editStudent.class}
+                    onChange={(e) =>
+                      setEditStudent({
+                        ...editStudent,
+                        class: e.target.value,
+                      })
+                    }
+                    placeholder="Class"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-dateOfBirth">Date of Birth</Label>
+                <Input
+                  id="edit-dateOfBirth"
+                  type="date"
+                  value={editStudent.dateOfBirth}
+                  onChange={(e) =>
+                    setEditStudent({
+                      ...editStudent,
+                      dateOfBirth: e.target.value,
+                    })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowEditDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateStudent}>Update Student</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* View Student Dialog */}
+        <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Student Details</DialogTitle>
+              <DialogDescription>
+                Complete information for {selectedStudent?.name}
+              </DialogDescription>
+            </DialogHeader>
+
+            {selectedStudent && (
+              <div className="grid gap-4 py-4">
+                <div className="flex items-center space-x-4">
+                  <div className="h-16 w-16 rounded-full bg-gradient-to-r from-green-500 to-teal-600 flex items-center justify-center">
+                    <span className="text-white font-semibold text-lg">
+                      {selectedStudent.name
+                        ? selectedStudent.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()
+                        : "N/A"}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold">{selectedStudent.name}</h3>
+                    {selectedStudent.fullName && selectedStudent.fullName !== selectedStudent.name && (
+                      <p className="text-gray-600">{selectedStudent.fullName}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Roll Number</Label>
+                    <div className="flex items-center">
+                      <Hash className="h-4 w-4 mr-2 text-gray-400" />
+                      <span className="font-medium">{selectedStudent.rollNumber || "N/A"}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Admission Number</Label>
+                    <div className="font-mono text-sm">{selectedStudent.adNumber || "N/A"}</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Class</Label>
+                    <div className="flex items-center">
+                      <BookOpen className="h-4 w-4 mr-2 text-gray-400" />
+                      <Badge variant="outline">Class {selectedStudent.class || "N/A"}</Badge>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Date of Birth</Label>
+                    <div className="flex items-center">
+                      <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                      <span>
+                        {selectedStudent.dateOfBirth
+                          ? new Date(selectedStudent.dateOfBirth).toLocaleDateString()
+                          : "Not provided"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-500">Added to System</Label>
+                  <div className="text-sm text-gray-600">
+                    {new Date(selectedStudent.createdAt).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setShowViewDialog(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Bulk Import Section */}
         <Card className="mb-6">
@@ -722,10 +1038,18 @@ export default function ManageStudents() {
 
                         <TableCell>
                           <div className="flex items-center space-x-2">
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleViewClick(student)}
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleEditClick(student)}
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
                             <AlertDialog>
@@ -747,7 +1071,12 @@ export default function ManageStudents() {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction>Delete</AlertDialogAction>
+                                  <AlertDialogAction 
+                                    onClick={() => handleDeleteStudent(student._id, student.name)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>

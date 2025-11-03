@@ -28,11 +28,11 @@ export default function StudentCard({
   const [isImprovementModalOpen, setIsImprovementModalOpen] = useState(false);
   if (!student) {
     return (
-      <Card className="bg-white rounded-xl shadow-md h-[420px] overflow-hidden mb-6">
+      <Card className="bg-white rounded-2xl shadow-md h-[420px] overflow-hidden mb-6">
         <div className="grid grid-flow-col grid-rows-1 gap-2 p-6">
           <div className="row-span-3 flex justify-center items-center">
             <Avatar className="w-24 h-24 border-4 border-primary">
-              <AvatarFallback>?</AvatarFallback>
+              <AvatarFallback>?</AvatarFallback> 
             </Avatar>
           </div>
           <div className="col-span-2">
@@ -152,14 +152,14 @@ export default function StudentCard({
         <div className="w-full mt-auto flex gap-2">
           <Button
             variant="outline"
-            className={`flex-1 bg-white/60 ${text} rounded-md border-0 font-medium hover:bg-white/30 hover:text-white transition-colors`}
+            className={`flex-1 bg-white/60 ${text} rounded-xl border-0 font-medium hover:bg-white/30 hover:text-white transition-colors`}
             onClick={onSkip}
           >
             Skip <SkipForward />
           </Button>
           <Button 
             variant="outline"
-            className={`flex-1 bg-white/60 ${text} rounded-md border-0 font-medium hover:bg-white/30 hover:text-white transition-colors`}
+            className={`flex-1 bg-white/60 ${text} rounded-xl border-0 font-medium hover:bg-white/30 hover:text-white transition-colors`}
             onClick={() => setIsHistoryModalOpen(true)}
             disabled={!subject || !classNumber}
           >
@@ -167,7 +167,7 @@ export default function StudentCard({
           </Button>
           <Button
             variant="outline"
-            className={`flex-1 bg-white/60 ${text} rounded-md border-0 font-medium hover:bg-white/30 hover:text-white transition-colors`}
+            className={`flex-1 bg-white/60 ${text} rounded-xl border-0 font-medium hover:bg-white/30 hover:text-white transition-colors`}
             onClick={() => setIsImprovementModalOpen(true)}
             disabled={!subject || !classNumber}
           >

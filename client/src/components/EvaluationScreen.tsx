@@ -517,7 +517,7 @@ export default function EvaluationScreen({
                             ? "bg-blue-100 border-blue-200"
                             : ""
                         }`}
-                      >
+                      > 
                         <div className="flex justify-between items-center">
                           <span className="text-xs font-medium text-gray-900 truncate flex-1">
                             ({student.adNumber}) {student.name}
@@ -595,7 +595,7 @@ export default function EvaluationScreen({
                 style={{
                   background: `linear-gradient(to right, ${level.color}80, ${level.color})`,
                 }}
-                className={`flex flex-col items-center p-3 rounded-xl shadow-lg transition-all ${
+                className={`flex flex-col items-center p-3 rounded-3xl shadow-lg transition-all ${
                   isSaving ? "opacity-50 cursor-not-allowed" : ""
                 }`}
                 onClick={() => {

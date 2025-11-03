@@ -6,23 +6,32 @@ const DvtMarks = require("../models/DvtMarks");
 
 // Add a new student
 router.post("/", async (req, res) => {
-  const student = new Student({
-    // name: req.body.name,
-    // rollNumber: req.body.rollNumber,
-    // admissionNumber: req.body.admissionNumber,
-    // photoUrl: req.body.photoUrl,
-    // classId: req.body.classId,
-    name: "John Doe",
-    rollNumber: 20,
-    admissionNumber: 84,
-    photoUrl: "https://example.com/photo.jpg",
-    classId: "60d5f484f1a2c8b8f8e4b8e4",
-  });
-
   try {
+    const { name, fullName, rollNumber, adNumber, class: studentClass, dateOfBirth } = req.body;
+    
+    // Validate required fields
+    if (!name || !rollNumber || !adNumber || !studentClass) {
+      return res.status(400).json({ message: "Missing required fields: name, rollNumber, adNumber, and class are required" });
+    }
+
+    const studentData = {
+      name,
+      fullName: fullName || name,
+      rollNumber,
+      adNumber,
+      class: studentClass,
+    };
+
+    // Only add dateOfBirth if it's provided
+    if (dateOfBirth) {
+      studentData.dateOfBirth = dateOfBirth;
+    }
+
+    const student = new Student(studentData);
     const newStudent = await student.save();
     res.status(201).json(newStudent);
   } catch (err) {
+    console.error("Error creating student:", err);
     res.status(400).json({ message: err.message });
   }
 });
@@ -83,5 +92,81 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// Update a student
+router.put("/:id", async (req, res) => {
+  try {
+    console.log("Updating student with ID:", req.params.id);
+    
+    // Validate if the ID is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      console.log("Invalid ObjectId format");
+      return res.status(400).json({ message: "Invalid student ID format" });
+    }
 
+    const { name, fullName, rollNumber, adNumber, class: studentClass, dateOfBirth } = req.body;
+    
+    // Validate required fields
+    if (!name || !rollNumber || !adNumber || !studentClass) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const updateData = {
+      name,
+      fullName: fullName || name,
+      rollNumber,
+      adNumber,
+      class: studentClass,
+    };
+
+    // Only add dateOfBirth if it's provided
+    if (dateOfBirth) {
+      updateData.dateOfBirth = dateOfBirth;
+    }
+
+    const updatedStudent = await Student.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedStudent) {
+      console.log("Student not found");
+      return res.status(404).json({ message: "Student not found" });
+    }
+    
+    console.log("Updated student:", updatedStudent);
+    res.json(updatedStudent);
+  } catch (err) {
+    console.error("Error updating student:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Delete a student
+router.delete("/:id", async (req, res) => {
+  try {
+    console.log("Deleting student with ID:", req.params.id);
+    
+    // Validate if the ID is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      console.log("Invalid ObjectId format");
+      return res.status(400).json({ message: "Invalid student ID format" });
+    }
+
+    const deletedStudent = await Student.findByIdAndDelete(req.params.id);
+
+    if (!deletedStudent) {
+      console.log("Student not found");
+      return res.status(404).json({ message: "Student not found" });
+    }
+    
+    console.log("Deleted student:", deletedStudent);
+    res.json({ message: "Student deleted successfully", student: deletedStudent });
+  } catch (err) {
+    console.error("Error deleting student:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Updated with CRUD operations
 module.exports = router;

@@ -106,7 +106,10 @@ export default function ManageTeachers() {
   
   // Dialog states
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showViewDialog, setShowViewDialog] = useState(false);
   const [showBulkImportDialog, setShowBulkImportDialog] = useState(false);
+  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importResults, setImportResults] = useState<BulkImportResult | null>(null);
   
@@ -121,7 +124,15 @@ export default function ManageTeachers() {
     role: "teacher"
   });
 
-  const baseUrl = import.meta.env.VITE_BASE_URL;
+  // Edit form state
+  const [editTeacher, setEditTeacher] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    qualification: "",
+    dateOfBirth: "",
+    role: "teacher"
+  });
 
   // Check if user is super admin
   useEffect(() => {
@@ -205,7 +216,12 @@ export default function ManageTeachers() {
         return;
       }
 
-      await axios.post("/api/teachers/register", newTeacher);
+      const response = await axios.post("/api/teachers/register", newTeacher);
+      const newTeacherRecord = response.data.teacher; // API returns { message, teacher }
+      
+      // Add new teacher to local state instead of refetching
+      setTeachers(prevTeachers => [...prevTeachers, newTeacherRecord]);
+      setFilteredTeachers(prevFiltered => [...prevFiltered, newTeacherRecord]);
       
       toast({
         title: "Success",
@@ -223,7 +239,6 @@ export default function ManageTeachers() {
       });
       
       setShowAddDialog(false);
-      fetchTeachers();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -285,8 +300,10 @@ export default function ManageTeachers() {
         description: response.data.message,
       });
       
-      // Refresh teachers list
-      fetchTeachers();
+      // Refresh teachers list only if there were successful imports
+      if (response.data.results.successful.length > 0) {
+        fetchTeachers();
+      }
     } catch (error: any) {
       console.error("Error importing teachers:", error);
       toast({
@@ -305,6 +322,93 @@ export default function ManageTeachers() {
     if (file) {
       handleBulkImport(file);
     }
+  };
+
+  // Handle delete teacher
+  const handleDeleteTeacher = async (teacherId: string, teacherName: string) => {
+    try {
+      await axios.delete(`/api/teachers/${teacherId}`);
+      
+      // Remove teacher from local state instead of refetching
+      setTeachers(prevTeachers => prevTeachers.filter(teacher => teacher._id !== teacherId));
+      setFilteredTeachers(prevFiltered => prevFiltered.filter(teacher => teacher._id !== teacherId));
+      
+      toast({
+        title: "Success",
+        description: `${teacherName} has been deleted successfully.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to delete teacher.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle edit teacher
+  const handleEditClick = (teacher: Teacher) => {
+    setSelectedTeacher(teacher);
+    setEditTeacher({
+      name: teacher.name || "",
+      email: teacher.email || "",
+      phone: teacher.phone || "",
+      qualification: teacher.qualification || "",
+      dateOfBirth: teacher.dateOfBirth ? teacher.dateOfBirth.split('T')[0] : "",
+      role: teacher.role || "teacher",
+    });
+    setShowEditDialog(true);
+  };
+
+  // Handle update teacher
+  const handleUpdateTeacher = async () => {
+    if (!selectedTeacher) return;
+
+    try {
+      if (!editTeacher.name || !editTeacher.email || !editTeacher.phone) {
+        toast({
+          title: "Validation Error",
+          description: "Please fill in all required fields.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await axios.put(`/api/teachers/${selectedTeacher._id}`, editTeacher);
+      const updatedTeacher = response.data;
+
+      // Update teacher in local state instead of refetching
+      setTeachers(prevTeachers => 
+        prevTeachers.map(teacher => 
+          teacher._id === selectedTeacher._id ? updatedTeacher : teacher
+        )
+      );
+      setFilteredTeachers(prevFiltered => 
+        prevFiltered.map(teacher => 
+          teacher._id === selectedTeacher._id ? updatedTeacher : teacher
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: "Teacher has been updated successfully.",
+      });
+
+      setShowEditDialog(false);
+      setSelectedTeacher(null);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to update teacher.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle view teacher
+  const handleViewClick = (teacher: Teacher) => {
+    setSelectedTeacher(teacher);
+    setShowViewDialog(true);
   };
 
   if (user?.role !== "super_admin") {
@@ -648,10 +752,18 @@ export default function ManageTeachers() {
                         
                         <TableCell>
                           <div className="flex items-center space-x-2">
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleViewClick(teacher)}
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleEditClick(teacher)}
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
                             <AlertDialog>
@@ -669,7 +781,12 @@ export default function ManageTeachers() {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction>Delete</AlertDialogAction>
+                                  <AlertDialogAction 
+                                    onClick={() => handleDeleteTeacher(teacher._id, teacher.name)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
@@ -702,6 +819,211 @@ export default function ManageTeachers() {
             )}
           </CardContent>
         </Card>
+
+        {/* Edit Teacher Dialog */}
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Edit Teacher</DialogTitle>
+              <DialogDescription>
+                Update teacher information below.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">Name *</Label>
+                  <Input
+                    id="edit-name"
+                    value={editTeacher.name}
+                    onChange={(e) =>
+                      setEditTeacher({ ...editTeacher, name: e.target.value })
+                    }
+                    placeholder="Teacher name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-email">Email *</Label>
+                  <Input
+                    id="edit-email"
+                    type="email"
+                    value={editTeacher.email}
+                    onChange={(e) =>
+                      setEditTeacher({ ...editTeacher, email: e.target.value })
+                    }
+                    placeholder="Email address"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-phone">Phone *</Label>
+                  <Input
+                    id="edit-phone"
+                    value={editTeacher.phone}
+                    onChange={(e) =>
+                      setEditTeacher({ ...editTeacher, phone: e.target.value })
+                    }
+                    placeholder="Phone number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-role">Role</Label>
+                  <Select
+                    value={editTeacher.role}
+                    onValueChange={(value) =>
+                      setEditTeacher({ ...editTeacher, role: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="teacher">Teacher</SelectItem>
+                      <SelectItem value="super_admin">Super Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-qualification">Qualification</Label>
+                <Input
+                  id="edit-qualification"
+                  value={editTeacher.qualification}
+                  onChange={(e) =>
+                    setEditTeacher({ ...editTeacher, qualification: e.target.value })
+                  }
+                  placeholder="Educational qualification"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-dateOfBirth">Date of Birth</Label>
+                <Input
+                  id="edit-dateOfBirth"
+                  type="date"
+                  value={editTeacher.dateOfBirth}
+                  onChange={(e) =>
+                    setEditTeacher({ ...editTeacher, dateOfBirth: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowEditDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateTeacher}>Update Teacher</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* View Teacher Dialog */}
+        <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Teacher Details</DialogTitle>
+              <DialogDescription>
+                Complete information for {selectedTeacher?.name}
+              </DialogDescription>
+            </DialogHeader>
+
+            {selectedTeacher && (
+              <div className="grid gap-4 py-4">
+                <div className="flex items-center space-x-4">
+                  <div className="h-16 w-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                    <span className="text-white font-semibold text-lg">
+                      {selectedTeacher.name
+                        ? selectedTeacher.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()
+                        : "N/A"}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold">{selectedTeacher.name}</h3>
+                    <Badge variant={selectedTeacher.role === "super_admin" ? "destructive" : "default"}>
+                      {selectedTeacher.role === "super_admin" ? "Super Admin" : "Teacher"}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Email</Label>
+                    <div className="flex items-center">
+                      <Mail className="h-4 w-4 mr-2 text-gray-400" />
+                      <span>{selectedTeacher.email}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Phone</Label>
+                    <div className="flex items-center">
+                      <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                      <span>{selectedTeacher.phone}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedTeacher.qualification && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Qualification</Label>
+                    <div className="flex items-center">
+                      <GraduationCap className="h-4 w-4 mr-2 text-gray-400" />
+                      <span>{selectedTeacher.qualification}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Status</Label>
+                    <Badge variant={selectedTeacher.active ? "default" : "secondary"}>
+                      {selectedTeacher.active ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Date of Birth</Label>
+                    <div className="flex items-center">
+                      <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                      <span>
+                        {selectedTeacher.dateOfBirth
+                          ? new Date(selectedTeacher.dateOfBirth).toLocaleDateString()
+                          : "Not provided"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-500">Joined System</Label>
+                  <div className="flex items-center">
+                    <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                    <span>{new Date(selectedTeacher.joinedAt).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setShowViewDialog(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
