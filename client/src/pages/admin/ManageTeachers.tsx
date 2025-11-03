@@ -411,8 +411,43 @@ export default function ManageTeachers() {
     setShowViewDialog(true);
   };
 
-  if (user?.role !== "super_admin") {
-    return null;
+  // Show access denied for non-super admins
+  if (user && user.role !== "super_admin") {
+    return (
+      <div className="mx-auto max-w-7xl bg-white min-h-screen shadow-lg">
+        <Header showContext={false} onHomeClick={() => setLocation("/")} />
+        <main className="p-6">
+          <div className="text-center py-12">
+            <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+            <p className="text-gray-600 mb-4">
+              You don't have permission to access the teacher management area.
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              Only super administrators can manage teachers.
+            </p>
+            <Button onClick={() => setLocation("/")}>
+              Return to Home
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Show loading if user is not loaded yet
+  if (!user) {
+    return (
+      <div className="mx-auto max-w-7xl bg-white min-h-screen shadow-lg">
+        <Header showContext={false} onHomeClick={() => setLocation("/")} />
+        <main className="p-6">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   return (

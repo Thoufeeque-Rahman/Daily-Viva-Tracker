@@ -23,18 +23,23 @@ export default function AuthPage() {
   const { user, isAuthenticated, login, isLoading, isLoginLoading } = useAuth();
   const [, setLocation] = useLocation();
 
-  // Show loading while checking authentication
+  // Show stunning splash screen while checking authentication
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="w-full max-w-md space-y-8 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary mb-2">
+        <div className="text-center space-y-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-600">
             <GraduationCap className="h-8 w-8 text-white" />
           </div>
-          <div className="space-y-4">
-            <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4 mx-auto"></div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-semibold text-gray-900">
+              Daily Viva Tracker
+            </h1>
+            <p className="text-gray-600">
+              A tool for managing student evaluations!
+            </p>
           </div>
+          {/* <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div> */}
         </div>
       </div>
     );
@@ -109,8 +114,10 @@ export default function AuthPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoginLoading}
                   required
+                  className="h-10"
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <Input
@@ -121,6 +128,7 @@ export default function AuthPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoginLoading}
                   required
+                  className="h-10"
                 />
               </div>
             </CardContent>

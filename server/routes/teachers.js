@@ -4,10 +4,11 @@ const Teachers = require('../models/Teachers');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const { authenticateToken } = require('../middleware/auth');
+const isSuperAdmin = require('../middleware/isSuperAdmin');
 
 // Public routes
-// Registration
-router.post('/register', async (req, res) => {
+// Registration (Super Admin Only for creating new teachers)
+router.post('/register', authenticateToken, isSuperAdmin, async (req, res) => {
   try {
     const { email, password, name, phone, qualification, dateOfBirth } = req.body;
     
@@ -313,13 +314,8 @@ router.delete('/:teacherId/subjects/:subjectId', authenticateToken, async (req, 
 
 
 // Super admin: Update teacher
-router.put('/:teacherId', authenticateToken, async (req, res) => {
+router.put('/:teacherId', authenticateToken, isSuperAdmin, async (req, res) => {
   try {
-    // Check if current user is super admin
-    const currentUser = await Teachers.findById(req.user.id);
-    if (!currentUser || currentUser.role !== 'super_admin') {
-      return res.status(403).json({ error: 'Access denied. Super admin privileges required.' });
-    }
 
     const { name, email, phone, qualification, role, active, dateOfBirth } = req.body;
 
@@ -348,13 +344,8 @@ router.put('/:teacherId', authenticateToken, async (req, res) => {
 });
 
 // Super admin: Delete teacher
-router.delete('/:teacherId', authenticateToken, async (req, res) => {
+router.delete('/:teacherId', authenticateToken, isSuperAdmin, async (req, res) => {
   try {
-    // Check if current user is super admin
-    const currentUser = await Teachers.findById(req.user.id);
-    if (!currentUser || currentUser.role !== 'super_admin') {
-      return res.status(403).json({ error: 'Access denied. Super admin privileges required.' });
-    }
 
     const teacher = await Teachers.findByIdAndDelete(req.params.teacherId);
     if (!teacher) {

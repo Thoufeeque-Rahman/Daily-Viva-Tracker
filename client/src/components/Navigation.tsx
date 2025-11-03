@@ -50,11 +50,11 @@ export default function Navigation() {
         icon: GraduationCap,
         href: "/admin/students",
       },
-      {
-        title: "Admin Statistics",
-        icon: BarChart3,
-        href: "/admin/stats",
-      },
+      // {
+      //   title: "Admin Statistics",
+      //   icon: BarChart3,
+      //   href: "/admin/stats",
+      // },
     ] : [])
   ]
 

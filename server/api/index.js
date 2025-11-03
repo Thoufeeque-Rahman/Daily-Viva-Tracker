@@ -15,7 +15,7 @@ if (!process.env.JWT_SECRET) {
 
 const app = express();
  
-// Middleware
+// Middleware 
 app.use(
   cors({
     origin: [

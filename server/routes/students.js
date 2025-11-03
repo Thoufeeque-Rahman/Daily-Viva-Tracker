@@ -3,9 +3,11 @@ const router = express.Router();
 const mongoose = require("mongoose");
 const Student = require("../models/Students");
 const DvtMarks = require("../models/DvtMarks");
+const { authenticateToken } = require("../middleware/auth");
+const isSuperAdmin = require("../middleware/isSuperAdmin");
 
-// Add a new student
-router.post("/", async (req, res) => {
+// Add a new student (Super Admin Only)
+router.post("/", authenticateToken, isSuperAdmin, async (req, res) => {
   try {
     const { name, fullName, rollNumber, adNumber, class: studentClass, dateOfBirth } = req.body;
     
@@ -36,8 +38,8 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Get all students
-router.get("/", async (req, res) => {
+// Get all students (All authenticated users can view)
+router.get("/", authenticateToken, async (req, res) => {
   try {
     const students = await Student.find();
     res.json(students);
@@ -46,8 +48,8 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Get students by class
-router.get("/class/:class", async (req, res) => {
+// Get students by class (All authenticated users can view)
+router.get("/class/:class", authenticateToken, async (req, res) => {
   try {
     const students = await Student.find({ class: req.params.class });
     res.json(students);
@@ -56,8 +58,8 @@ router.get("/class/:class", async (req, res) => {
   }
 });
 
-// Get a single student by adNumber
-router.get("/adNumber/:adNumber", async (req, res) => {
+// Get a single student by adNumber (All authenticated users can view)
+router.get("/adNumber/:adNumber", authenticateToken, async (req, res) => {
   try {
     const student = await Student.findOne({ adNumber: req.params.adNumber });
     if (!student) return res.status(404).json({ message: "Student not found" });
@@ -67,8 +69,8 @@ router.get("/adNumber/:adNumber", async (req, res) => {
   }
 });
 
-// Get a student by Id
-router.get("/:id", async (req, res) => {
+// Get a student by Id (All authenticated users can view)
+router.get("/:id", authenticateToken, async (req, res) => {
   try {
     console.log("Fetching student with ID:", req.params.id);
     
@@ -92,8 +94,8 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Update a student
-router.put("/:id", async (req, res) => {
+// Update a student (Super Admin Only)
+router.put("/:id", authenticateToken, isSuperAdmin, async (req, res) => {
   try {
     console.log("Updating student with ID:", req.params.id);
     
@@ -142,8 +144,8 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// Delete a student
-router.delete("/:id", async (req, res) => {
+// Delete a student (Super Admin Only)
+router.delete("/:id", authenticateToken, isSuperAdmin, async (req, res) => {
   try {
     console.log("Deleting student with ID:", req.params.id);
     
