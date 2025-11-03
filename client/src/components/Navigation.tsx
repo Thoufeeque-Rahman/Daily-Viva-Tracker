@@ -1,4 +1,4 @@
-import { Menu, Home, History, BarChart, Replace, Users as UsersIcon } from "lucide-react"
+import { Menu, Home, History, BarChart, Replace, Users as UsersIcon, BarChart3 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useLocation } from "wouter"
 import {
@@ -44,6 +44,11 @@ export default function Navigation() {
         title: "Manage Teachers",
         icon: UsersIcon,
         href: "/admin/superadmin",
+      },
+      {
+        title: "Admin Statistics",
+        icon: BarChart3,
+        href: "/admin/stats",
       },
     ] : [])
   ]
