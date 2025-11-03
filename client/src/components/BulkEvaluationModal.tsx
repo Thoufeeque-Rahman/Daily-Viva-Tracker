@@ -23,6 +23,16 @@ import {
   type IndividualEvaluationData 
 } from "@/lib/bulk-evaluation-api";
 import { Package, Zap, Users, Clock } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface BulkEvaluationModalProps {
   isOpen: boolean;
@@ -75,6 +85,9 @@ export function BulkEvaluationModal({
 
   // Loading states
   const [savingStudentId, setSavingStudentId] = useState<string | null>(null);
+  
+  // Confirmation dialog state
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // Helper function to get default emoji for grading levels without emoji
   const getDefaultEmoji = (name: string) => {
@@ -181,26 +194,25 @@ export function BulkEvaluationModal({
     }
   };
 
-  // Handle "Excellent for All" button (only for batch mode)
-  const handleExcellentForAll = () => {
+  // Handle "Grade for All" buttons (only for batch mode)
+  const handleGradeForAll = (selectedLevel: GradingLevel) => {
     if (evaluationMode !== "batch") return;
-    
-    const excellentLevel =
-      gradingLevels.find(
-        (level) =>
-          level.name.toLowerCase().includes("excellent") ||
-          level.name.toLowerCase().includes("great")
-      ) || gradingLevels[0]; // Default to first level if no "excellent" found
 
     const allEvaluations: Record<string, { evaluation: string; mark: number }> =
       {};
     remainingStudents.forEach((student) => {
       allEvaluations[student._id] = {
-        evaluation: excellentLevel.name.toLowerCase(),
-        mark: excellentLevel.mark,
+        evaluation: selectedLevel.name.toLowerCase(),
+        mark: selectedLevel.mark,
       };
     });
     setStudentEvaluations(allEvaluations);
+    
+    toast({
+      title: "✅ Applied to All",
+      description: `Set ${selectedLevel.name} for all ${remainingStudents.length} students`,
+      duration: 2000,
+    });
   };
 
   // Handle mode toggle
@@ -220,7 +232,7 @@ export function BulkEvaluationModal({
     });
   };
 
-  // Handle batch save
+  // Handle save button click - show confirmation dialog
   const handleSave = async () => {
     console.log("Batch save debug:", {
       selectedSubject,
@@ -256,14 +268,30 @@ export function BulkEvaluationModal({
       return;
     }
 
+    // Show confirmation dialog
+    setShowConfirmDialog(true);
+  };
+
+  // Handle confirmed batch save
+  const handleConfirmedSave = async () => {
+    setShowConfirmDialog(false);
+    
+    const evaluationsArray = Object.entries(studentEvaluations)
+      .filter(([_, evaluation]) => evaluation !== null)
+      .map(([studentId, evaluation]) => ({
+        studentId,
+        evaluation: evaluation!.evaluation,
+        mark: evaluation!.mark,
+      }));
+
     try {
       setSavingStudentId("batch_saving"); // Use a special ID for batch saving
       
       const batchData: BulkBatchEvaluationData = {
         evaluations: evaluationsArray,
-        subject: selectedSubject.subject,
-        class: selectedSubject.class,
-        tId: teacherId,
+        subject: selectedSubject?.subject || '',
+        class: selectedSubject?.class || 0,
+        tId: teacherId || '',
       };
 
       const result = await saveBulkBatchEvaluations(batchData);
@@ -331,7 +359,7 @@ export function BulkEvaluationModal({
                 {evaluationMode === "batch" ? (
                   <><Package className="h-5 w-5" /> Batch Evaluation</>
                 ) : (
-                  <><Zap className="h-5 w-5" /> Individual Evaluation</>
+                  <><Zap className="h-5 w-5" /> Indiv. Evaluation</>
                 )}
               </DialogTitle>
               <DialogDescription>
@@ -379,16 +407,16 @@ export function BulkEvaluationModal({
               </div>
               
               <div className="flex gap-2">
-                <Badge variant="outline" className="flex items-center gap-1">
+                <Badge variant="outline" className="flex items-center gap-1  flex-nowrap truncate">
                   <Users className="h-3 w-3" />
-                  {totalStudents} total
+                  {totalStudents} ttl.
                 </Badge>
-                <Badge variant="secondary" className="flex items-center gap-1">
+                <Badge variant="secondary" className="flex items-center gap-1  flex-nowrap truncate">
                   <Clock className="h-3 w-3" />
-                  {evaluatedCount} evaluated
+                  {evaluatedCount} eval.
                 </Badge>
-                <Badge variant="default" className="flex items-center gap-1">
-                  {remainingCount} remaining
+                <Badge variant="default" className="flex items-center gap-1 flex-nowrap truncate">
+                  {remainingCount} rmin.
                 </Badge>
               </div>
             </div>
@@ -403,17 +431,30 @@ export function BulkEvaluationModal({
 
           {/* Action Buttons (only for batch mode) */}
           {evaluationMode === "batch" && (
-            <div className="flex justify-between items-center py-2">
+            <div className="flex flex-col justify-between items py-3 gap-2">
               <div className="text-sm text-gray-600">
                 Progress: {evaluatedCount}/{totalStudents} students evaluated
               </div>
-              <Button
-                onClick={handleExcellentForAll}
-                size="sm"
-                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 font-medium shadow-lg hover:shadow-xl transition-all"
-              >
-                ⭐ Excellent for All
-              </Button>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-medium text-gray-700">Select for All:</span>
+                <div className="flex gap-2">
+                  {gradingLevels.map((level) => (
+                    <Button
+                      key={level.name}
+                      onClick={() => handleGradeForAll(level)}
+                      size="sm"
+                      className="w-9 h-9 rounded-xl flex items-center justify-center transition-all text-2xl"
+                      style={{
+                        background: `linear-gradient(135deg, ${level.color}90, ${level.color})`,
+                        color: 'white'
+                      }}
+                    >
+                      <span className="text-sm">{level.emoji || getDefaultEmoji(level.name)}</span>
+                      {/* <span className="text-xs">{level.name}</span> */}
+                    </Button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
@@ -446,7 +487,7 @@ export function BulkEvaluationModal({
                       flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl transition-all duration-200 relative
                       ${
                         selectedEvaluation
-                          ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 shadow-md"
+                          ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200"
                           : "bg-gray-50 hover:bg-gray-100 border-2 border-transparent"
                       }
                       ${savingStudentId === student._id ? "opacity-75 pointer-events-none" : ""}
@@ -456,11 +497,11 @@ export function BulkEvaluationModal({
                       <div className="flex-1 flex justify-between space-x-3">
                         <div>
                           <div>
-                            <div className="font-medium text-gray-500 text-sm flex items-center justify-start gap-1">
-                              #{student.rollNumber}{" "}
+                            <div className="font-medium text-gray-500 flex items-center justify-start gap-1">
+                              <p className="w-7 text-xs">#{student.adNumber}</p>
                               {selectedEvaluation && (
-                                <div className="max-w-14">
-                                  <div className="text-xs truncate font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                                <div className="max-w-11">
+                                  <div className="text-[10px] truncate font-medium text-blue-600 bg-blue-100 px-2 rounded-full">
                                     {selectedEvaluation.evaluation
                                       .charAt(0)
                                       .toUpperCase() +
@@ -469,7 +510,7 @@ export function BulkEvaluationModal({
                                 </div>
                               )}
                             </div>
-                            <div className="font-medium text-gray-900 max-w-24 truncate">
+                            <div className="font-medium text-gray-900 max-w-20 md:max-w-full truncate">
                               {student.name}
                             </div>
                           </div>
@@ -499,18 +540,18 @@ export function BulkEvaluationModal({
                                 }
                                 disabled={isDisabled}
                                 className={`
-                              w-9 h-9 rounded-full flex items-center justify-center transition-all text-2xl
+                              w-9 h-9 rounded-xl flex items-center justify-center transition-all text-2xl
                               ${
                                 isSelected
-                                  ? "ring-3 ring-blue-500 ring-offset-2 shadow-lg"
+                                  ? "ring-3 ring-blue-500 ring-offset-2 scale-105 shadow-lg"
                                   : "hover:scale-105 hover:shadow-md"
                               }
                               ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}
                             `}
                                 style={{
-                                  background: isSelected ?
-                                  `linear-gradient(135deg, ${level.color}90, ${level.color})` :
-                                  `linear-gradient(135deg, rgb(107 114 128/90), rgb(107 114 128/90))`,
+                                  background: `${evaluationMode === "individual" ? `linear-gradient(135deg, ${level.color}90, ${level.color})` : (isSelected ?
+                                  `linear-gradient(135deg, ${level.color}90, ${level.color})` : 
+                                  `linear-gradient(135deg, rgb(166 172 182), rgb(166 172 182))`)}`,
                                   boxShadow: isSelected
                                     ? `0 8px 25px rgba(59, 130, 246, 0.3)`
                                     : "0 2px 8px rgba(0,0,0,0.1)",
@@ -570,6 +611,36 @@ export function BulkEvaluationModal({
           </div>
         </div>
       </DialogContent>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-blue-600" />
+              Confirm Bulk Evaluation Save
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <div>
+                You are about to save <strong>{evaluatedCount}</strong> student evaluations for{" "}
+                <strong>{selectedSubject?.subject}</strong> - Class <strong>{selectedSubject?.class}</strong>.
+              </div>
+              <div className="text-sm text-gray-600 mt-2">
+                This action cannot be undone. All selected evaluations will be permanently saved to the database.
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-row justify-center items-center gap-3">
+            <AlertDialogCancel className="m-0">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmedSave}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Save All Evaluations
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
