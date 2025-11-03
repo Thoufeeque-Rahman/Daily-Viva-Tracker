@@ -113,59 +113,60 @@ export function ImprovementList({
   }
 
   return (
-    <Card className="mb-4">
-      <CardHeader>
+    <Card className="mb-4 h-fit">
+      <CardHeader className="p-3">
         <CardTitle className="text-sm flex items-center gap-2">
           <Clock className="h-4 w-4" />
-          Improvements for {subject} - Class {classNumber}
+          Improvements
           <Badge variant="outline">{improvements.length}</Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-0 py-0">
         <ScrollArea className="h-48">
-          <div className="space-y-3">
+          <div className="space-y-0">
             {improvements.map((improvement) => (
               <div
                 key={improvement._id}
-                className={`p-3 border rounded-lg ${
+                className={`p-1 border-t ${
                   improvement.status === "done"
-                    ? "bg-green-50 border-green-200"
-                    : "bg-yellow-50 border-yellow-200"
+                    ? "bg-green-50"
+                    : "bg-yellow-50"
                 }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <User className="h-3 w-3 text-gray-500" />
-                      <span className="text-sm font-medium text-gray-700">
-                        {improvement.student.adNumber}{" - "}
-                        {improvement.student.name}
+                      <span className="text-xs font-medium text-gray-700">
+                        ({improvement.student.adNumber}) {improvement.student.name}
                       </span>
-                      <Badge
+                      {/* <Badge
                         variant={
                           improvement.status === "done"
                             ? "default"
                             : "secondary"
                         }
-                        className={`text-xs ${
+                        className={`text-[10px] py-0 ${
                           improvement.status === "done"
                             ? "bg-green-100 text-green-800 hover:bg-green-100"
                             : "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
                         }`}
                       >
                         {improvement.status === "done"
-                          ? "Completed"
-                          : "Assigned"}
-                      </Badge>
+                          ? "Com."
+                          : "Ass."}
+                      </Badge> */}
                     </div>
                     <div className="flex items-center justify-between gap-1 text-xs text-gray-500">
-                      <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+                      <p className="text-xs w-20 text-gray-600 mb-2 line-clamp-2 truncate">
                         {improvement.description}
                       </p>
                       <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
+                        {/* <Calendar className="h-3 w-3" /> */}
                         Due:{" "}
-                        {new Date(improvement.dueDate).toLocaleDateString()}
+                        {(() => {
+                          const d = new Date(improvement.dueDate); 
+                          return `${d.getDate()} ${d.toLocaleString(undefined, { month: "short" })}`;
+                        })()}
                       </div>
                     </div>
                   </div>

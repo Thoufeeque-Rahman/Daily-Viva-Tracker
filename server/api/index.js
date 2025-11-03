@@ -110,8 +110,8 @@ app.use("/api/improvements", authenticateToken, improvementsRoutes);
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Get MongoDB URL from config to ensure consistency
-const MONGODB_URL = process.env.MONGODB_URL || 'mongodb+srv://rahmanam90:9946337540@cluster0.8sxy4wx.mongodb.net/my_dvt_db';
-
+const MONGODB_URL = process.env.MONGODB_URL;
+console.log(MONGODB_URL);
 // Connect to MongoDB with updated options
 mongoose
   .connect(MONGODB_URL, {

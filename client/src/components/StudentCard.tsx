@@ -115,7 +115,7 @@ export default function StudentCard({
       className={`bg-gradient-to-r ${bg} shadow-xl overflow-hidden border text-white rounded-2xl mb-6 ${animationClass}`}
       // style={{ height: "fit" }} 
     >
-      <div className="h-full flex flex-col items-center gap-2 p-6"> 
+      <div className="h-full flex flex-col items-center gap-2 p-3"> 
         <div className="flex items-center w-full">
           <div className="flex justify-center items-center mr-6">
             <Avatar className={`w-24 h-24`}>

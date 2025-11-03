@@ -12,7 +12,10 @@ import StudentCard from "./StudentCard";
 import { useEffect, useState } from "react";
 import { Input } from "./ui/input";
 import { Label } from "@radix-ui/react-label";
-import { useActiveGradingConfig, getDefaultGradingLevels } from "@/hooks/use-grading-config";
+import {
+  useActiveGradingConfig,
+  getDefaultGradingLevels,
+} from "@/hooks/use-grading-config";
 import { GradingLevel } from "@/types";
 import { ImprovementList } from "./ImprovementList";
 import { ImprovementModal } from "./ImprovementModal";
@@ -52,7 +55,8 @@ interface EvaluationScreenProps {
   onFinish: () => void;
   setPunishmentModalOpen: (open: boolean) => void;
   isNextEnabled: boolean;
-  allStudents: Student[];
+  allStudents: Student[]; // This contains only remaining students
+  allStudentsWithStats?: Student[]; // This should contain ALL students with question counts
   onStudentSelect?: (student: Student) => void;
   onForceStop?: () => void;
   selectedSubject?: { subject: string; class: number };
@@ -75,6 +79,7 @@ export default function EvaluationScreen({
   setPunishmentModalOpen,
   isNextEnabled,
   allStudents,
+  allStudentsWithStats,
   onStudentSelect,
   selectedSubject,
   isLoadingNext = false,
@@ -86,47 +91,88 @@ export default function EvaluationScreen({
   const [showImprovementConfirm, setShowImprovementConfirm] = useState(false);
   const [showImprovementModal, setShowImprovementModal] = useState(false);
   const [showBulkEvaluationModal, setShowBulkEvaluationModal] = useState(false);
-  const [pendingEvaluation, setPendingEvaluation] = useState<{evaluation: string, mark: number} | null>(null);
+  const [pendingEvaluation, setPendingEvaluation] = useState<{
+    evaluation: string;
+    mark: number;
+  } | null>(null);
+
+  // State for student statistics
+  const [allStudentsData, setAllStudentsData] = useState<Student[]>([]);
+  const [dvtMarks, setDvtMarks] = useState<any[]>([]);
+  const [studentsWithQuestionCounts, setStudentsWithQuestionCounts] = useState<
+    (Student & { questionsAsked: number })[]
+  >([]);
 
   // Get active grading configuration
   const { data: gradingConfig } = useActiveGradingConfig();
   const gradingLevels = gradingConfig?.levels || getDefaultGradingLevels();
-  
+
   // Get auth context and toast
   const { user } = useAuth();
   const { toast } = useToast();
+  const baseUrl = import.meta.env.VITE_BASE_URL;
 
   // Utility functions for styling
   const getGradientClass = (color: string) => {
     const colorMap: Record<string, string> = {
-      '#16a34a': 'bg-gradient-to-r from-emerald-500 to-green-600',
-      '#e88d8d': 'bg-gradient-to-r from-yellow-500 to-amber-600',
-      '#dc2626': 'bg-gradient-to-r from-rose-500 to-red-600',
-      '#4ce600': 'bg-gradient-to-r from-blue-500 to-blue-600',
-      '#d97706': 'bg-gradient-to-r from-purple-500 to-purple-600',
-      '#EC4899': 'bg-gradient-to-r from-pink-500 to-pink-600',
+      "#16a34a": "bg-gradient-to-r from-emerald-500 to-green-600",
+      "#e88d8d": "bg-gradient-to-r from-yellow-500 to-amber-600",
+      "#dc2626": "bg-gradient-to-r from-rose-500 to-red-600",
+      "#4ce600": "bg-gradient-to-r from-blue-500 to-blue-600",
+      "#d97706": "bg-gradient-to-r from-purple-500 to-purple-600",
+      "#EC4899": "bg-gradient-to-r from-pink-500 to-pink-600",
     };
     return colorMap[color] || `bg-gradient-to-r from-gray-500 to-gray-600`;
   };
 
   const getRingClass = (color: string) => {
     const colorMap: Record<string, string> = {
-      '#16a34a': 'ring-emerald-500',
-      '#e88d8d': 'ring-yellow-500',
-      '#dc2626': 'ring-red-500',
-      '#4ce600': 'ring-blue-500',
-      '#d97706': 'ring-purple-500',
-      '#EC4899': 'ring-pink-500',
+      "#16a34a": "ring-emerald-500",
+      "#e88d8d": "ring-yellow-500",
+      "#dc2626": "ring-red-500",
+      "#4ce600": "ring-blue-500",
+      "#d97706": "ring-purple-500",
+      "#EC4899": "ring-pink-500",
     };
-    return colorMap[color] || 'ring-gray-500';
+    return colorMap[color] || "ring-gray-500";
   };
 
   const getDefaultEmoji = (name: string) => {
     const lowerName = name.toLowerCase();
-    if (lowerName.includes('great') || lowerName.includes('excellent')) return '😊';
-    if (lowerName.includes('good') || lowerName.includes('average')) return '🙂';
-    if (lowerName.includes('poor') || lowerName.includes('bad')) return '☹️';
-    return '😐';
+    if (lowerName.includes("great") || lowerName.includes("excellent"))
+      return "😊";
+    if (lowerName.includes("good") || lowerName.includes("average"))
+      return "🙂";
+    if (lowerName.includes("poor") || lowerName.includes("bad")) return "☹️";
+    return "😐";
+  };
+
+  // Fetch all students with statistics
+  const fetchAllStudentsData = async () => {
+    try {
+      const response = await fetch(`${baseUrl}/api/students`, {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to fetch students");
+      const data = await response.json();
+      setAllStudentsData(data);
+    } catch (error) {
+      console.error("Error fetching students:", error);
+    }
+  };
+
+  // Fetch DVT marks for statistics
+  const fetchDvtMarks = async () => {
+    try {
+      const response = await fetch(`${baseUrl}/api/dvtmarks`, {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to fetch DVT marks");
+      const data = await response.json();
+      setDvtMarks(data);
+    } catch (error) {
+      console.error("Error fetching DVT marks:", error);
+    }
   };
 
   // Filter students based on search query
@@ -137,10 +183,18 @@ export default function EvaluationScreen({
 
   // Helper function to check if mark requires improvement
   const requiresImprovement = (mark: number) => {
-    const maxMark = Math.max(...gradingLevels.map(level => level.mark));
+    const maxMark = Math.max(...gradingLevels.map((level) => level.mark));
     const threshold = maxMark * 0.5; // 50% threshold
-    console.log("Max Mark:", maxMark, "Threshold:", threshold, "Given Mark:", mark, mark < threshold);
-    
+    console.log(
+      "Max Mark:",
+      maxMark,
+      "Threshold:",
+      threshold,
+      "Given Mark:",
+      mark,
+      mark < threshold
+    );
+
     return mark < threshold;
   };
 
@@ -149,7 +203,7 @@ export default function EvaluationScreen({
     if (requiresImprovement(mark) && currentStudent) {
       // Store pending evaluation and show confirmation dialog
       console.log("Mark requires improvement:", mark);
-      
+
       setPendingEvaluation({ evaluation, mark });
       setShowImprovementConfirm(true);
     } else {
@@ -164,7 +218,7 @@ export default function EvaluationScreen({
   // Handle improvement confirmation
   const handleImprovementConfirm = (addImprovement: boolean) => {
     setShowImprovementConfirm(false);
-    
+
     if (pendingEvaluation) {
       if (addImprovement) {
         // Show improvement modal first, save evaluation later
@@ -181,7 +235,7 @@ export default function EvaluationScreen({
   // Handle improvement modal success - save evaluation after task is assigned
   const handleImprovementSuccess = () => {
     setShowImprovementModal(false);
-    
+
     if (pendingEvaluation) {
       // Now save the evaluation after improvement task is assigned and move to next student
       onEvaluate(pendingEvaluation.evaluation, pendingEvaluation.mark);
@@ -190,11 +244,66 @@ export default function EvaluationScreen({
     }
   };
 
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchAllStudentsData();
+    fetchDvtMarks();
+  }, []);
+
+  // Calculate students with question counts when data changes
+  useEffect(() => {
+    if (!selectedSubject || !dvtMarks.length || !allStudentsData.length) return;
+
+    const subject = selectedSubject.subject;
+    const classNum = selectedSubject.class;
+
+    if (!subject || !classNum) return;
+
+    // First filter students by class (only students from the current class)
+    const studentsInClass = allStudentsData.filter(
+      (student) => student.class === classNum
+    );
+
+    // Calculate question counts for each student in this class and subject
+    const questionCounts = dvtMarks
+      .filter((mark) => mark.subject === subject && mark.class === classNum)
+      .reduce((acc: { [key: string]: number }, mark) => {
+        const studentId = mark.studentId;
+        acc[studentId] = (acc[studentId] || 0) + 1;
+        return acc;
+      }, {});
+
+    // Create students with question counts (only for students in the current class)
+    const studentsWithCounts = studentsInClass.map((student) => ({
+      ...student,
+      questionsAsked: questionCounts[student._id] || 0,
+    }));
+
+    setStudentsWithQuestionCounts(studentsWithCounts);
+  }, [selectedSubject, dvtMarks, allStudentsData]);
+
   // Update key when student changes to trigger animation
   useEffect(() => {
-    console.log("Student changed, updating key. New student:", currentStudent?.name);
+    console.log(
+      "Student changed, updating key. New student:",
+      currentStudent?.name
+    );
     setStudentKey((prevKey) => prevKey + 1);
   }, [currentStudent]);
+
+  // Log when Bulk Evaluation modal is opened (avoid logging directly in JSX)
+  useEffect(() => {
+    if (showBulkEvaluationModal) {
+      console.log("EvaluationScreen passing to BulkModal:", {
+        selectedSubject,
+        teacherId: user?.tId || user?._id,
+        userTId: user?.tId,
+        user_Id: user?._id,
+        fullUser: user,
+        allStudentsCount: allStudents.length,
+      });
+    }
+  }, [showBulkEvaluationModal, selectedSubject, user, allStudents]);
 
   var studentsAskedNumber = Math.abs(studentsNot - totalStudents);
 
@@ -217,12 +326,19 @@ export default function EvaluationScreen({
               {/* totalStudents */}
             </span>
           </div>
-          <Progress value={progressPercent} className="w-full h-2.5 shadow-lg" />
+          <Progress
+            value={progressPercent}
+            className="w-full h-2.5 shadow-lg"
+          />
         </div>
         <div className="flex-none">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-10 w-10 p-0 bg-secondary hover:bg-secondary/50 focus:bg-secondary/50">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 p-0 bg-secondary hover:bg-secondary/50 focus:bg-secondary/50"
+              >
                 <EllipsisVertical className="h-6 w-6" />
                 <span className="sr-only">Open menu</span>
               </Button>
@@ -307,12 +423,74 @@ export default function EvaluationScreen({
         )}
       </div>
 
-      {/* Improvements List */}
+      {/* Two Column Lists */}
       {selectedSubject?.subject && selectedSubject?.class && (
-        <ImprovementList
-          subject={selectedSubject.subject}
-          classNumber={selectedSubject.class}
-        />
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-2 mb-4">
+          {/* Improvements List */}
+          <div>
+            <ImprovementList
+              subject={selectedSubject.subject}
+              classNumber={selectedSubject.class}
+            />
+          </div>
+
+          {/* All Students with Question Stats */}
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm h-fit">
+            <div className="p-3 border-b border-gray-200">
+              <h3 className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                📊 Question Count
+                {/* <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                  {studentsWithQuestionCounts.length} total
+                </span> */}
+              </h3>
+            </div>
+            <div className="max-h-48 overflow-y-auto">
+              {studentsWithQuestionCounts
+                .sort(
+                  (a, b) => (a.questionsAsked || 0) - (b.questionsAsked || 0)
+                )
+                .map((student) => (
+                  <div
+                    key={student._id}
+                    onClick={() => {
+                      if (onStudentSelect) {
+                        onStudentSelect(student);
+                      }
+                    }}
+                    className={`p-2 border-b border-gray-100 last:border-0 hover:bg-blue-50 cursor-pointer transition-colors ${
+                      currentStudent?._id === student._id
+                        ? "bg-blue-100 border-blue-200"
+                        : ""
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium text-gray-900 truncate flex-1">
+                        ({student.adNumber}){" "}{student.name}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                          {student.questionsAsked}q
+                        </span>
+                        {/* Show if student is in remaining list (available for questioning) */}
+                        {/* {allStudents.find(s => s._id === student._id) && (
+                          <span className="text-xs text-blue-500 bg-blue-100 px-1 py-1 rounded-full" title="Available for questioning">
+                            •
+                          </span>
+                        )} */}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              {studentsWithQuestionCounts.length === 0 && (
+                <div className="p-4 text-center text-gray-500 text-sm">
+                  {selectedSubject
+                    ? "Loading student data..."
+                    : "No students available"}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Student Card */}
@@ -320,10 +498,10 @@ export default function EvaluationScreen({
         key={studentKey}
         className="transform transition-transform duration-300 mb-auto"
       >
-        <StudentCard 
-          student={currentStudent} 
-          onSkip={onSkip} 
-          animate 
+        <StudentCard
+          student={currentStudent}
+          onSkip={onSkip}
+          animate
           subject={selectedSubject?.subject}
           classNumber={selectedSubject?.class}
           onImprovementAssigned={() => {
@@ -337,30 +515,51 @@ export default function EvaluationScreen({
         <h4 className="text-sm font-medium text-gray-700 mb-3">
           Evaluate Student:
         </h4>
-        <div className={`grid gap-3 ${gradingLevels.length <= 3 ? 'grid-cols-3' : gradingLevels.length === 4 ? 'grid-cols-2' : gradingLevels.length === 5 ? 'grid-cols-3' : 'grid-cols-1'}`}>
+        <div
+          className={`grid gap-3 ${
+            gradingLevels.length <= 3
+              ? "grid-cols-3"
+              : gradingLevels.length === 4
+              ? "grid-cols-2"
+              : gradingLevels.length === 5
+              ? "grid-cols-3"
+              : "grid-cols-1"
+          }`}
+        >
           {gradingLevels.map((level, index) => {
             const isSelected = currentEvaluation === level.name.toLowerCase();
             const gradientClass = getGradientClass(level.color);
             const ringClass = getRingClass(level.color);
-            
+
             return (
               <button
                 key={level.name}
-                style={{ background: `linear-gradient(to right, ${level.color}80, ${level.color})`}}
-                className={`flex flex-col items-center p-3 rounded-xl shadow-lg transition-all ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
+                style={{
+                  background: `linear-gradient(to right, ${level.color}80, ${level.color})`,
+                }}
+                className={`flex flex-col items-center p-3 rounded-xl shadow-lg transition-all ${
+                  isSaving ? "opacity-50 cursor-not-allowed" : ""
+                }`}
                 onClick={() => {
                   if (isSaving) return;
                   const evaluation = level.name.toLowerCase();
                   console.log("Evaluating with:", evaluation, level.mark);
-                  
+
                   handleEvaluation(evaluation, level.mark);
                 }}
                 disabled={isSaving}
-              > 
-                <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1"> 
-                  <span className="text-white text-4xl">{level.emoji || getDefaultEmoji(level.name)}</span>  
-                </div>  
-                <span className="text-base font-medium text-white" style={{ textShadow: `0.5px 0.5px 2px #000` }}>{level.name}</span> 
+              >
+                <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1">
+                  <span className="text-white text-4xl">
+                    {level.emoji || getDefaultEmoji(level.name)}
+                  </span>
+                </div>
+                <span
+                  className="text-base font-medium text-white"
+                  style={{ textShadow: `0.5px 0.5px 2px #000` }}
+                >
+                  {level.name}
+                </span>
               </button>
             );
           })}
@@ -391,7 +590,7 @@ export default function EvaluationScreen({
               disabled={isSaving}
             >
               {"Bulk Eval. Entry"}
-            </Button> 
+            </Button>
             <Button
               variant="outline"
               className="flex-1 py-3 bg-red-500 shadow-md rounded-xl text-white border-0 font-medium hover:bg-destructive hover:text-white transition-colors"
@@ -400,7 +599,7 @@ export default function EvaluationScreen({
               disabled={isSaving}
             >
               {"Finish Evaluation"}
-            </Button> 
+            </Button>
             {/* <div>
               <Button
                 variant="outline"
@@ -428,13 +627,17 @@ export default function EvaluationScreen({
       </div> */}
 
       {/* Improvement Confirmation Dialog */}
-      <AlertDialog open={showImprovementConfirm} onOpenChange={setShowImprovementConfirm}>
+      <AlertDialog
+        open={showImprovementConfirm}
+        onOpenChange={setShowImprovementConfirm}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Low Performance Detected</AlertDialogTitle>
             <AlertDialogDescription>
-              {currentStudent?.name} scored {pendingEvaluation?.mark} marks, which is below 50% of the maximum possible score. 
-              Would you like to assign an improvement task to help them improve?
+              {currentStudent?.name} scored {pendingEvaluation?.mark} marks,
+              which is below 50% of the maximum possible score. Would you like
+              to assign an improvement task to help them improve?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -461,15 +664,6 @@ export default function EvaluationScreen({
       )}
 
       {/* Bulk Evaluation Modal */}
-      {/* Debug log for checking data before passing to modal */}
-      {showBulkEvaluationModal && console.log("EvaluationScreen passing to BulkModal:", {
-        selectedSubject,
-        teacherId: user?.tId || user?._id,
-        userTId: user?.tId,
-        user_Id: user?._id,
-        fullUser: user,
-        allStudentsCount: allStudents.length
-      })}
       <BulkEvaluationModal
         isOpen={showBulkEvaluationModal}
         onClose={() => setShowBulkEvaluationModal(false)}
