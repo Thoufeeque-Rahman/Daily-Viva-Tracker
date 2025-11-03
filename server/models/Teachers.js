@@ -8,6 +8,7 @@ const teacherSchema = new mongoose.Schema({
     phone: { type: String, required: true },
     role: { type: String, enum: ['teacher', 'super_admin'], default: 'teacher' },
     qualification: { type: String },
+    dateOfBirth: { type: Date, required: false }, // Optional DOB field
     subjectsTaught: [
         {
             _id: { type: mongoose.Schema.Types.ObjectId, auto: true },

@@ -14,7 +14,7 @@ if (!process.env.JWT_SECRET) {
 }
 
 const app = express();
-
+ 
 // Middleware
 app.use(
   cors({
@@ -28,7 +28,7 @@ app.use(
       'https://daily-viva-tracker.vercel.app', // Frontend Vercel deployment URL
       'https://daily-viva-tracker-3p9w.vercel.app', // Backend Vercel deployment URL
       'https://v6xrx50k-5000.inc1.devtunnels.ms',
-      'https://daily-viva-tracker-frontend-2.vercel.app',
+      'https://daily-viva-tracker-frontend-2.vercel.app', 
       // Allow any vercel.app subdomain for flexibility
       /^https:\/\/.*\.vercel\.app$/,
       /^https:\/\/daily-viva-tracker.*\.vercel\.app$/
