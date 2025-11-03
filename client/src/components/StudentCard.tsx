@@ -133,8 +133,8 @@ export default function StudentCard({
           </div>
           <div className="flex-1">
             <h3 className={`text-xl font-bold text-start`}>{student.name}</h3>
-            <div className="mt-3 w-full space-y-2 bg-white/20 p-3 rounded-xl shadow-sm">
-              <div className="flex justify-between text-sm">
+            <div className="mt-2 w-full space-y-2 bg-white/10 p-3 rounded-xl shadow-sm">
+              <div className="flex justify-between text-sm"> 
                 <span className="text-white/80">Roll Number:</span>
                 <span className={`font-medium text-white`}>
                   {student.rollNumber}
@@ -152,14 +152,14 @@ export default function StudentCard({
         <div className="w-full mt-auto flex gap-2">
           <Button
             variant="outline"
-            className="flex-1 bg-white/20 text-white rounded-md border-0 font-medium hover:bg-white/30 hover:text-white transition-colors"
+            className={`flex-1 bg-white/60 ${text} rounded-md border-0 font-medium hover:bg-white/30 hover:text-white transition-colors`}
             onClick={onSkip}
           >
             Skip <SkipForward />
           </Button>
-          <Button
+          <Button 
             variant="outline"
-            className="flex-1 bg-white/20 text-white rounded-md border-0 font-medium hover:bg-white/30 hover:text-white transition-colors"
+            className={`flex-1 bg-white/60 ${text} rounded-md border-0 font-medium hover:bg-white/30 hover:text-white transition-colors`}
             onClick={() => setIsHistoryModalOpen(true)}
             disabled={!subject || !classNumber}
           >
@@ -167,7 +167,7 @@ export default function StudentCard({
           </Button>
           <Button
             variant="outline"
-            className="flex-1 bg-white/20 text-white rounded-md border-0 font-medium hover:bg-white/30 hover:text-white transition-colors"
+            className={`flex-1 bg-white/60 ${text} rounded-md border-0 font-medium hover:bg-white/30 hover:text-white transition-colors`}
             onClick={() => setIsImprovementModalOpen(true)}
             disabled={!subject || !classNumber}
           >

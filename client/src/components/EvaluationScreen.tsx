@@ -102,6 +102,7 @@ export default function EvaluationScreen({
   const [studentsWithQuestionCounts, setStudentsWithQuestionCounts] = useState<
     (Student & { questionsAsked: number })[]
   >([]);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   // Get active grading configuration
   const { data: gradingConfig } = useActiveGradingConfig();
@@ -175,6 +176,12 @@ export default function EvaluationScreen({
     }
   };
 
+  // Refresh statistics data
+  const refreshStats = async () => {
+    setIsLoadingStats(true);
+    await Promise.all([fetchAllStudentsData(), fetchDvtMarks()]);
+  };
+
   // Filter students based on search query
   // console.log(allStudents);
   const filteredStudents = allStudents.filter((student) =>
@@ -200,19 +207,35 @@ export default function EvaluationScreen({
 
   // Helper function to handle evaluation with improvement check
   const handleEvaluation = (evaluation: string, mark: number) => {
-    if (requiresImprovement(mark) && currentStudent) {
-      // Store pending evaluation and show confirmation dialog
-      console.log("Mark requires improvement:", mark);
+    // if (requiresImprovement(mark) && currentStudent) {
+    //   // Store pending evaluation and show confirmation dialog
+    //   console.log("Mark requires improvement:", mark);
 
-      setPendingEvaluation({ evaluation, mark });
-      setShowImprovementConfirm(true);
-    } else {
-      // Direct evaluation for good marks
-      console.log("Direct evaluation - no improvement needed:", mark);
+    //   setPendingEvaluation({ evaluation, mark });
+    //   setShowImprovementConfirm(true);
+    // } else {
+    // Direct evaluation for good marks
+    console.log("Direct evaluation - no improvement needed:", mark);
 
-      onEvaluate(evaluation, mark);
-      setCurrentEvaluation(evaluation);
-    }
+    onEvaluate(evaluation, mark);
+    setCurrentEvaluation(evaluation);
+
+    // Update question count for the current student
+    updateStudentQuestionCount(currentStudent?._id);
+    // }
+  };
+
+  // Update question count for a specific student after evaluation
+  const updateStudentQuestionCount = (studentId: string | undefined) => {
+    if (!studentId) return;
+
+    setStudentsWithQuestionCounts((prev) =>
+      prev.map((student) =>
+        student._id === studentId
+          ? { ...student, questionsAsked: student.questionsAsked + 1 }
+          : student
+      )
+    );
   };
 
   // Handle improvement confirmation
@@ -226,6 +249,8 @@ export default function EvaluationScreen({
       } else {
         // No improvement needed, save evaluation immediately and move to next student
         onEvaluate(pendingEvaluation.evaluation, pendingEvaluation.mark);
+        // Update question count for the current student
+        updateStudentQuestionCount(currentStudent?._id);
         // Don't set current evaluation as it will be cleared when moving to next student
         setPendingEvaluation(null);
       }
@@ -239,6 +264,8 @@ export default function EvaluationScreen({
     if (pendingEvaluation) {
       // Now save the evaluation after improvement task is assigned and move to next student
       onEvaluate(pendingEvaluation.evaluation, pendingEvaluation.mark);
+      // Update question count for the current student
+      updateStudentQuestionCount(currentStudent?._id);
       // Don't set the current evaluation here as it will be cleared when moving to next student
       setPendingEvaluation(null);
     }
@@ -246,18 +273,28 @@ export default function EvaluationScreen({
 
   // Fetch data on component mount
   useEffect(() => {
-    fetchAllStudentsData();
-    fetchDvtMarks();
+    const loadInitialData = async () => {
+      setIsLoadingStats(true);
+      await Promise.all([fetchAllStudentsData(), fetchDvtMarks()]);
+      setIsLoadingStats(false);
+    };
+    loadInitialData();
   }, []);
 
   // Calculate students with question counts when data changes
   useEffect(() => {
-    if (!selectedSubject || !dvtMarks.length || !allStudentsData.length) return;
+    if (!selectedSubject || !allStudentsData.length) {
+      setIsLoadingStats(false);
+      return;
+    }
 
     const subject = selectedSubject.subject;
     const classNum = selectedSubject.class;
 
-    if (!subject || !classNum) return;
+    if (!subject || !classNum) {
+      setIsLoadingStats(false);
+      return;
+    }
 
     // First filter students by class (only students from the current class)
     const studentsInClass = allStudentsData.filter(
@@ -280,6 +317,7 @@ export default function EvaluationScreen({
     }));
 
     setStudentsWithQuestionCounts(studentsWithCounts);
+    setIsLoadingStats(false);
   }, [selectedSubject, dvtMarks, allStudentsData]);
 
   // Update key when student changes to trigger animation
@@ -425,7 +463,7 @@ export default function EvaluationScreen({
 
       {/* Two Column Lists */}
       {selectedSubject?.subject && selectedSubject?.class && (
-        <div className="grid grid-cols-2 md:grid-cols-2 gap-2 mb-4">
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-2 mb-6">
           {/* Improvements List */}
           <div>
             <ImprovementList
@@ -435,7 +473,7 @@ export default function EvaluationScreen({
           </div>
 
           {/* All Students with Question Stats */}
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm h-fit">
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm h-full">
             <div className="p-3 border-b border-gray-200">
               <h3 className="text-sm font-medium text-gray-900 flex items-center gap-2">
                 📊 Question Count
@@ -445,46 +483,66 @@ export default function EvaluationScreen({
               </h3>
             </div>
             <div className="max-h-48 overflow-y-auto">
-              {studentsWithQuestionCounts
-                .sort(
-                  (a, b) => (a.questionsAsked || 0) - (b.questionsAsked || 0)
-                )
-                .map((student) => (
-                  <div
-                    key={student._id}
-                    onClick={() => {
-                      if (onStudentSelect) {
-                        onStudentSelect(student);
-                      }
-                    }}
-                    className={`p-2 border-b border-gray-100 last:border-0 hover:bg-blue-50 cursor-pointer transition-colors ${
-                      currentStudent?._id === student._id
-                        ? "bg-blue-100 border-blue-200"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-medium text-gray-900 truncate flex-1">
-                        ({student.adNumber}){" "}{student.name}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                          {student.questionsAsked}q
-                        </span>
-                        {/* Show if student is in remaining list (available for questioning) */}
-                        {/* {allStudents.find(s => s._id === student._id) && (
-                          <span className="text-xs text-blue-500 bg-blue-100 px-1 py-1 rounded-full" title="Available for questioning">
-                            •
-                          </span>
-                        )} */}
+              {isLoadingStats
+                ? // Skeleton loading
+                  Array.from({ length: 8 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="p-2 border-b border-gray-100 animate-pulse"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2 flex-1">
+                          <div className="h-3 bg-gray-200 rounded w-8"></div>
+                          <div className="h-3 bg-gray-200 rounded flex-1 max-w-20"></div>
+                        </div>
+                        <div className="h-5 w-8 bg-gray-200 rounded-full"></div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              {studentsWithQuestionCounts.length === 0 && (
+                  ))
+                : studentsWithQuestionCounts
+                    .sort(
+                      (a, b) =>
+                        (a.questionsAsked || 0) - (b.questionsAsked || 0)
+                    )
+                    .map((student) => (
+                      <div
+                        key={student._id}
+                        onClick={() => {
+                          if (onStudentSelect) {
+                            onStudentSelect(student);
+                          }
+                        }}
+                        className={`p-2 border-b border-gray-100 last:border-0 hover:bg-blue-50 cursor-pointer transition-colors ${
+                          currentStudent?._id === student._id
+                            ? "bg-blue-100 border-blue-200"
+                            : ""
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-medium text-gray-900 truncate flex-1">
+                            ({student.adNumber}) {student.name}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                              {student.questionsAsked}q
+                            </span>
+                            {/* Show if student is in remaining list (available for questioning) */}
+                            {allStudents.find((s) => s._id === student._id) && (
+                              <span
+                                className="text-xs text-blue-500 bg-blue-100 px-1 py-1 rounded-full"
+                                title="Available for questioning"
+                              >
+                                •
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+              {!isLoadingStats && studentsWithQuestionCounts.length === 0 && (
                 <div className="p-4 text-center text-gray-500 text-sm">
                   {selectedSubject
-                    ? "Loading student data..."
+                    ? "No students found for this class"
                     : "No students available"}
                 </div>
               )}

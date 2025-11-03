@@ -95,13 +95,17 @@ export function ImprovementList({
 
   if (!improvements.length) {
     return (
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle className="text-sm">
-            Improvements for {subject} - Class {classNumber}
+      <Card className="h-full">
+        <CardHeader className="p-0">
+          <CardTitle className="p-3 text-sm flex items-center justify-between gap-2 border-b border-gray-200">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Improvements
+            </div>
+            <Badge variant="outline">0</Badge>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="max-h-48">
           <p className="text-sm text-gray-500 text-center py-4">
             {allImprovements.length > 0
               ? `All ${allImprovements.length} improvement tasks are completed!`
@@ -113,11 +117,13 @@ export function ImprovementList({
   }
 
   return (
-    <Card className="mb-4 h-fit">
-      <CardHeader className="p-3">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Clock className="h-4 w-4" />
-          Improvements
+    <Card className=" bg-white border border-gray-200 rounded-lg shadow-sm h-full">
+      <CardHeader className="p-0">
+        <CardTitle className="p-3 text-sm flex items-center justify-between gap-2 border-b border-gray-200">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Improvements
+          </div>
           <Badge variant="outline">{improvements.length}</Badge>
         </CardTitle>
       </CardHeader>
@@ -128,16 +134,15 @@ export function ImprovementList({
               <div
                 key={improvement._id}
                 className={`p-1 border-t ${
-                  improvement.status === "done"
-                    ? "bg-green-50"
-                    : "bg-yellow-50"
+                  improvement.status === "done" ? "bg-green-50" : "bg-yellow-50"
                 }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs font-medium text-gray-700">
-                        ({improvement.student.adNumber}) {improvement.student.name}
+                        ({improvement.student.adNumber}){" "}
+                        {improvement.student.name}
                       </span>
                       {/* <Badge
                         variant={
@@ -164,8 +169,10 @@ export function ImprovementList({
                         {/* <Calendar className="h-3 w-3" /> */}
                         Due:{" "}
                         {(() => {
-                          const d = new Date(improvement.dueDate); 
-                          return `${d.getDate()} ${d.toLocaleString(undefined, { month: "short" })}`;
+                          const d = new Date(improvement.dueDate);
+                          return `${d.getDate()} ${d.toLocaleString(undefined, {
+                            month: "short",
+                          })}`;
                         })()}
                       </div>
                     </div>
