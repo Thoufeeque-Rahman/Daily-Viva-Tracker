@@ -111,14 +111,28 @@ export function BulkEvaluationModal({
   // Handle individual student evaluation
   const handleStudentEvaluation = async (studentId: string, level: GradingLevel) => {
     if (evaluationMode === "batch") {
-      // Batch mode: just store the evaluation
-      setStudentEvaluations((prev) => ({
-        ...prev,
-        [studentId]: {
-          evaluation: level.name.toLowerCase(),
-          mark: level.mark,
-        },
-      }));
+      // Batch mode: toggle selection (select if not selected, deselect if already selected)
+      setStudentEvaluations((prev) => {
+        const currentSelection = prev[studentId];
+        const isCurrentlySelected = currentSelection?.evaluation === level.name.toLowerCase();
+        
+        if (isCurrentlySelected) {
+          // Deselect if already selected
+          return {
+            ...prev,
+            [studentId]: null,
+          };
+        } else {
+          // Select the new evaluation
+          return {
+            ...prev,
+            [studentId]: {
+              evaluation: level.name.toLowerCase(),
+              mark: level.mark,
+            },
+          };
+        }
+      });
     } else {
       // Individual mode: save immediately and remove from list
       console.log("Individual evaluation debug:", {
