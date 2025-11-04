@@ -663,19 +663,19 @@ export default function History() {
                       </div>
                     </div>
 
-                    {evaluation.punishment && (
+                    {/* {evaluation.punishment && (
                       <div className="bg-white/80 rounded-xl p-4 shadow-sm">
                         <div className="flex items-center justify-center gap-2 mb-1">
                           <MessageCircle className={`w-4 h-4 ${colors.icon}`} />
                           <p className="text-xs text-gray-500 uppercase tracking-wide">
                             Punishment
                           </p>
-                        </div>
+                        </div> 
                         <p className={`text-sm font-medium ${colors.text}`}>
                           {evaluation.punishment}
                         </p>
                       </div>
-                    )}
+                    )} */}
                   </div>
                 </Card>
               );
