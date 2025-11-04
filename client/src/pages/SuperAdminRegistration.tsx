@@ -220,8 +220,11 @@ export default function SuperAdminRegistration() {
     setIsLoading(true);
 
     try {
+      console.log('Submitting registration for token:', token);
+      console.log('Form data:', formData);
       const response = await axios.post(`/api/super-admin-registration/register-super-admin/${token}`, formData);
       const data = response.data;
+      console.log('Registration response:', data);
 
       if (data.success) {
         toast({
@@ -243,9 +246,10 @@ export default function SuperAdminRegistration() {
       }
     } catch (error) {
       console.error('Registration error:', error);
+      console.error('Error response:', error.response?.data);
       toast({
-        title: "Error",
-        description: "Network error. Please check your connection and try again.",
+        title: "Registration Failed",
+        description: error.response?.data?.error || "Network error. Please check your connection and try again.",
         variant: "destructive",
       });
     } finally {

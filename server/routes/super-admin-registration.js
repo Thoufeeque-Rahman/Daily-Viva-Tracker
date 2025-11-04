@@ -119,14 +119,50 @@ router.get('/validate-token/:token', (req, res) => {
 // Super Admin + College Registration (using one-time token)
 router.post('/register-super-admin/:token', async (req, res) => {
   try {
+    console.log('Registration request received for token:', req.params.token);
+    console.log('Current tokens in memory:', Array.from(oneTimeTokens.keys()));
     const { token } = req.params;
     const tokenData = oneTimeTokens.get(token);
     
+    console.log('Token data found:', tokenData ? 'Yes' : 'No');
+    if (tokenData) {
+      console.log('Token details:', {
+        isActive: tokenData.isActive,
+        expiresAt: tokenData.expiresAt,
+        currentTime: new Date(),
+        expired: new Date() > tokenData.expiresAt,
+        usedCount: tokenData.usedCount,
+        maxUses: tokenData.maxUses,
+        fullyUsed: tokenData.usedCount >= tokenData.maxUses
+      });
+    }
+    
     // Validate token
-    if (!tokenData || !tokenData.isActive || new Date() > tokenData.expiresAt || tokenData.usedCount >= tokenData.maxUses) {
+    if (!tokenData) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid or expired registration token'
+        error: 'Registration token not found'
+      });
+    }
+    
+    if (!tokenData.isActive) {
+      return res.status(400).json({
+        success: false,
+        error: 'Registration token has been deactivated'
+      });
+    }
+    
+    if (new Date() > tokenData.expiresAt) {
+      return res.status(400).json({
+        success: false,
+        error: 'Registration token has expired'
+      });
+    }
+    
+    if (tokenData.usedCount >= tokenData.maxUses) {
+      return res.status(400).json({
+        success: false,
+        error: 'Registration token has been fully used'
       });
     }
     
@@ -219,12 +255,14 @@ router.post('/register-super-admin/:token', async (req, res) => {
       const savedAdmin = await superAdmin.save();
       console.log(`Created super admin: ${savedAdmin.name} (ID: ${savedAdmin._id})`);
 
-      // Mark token as used
+      // Mark token as used (but keep it active for debugging)
       tokenData.usedCount += 1;
-      if (tokenData.usedCount >= tokenData.maxUses) {
-        tokenData.isActive = false;
-      }
+      // Temporarily comment out deactivation for debugging
+      // if (tokenData.usedCount >= tokenData.maxUses) {
+      //   tokenData.isActive = false;
+      // }
       oneTimeTokens.set(token, tokenData);
+      console.log('Token usage updated. Used count:', tokenData.usedCount);
 
       // Generate JWT token for immediate login
       const jwtToken = jwt.sign(
