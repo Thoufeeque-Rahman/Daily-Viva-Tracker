@@ -32,6 +32,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import axios from "@/lib/axios";
 
 interface SuperAdminRegistrationData {
   // Super Admin info
@@ -93,8 +94,11 @@ export default function SuperAdminRegistration() {
       }
 
       try {
-        const response = await fetch(`/api/super-admin-registration/validate-token/${token}`);
-        const data = await response.json();
+        console.log('Validating token:', token);
+        console.log('Backend URL:', import.meta.env.VITE_BASE_URL);
+        const response = await axios.get(`/api/super-admin-registration/validate-token/${token}`);
+        const data = response.data;
+        console.log('Token validation response:', data);
         
         if (data.valid) {
           setTokenValid(true);
@@ -109,10 +113,11 @@ export default function SuperAdminRegistration() {
         }
       } catch (error) {
         console.error('Token validation error:', error);
+        console.error('Error details:', error.response?.data);
         setTokenValid(false);
         toast({
           title: "Error",
-          description: "Failed to validate registration link",
+          description: error.response?.data?.error || "Failed to validate registration link",
           variant: "destructive",
         });
       } finally {
@@ -215,15 +220,8 @@ export default function SuperAdminRegistration() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`/api/super-admin-registration/register-super-admin/${token}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
+      const response = await axios.post(`/api/super-admin-registration/register-super-admin/${token}`, formData);
+      const data = response.data;
 
       if (data.success) {
         toast({

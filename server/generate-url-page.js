@@ -146,7 +146,10 @@ const generateUrlHtml = `
             <h3>✅ Registration URL Generated Successfully!</h3>
             <p><strong>Registration URL:</strong></p>
             <div class="url-box" id="generatedUrl"></div>
-            <button class="copy-btn" onclick="copyUrl()">📋 Copy URL</button>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="copy-btn" onclick="copyUrl()">📋 Copy URL</button>
+                <button class="copy-btn" onclick="openUrl()" style="background: #007bff;">🔗 Open URL</button>
+            </div>
             
             <div style="margin-top: 15px;">
                 <p><strong>Details:</strong></p>
@@ -221,6 +224,11 @@ const generateUrlHtml = `
                     btn.textContent = originalText;
                 }, 2000);
             });
+        }
+        
+        function openUrl() {
+            const urlText = document.getElementById('generatedUrl').textContent;
+            window.open(urlText, '_blank');
         }
     </script>
 </body>

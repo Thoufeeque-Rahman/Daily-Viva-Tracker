@@ -67,6 +67,8 @@ router.post('/generate-registration-url', async (req, res) => {
 // Validate one-time token
 router.get('/validate-token/:token', (req, res) => {
   try {
+    console.log('Token validation request received for token:', req.params.token);
+    console.log('Current tokens in memory:', Array.from(oneTimeTokens.keys()));
     const { token } = req.params;
     const tokenData = oneTimeTokens.get(token);
     
