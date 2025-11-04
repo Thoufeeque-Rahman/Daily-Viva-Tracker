@@ -33,7 +33,18 @@ router.post('/generate-registration-url', async (req, res) => {
     oneTimeTokens.set(token, tokenData);
     
     // Generate the registration URL
-    const registrationUrl = `${process.env.VITE_BASE_URL || 'http://localhost:5174'}/super-admin-registration/${token}`;
+    // Determine frontend URL based on environment
+    let frontendUrl;
+    
+    // Check if we're running on Vercel (production) by looking at host header
+    const isVercelProduction = req.headers.host && req.headers.host.includes('vercel.app');
+    
+    if (process.env.NODE_ENV === 'production' || isVercelProduction) {
+      frontendUrl = process.env.VITE_FRONT_URL_PRODUCTION || 'https://daily-viva-tracker.vercel.app';
+    } else {
+      frontendUrl = process.env.VITE_FRONT_URL || 'http://localhost:5174';
+    }
+    const registrationUrl = `${frontendUrl}/super-admin-registration/${token}`;
     
     res.json({
       success: true,
