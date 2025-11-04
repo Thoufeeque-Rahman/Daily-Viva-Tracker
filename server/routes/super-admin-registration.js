@@ -5,9 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const College = require('../models/College');
 const Teacher = require('../models/Teachers');
-
-// In-memory store for one-time tokens (in production, use Redis or database)
-const oneTimeTokens = new Map();
+const RegistrationToken = require('../models/RegistrationToken');
 
 // Generate one-time registration URL (Super Admin only can create these)
 router.post('/generate-registration-url', async (req, res) => {
@@ -20,17 +18,17 @@ router.post('/generate-registration-url', async (req, res) => {
     // Generate secure random token
     const token = crypto.randomBytes(32).toString('hex');
     
-    // Store token with expiry and usage limits
-    const tokenData = {
+    // Store token in database with expiry and usage limits
+    const registrationToken = new RegistrationToken({
       token,
-      createdAt: new Date(),
       expiresAt: new Date(Date.now() + (expiryHours * 60 * 60 * 1000)),
       maxUses,
       usedCount: 0,
       isActive: true
-    };
+    });
     
-    oneTimeTokens.set(token, tokenData);
+    await registrationToken.save();
+    console.log('Token saved to database:', token);
     
     // Generate the registration URL
     // Determine frontend URL based on environment
@@ -51,8 +49,8 @@ router.post('/generate-registration-url', async (req, res) => {
       message: 'One-time registration URL generated successfully',
       registrationUrl,
       token,
-      expiresAt: tokenData.expiresAt,
-      maxUses
+      expiresAt: registrationToken.expiresAt,
+      maxUses: registrationToken.maxUses
     });
     
   } catch (error) {
@@ -65,12 +63,17 @@ router.post('/generate-registration-url', async (req, res) => {
 });
 
 // Validate one-time token
-router.get('/validate-token/:token', (req, res) => {
+router.get('/validate-token/:token', async (req, res) => {
   try {
     console.log('Token validation request received for token:', req.params.token);
-    console.log('Current tokens in memory:', Array.from(oneTimeTokens.keys()));
     const { token } = req.params;
-    const tokenData = oneTimeTokens.get(token);
+    
+    const tokenData = await RegistrationToken.findOne({ 
+      token: token,
+      isActive: true
+    });
+    
+    console.log('Token found in database:', tokenData ? 'Yes' : 'No');
     
     if (!tokenData) {
       return res.status(404).json({
@@ -120,9 +123,12 @@ router.get('/validate-token/:token', (req, res) => {
 router.post('/register-super-admin/:token', async (req, res) => {
   try {
     console.log('Registration request received for token:', req.params.token);
-    console.log('Current tokens in memory:', Array.from(oneTimeTokens.keys()));
     const { token } = req.params;
-    const tokenData = oneTimeTokens.get(token);
+    
+    const tokenData = await RegistrationToken.findOne({ 
+      token: token,
+      isActive: true
+    });
     
     console.log('Token data found:', tokenData ? 'Yes' : 'No');
     if (tokenData) {
@@ -255,14 +261,13 @@ router.post('/register-super-admin/:token', async (req, res) => {
       const savedAdmin = await superAdmin.save();
       console.log(`Created super admin: ${savedAdmin.name} (ID: ${savedAdmin._id})`);
 
-      // Mark token as used (but keep it active for debugging)
+      // Mark token as used in database
       tokenData.usedCount += 1;
-      // Temporarily comment out deactivation for debugging
-      // if (tokenData.usedCount >= tokenData.maxUses) {
-      //   tokenData.isActive = false;
-      // }
-      oneTimeTokens.set(token, tokenData);
-      console.log('Token usage updated. Used count:', tokenData.usedCount);
+      if (tokenData.usedCount >= tokenData.maxUses) {
+        tokenData.isActive = false;
+      }
+      await tokenData.save();
+      console.log('Token usage updated in database. Used count:', tokenData.usedCount);
 
       // Generate JWT token for immediate login
       const jwtToken = jwt.sign(
@@ -344,23 +349,26 @@ router.post('/register-super-admin/:token', async (req, res) => {
 });
 
 // List active tokens (for admin management)
-router.get('/active-tokens', (req, res) => {
+router.get('/active-tokens', async (req, res) => {
   try {
-    const activeTokens = Array.from(oneTimeTokens.entries())
-      .filter(([, data]) => data.isActive && new Date() <= data.expiresAt)
-      .map(([token, data]) => ({
-        token,
-        createdAt: data.createdAt,
-        expiresAt: data.expiresAt,
-        usedCount: data.usedCount,
-        maxUses: data.maxUses,
-        usesRemaining: data.maxUses - data.usedCount
-      }));
+    const activeTokens = await RegistrationToken.find({
+      isActive: true,
+      expiresAt: { $gt: new Date() }
+    }).select('-__v');
+    
+    const formattedTokens = activeTokens.map(token => ({
+      token: token.token,
+      createdAt: token.createdAt,
+      expiresAt: token.expiresAt,
+      usedCount: token.usedCount,
+      maxUses: token.maxUses,
+      usesRemaining: token.maxUses - token.usedCount
+    }));
     
     res.json({
       success: true,
-      activeTokens,
-      count: activeTokens.length
+      activeTokens: formattedTokens,
+      count: formattedTokens.length
     });
   } catch (error) {
     console.error('Error listing active tokens:', error);
@@ -372,10 +380,11 @@ router.get('/active-tokens', (req, res) => {
 });
 
 // Deactivate a token
-router.delete('/deactivate-token/:token', (req, res) => {
+router.delete('/deactivate-token/:token', async (req, res) => {
   try {
     const { token } = req.params;
-    const tokenData = oneTimeTokens.get(token);
+    
+    const tokenData = await RegistrationToken.findOne({ token: token });
     
     if (!tokenData) {
       return res.status(404).json({
@@ -385,7 +394,7 @@ router.delete('/deactivate-token/:token', (req, res) => {
     }
     
     tokenData.isActive = false;
-    oneTimeTokens.set(token, tokenData);
+    await tokenData.save();
     
     res.json({
       success: true,
