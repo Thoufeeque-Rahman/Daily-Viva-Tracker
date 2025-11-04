@@ -117,7 +117,7 @@ export function ImprovementList({
   }
 
   return (
-    <Card className=" bg-white border border-gray-200 rounded-lg shadow-sm h-full">
+    <Card className=" bg-white border border-gray-200 rounded-2xl shadow-sm h-full">
       <CardHeader className="p-0">
         <CardTitle className="p-3 text-sm flex items-center justify-between gap-2 border-b border-gray-200">
           <div className="flex items-center gap-2">
@@ -128,13 +128,14 @@ export function ImprovementList({
         </CardTitle>
       </CardHeader>
       <CardContent className="px-0 py-0">
-        <ScrollArea className="h-48">
+        <ScrollArea className="h-48 rounded-b-2xl">
           <div className="space-y-0">
-            {improvements.map((improvement) => (
+            {improvements.map((improvement, index) => (
               <div
                 key={improvement._id}
-                className={`p-1 border-t ${
+                className={`p-1 ${
                   improvement.status === "done" ? "bg-green-50" : "bg-yellow-50"
+                } ${improvements.length === index + 1 ? "" : "border-b"
                 }`}
               >
                 <div className="flex items-start justify-between">

@@ -112,7 +112,7 @@ export default function StudentCard({
 
   return (
     <Card
-      className={`bg-gradient-to-r ${bg} shadow-xl overflow-hidden border text-white rounded-2xl mb-6 ${animationClass}`}
+      className={`bg-gradient-to-r ${bg} shadow-xl overflow-hidden border text-white rounded-3xl mb-6 ${animationClass}`}
       // style={{ height: "fit" }} 
     >
       <div className="h-full flex flex-col items-center gap-2 p-3"> 

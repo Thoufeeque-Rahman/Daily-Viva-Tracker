@@ -7,6 +7,7 @@ import {
   Star,
   Moon,
   EllipsisVertical,
+  Scroll,
 } from "lucide-react";
 import StudentCard from "./StudentCard";
 import { useEffect, useState } from "react";
@@ -40,6 +41,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { ScrollArea } from "./ui/scroll-area";
 
 interface EvaluationScreenProps {
   currentStudent: Student | undefined;
@@ -475,7 +477,7 @@ export default function EvaluationScreen({
           </div>
 
           {/* All Students with Question Stats */}
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm h-full">
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm h-full">
             <div className="p-3 border-b border-gray-200">
               <h3 className="text-sm font-medium text-gray-900 flex items-center gap-2">
                 📊 Question Count
@@ -484,71 +486,75 @@ export default function EvaluationScreen({
                 </span> */}
               </h3>
             </div>
-            <div className="max-h-48 overflow-y-auto">
-              {isLoadingStats
-                ? // Skeleton loading
-                  Array.from({ length: 8 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className="p-2 border-b border-gray-100 animate-pulse"
-                    >
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2 flex-1">
-                          <div className="h-3 bg-gray-200 rounded w-8"></div>
-                          <div className="h-3 bg-gray-200 rounded flex-1 max-w-20"></div>
-                        </div>
-                        <div className="h-5 w-8 bg-gray-200 rounded-full"></div>
-                      </div>
-                    </div>
-                  ))
-                : studentsWithQuestionCounts
-                    .sort(
-                      (a, b) =>
-                        (a.questionsAsked || 0) - (b.questionsAsked || 0)
-                    )
-                    .map((student) => (
+            <ScrollArea className="h-48 rounded-b-2xl">
+              <div className="space-y-0">
+                {isLoadingStats
+                  ? // Skeleton loading
+                    Array.from({ length: 8 }).map((_, index) => (
                       <div
-                        key={student._id}
-                        onClick={() => {
-                          if (onStudentSelect) {
-                            onStudentSelect(student);
-                          }
-                        }}
-                        className={`p-2 border-b border-gray-100 last:border-0 hover:bg-blue-50 cursor-pointer transition-colors ${
-                          currentStudent?._id === student._id
-                            ? "bg-blue-100 border-blue-200"
-                            : ""
-                        }`}
+                        key={index}
+                        className="p-2 border-b border-gray-100 animate-pulse"
                       >
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-gray-900 truncate flex-1">
-                            ({student.adNumber}) {student.name}
-                          </span>
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                              {student.questionsAsked}q
-                            </span>
-                            {/* Show if student is in remaining list (available for questioning) */}
-                            {allStudents.find((s) => s._id === student._id) && (
-                              <span
-                                className="text-xs text-blue-500 bg-blue-100 px-1 py-1 rounded-full"
-                                title="Available for questioning"
-                              >
-                                •
-                              </span>
-                            )}
+                          <div className="flex items-center gap-2 flex-1">
+                            <div className="h-3 bg-gray-200 rounded w-8"></div>
+                            <div className="h-3 bg-gray-200 rounded flex-1 max-w-20"></div>
                           </div>
+                          <div className="h-5 w-8 bg-gray-200 rounded-full"></div>
                         </div>
                       </div>
-                    ))}
-              {!isLoadingStats && studentsWithQuestionCounts.length === 0 && (
-                <div className="p-4 text-center text-gray-500 text-sm">
-                  {selectedSubject
-                    ? "No students found for this class"
-                    : "No students available"}
-                </div>
-              )}
-            </div>
+                    ))
+                  : studentsWithQuestionCounts
+                      .sort(
+                        (a, b) =>
+                          (a.questionsAsked || 0) - (b.questionsAsked || 0)
+                      )
+                      .map((student) => (
+                        <div
+                          key={student._id}
+                          onClick={() => {
+                            if (onStudentSelect) {
+                              onStudentSelect(student);
+                            }
+                          }}
+                          className={`p-2 border-b border-gray-100 last:border-0 hover:bg-blue-50 cursor-pointer transition-colors ${
+                            currentStudent?._id === student._id
+                              ? "bg-blue-100 border-blue-200"
+                              : ""
+                          }`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-medium text-gray-900 truncate flex-1">
+                              ({student.adNumber}) {student.name}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                                {student.questionsAsked}q
+                              </span>
+                              {/* Show if student is in remaining list (available for questioning) */}
+                              {allStudents.find(
+                                (s) => s._id === student._id
+                              ) && (
+                                <span
+                                  className="text-xs text-blue-500 bg-blue-100 px-1 py-1 rounded-full"
+                                  title="Available for questioning"
+                                >
+                                  •
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                {!isLoadingStats && studentsWithQuestionCounts.length === 0 && (
+                  <div className="p-4 text-center text-gray-500 text-sm">
+                    {selectedSubject
+                      ? "No students found for this class"
+                      : "No students available"}
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
           </div>
         </div>
       )}
