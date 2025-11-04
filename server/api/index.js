@@ -89,13 +89,25 @@ const gradingConfigsRoutes = require("../routes/gradingConfigs");
 const exportsRoutes = require("../routes/exports");
 const superadminRoutes = require("../routes/superadmin");
 const improvementsRoutes = require("../routes/improvements");
-
+const adminStatsRoutes = require("../routes/adminStats");
+const bulkImportRoutes = require("../routes/bulkImport");
+const collegesRoutes = require("../routes/colleges");
+const registrationRoutes = require("../routes/registration");
+const superAdminRegistrationRoutes = require("../routes/super-admin-registration");
 
 // Import auth middleware
 const { authenticateToken } = require('../middleware/auth');
 
 // Public routes
 app.use("/api/teachers", teachersRoutes); // Keep this public for login/register
+app.use("/api/registration", registrationRoutes); // College registration system
+app.use("/api/super-admin-registration", superAdminRegistrationRoutes); // One-time super admin registration
+
+// URL Generator Page (for initial setup)
+const { generateUrlHtml } = require('../generate-url-page');
+app.get('/generate-super-admin-url', (req, res) => {
+  res.send(generateUrlHtml);
+});
 
 // Protected routes - require JWT authentication
 app.use("/api/students", authenticateToken, studentRoutes);
@@ -107,6 +119,9 @@ app.use("/api/grading-configs", authenticateToken, gradingConfigsRoutes);
 app.use("/api/exports", authenticateToken, exportsRoutes);
 app.use("/api/superadmin", authenticateToken, superadminRoutes); // This route also has isSuperAdmin middleware inside
 app.use("/api/improvements", authenticateToken, improvementsRoutes);
+app.use("/api/admin", authenticateToken, adminStatsRoutes); // Admin statistics routes
+app.use("/api/bulk-import", authenticateToken, bulkImportRoutes); // Bulk import routes
+app.use("/api/colleges", authenticateToken, collegesRoutes); // College management routes
 
 app.use(express.static(path.join(__dirname, 'public')));
 

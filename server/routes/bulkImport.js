@@ -49,7 +49,7 @@ router.get("/colleges-for-import", authenticateToken, isSuperAdmin, async (req, 
 });
 
 // Generate Excel template for Teachers
-router.get("/template/teachers", isSuperAdmin, async (req, res) => {
+router.get("/template/teachers", async (req, res) => {
   try {
     // Create sample data for template
     const sampleData = [
@@ -123,7 +123,7 @@ router.get("/template/teachers", isSuperAdmin, async (req, res) => {
 });
 
 // Generate Excel template for Students
-router.get("/template/students", isSuperAdmin, async (req, res) => {
+router.get("/template/students", async (req, res) => {
   try {
     // Create sample data for template
     const sampleData = [

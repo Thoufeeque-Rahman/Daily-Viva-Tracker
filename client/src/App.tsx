@@ -22,11 +22,13 @@ import GradingConfig from "@/pages/admin/GradingConfig";
 import AdminStats from "@/pages/admin/AdminStats";
 import ManageTeachers from "@/pages/admin/ManageTeachers";
 import ManageStudents from "@/pages/admin/ManageStudents";
+import SuperAdminRegistration from "@/pages/SuperAdminRegistration";
 
 function Router() {
   return ( // TODO: Add a loading state
     <Switch>
       <Route path="/auth" component={AuthPage} />
+      <Route path="/super-admin-registration/:token" component={SuperAdminRegistration} />
       <SuperAdminRoute path="/admin/teachers/:id" component={TeacherDetails} />
       <SuperAdminRoute path="/admin/teachers" component={ManageTeachers} />
       <SuperAdminRoute path="/admin/students" component={ManageStudents} />

@@ -4,6 +4,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const College = require('../models/College');
 const Teacher = require('../models/Teachers');
+const { authenticateToken } = require('../middleware/auth');
+const { isSuperAdmin } = require('../middleware/isSuperAdmin');
 
 // Check if registration is enabled
 const REGISTRATION_ENABLED = process.env.REGISTRATION_ENABLED === 'true' || false;
@@ -185,15 +187,21 @@ router.get('/registration-status', (req, res) => {
 });
 
 // Enable/disable registration (super admin only)
-router.post('/toggle-registration', async (req, res) => {
+router.post('/toggle-registration', authenticateToken, isSuperAdmin, async (req, res) => {
   try {
-    // This would require super admin authentication
-    // For now, just return the current status
+    const { enabled } = req.body;
+    
+    // In a real production environment, you'd update a database setting
+    // For now, we'll create a dynamic toggle system
+    process.env.REGISTRATION_ENABLED = enabled ? 'true' : 'false';
+    
     res.json({
-      message: 'Registration toggle requires super admin privileges',
-      currentStatus: REGISTRATION_ENABLED
+      success: true,
+      message: `Registration ${enabled ? 'enabled' : 'disabled'} successfully`,
+      registrationEnabled: enabled
     });
   } catch (error) {
+    console.error('Error toggling registration:', error);
     res.status(500).json({ error: 'Failed to toggle registration status' });
   }
 });
