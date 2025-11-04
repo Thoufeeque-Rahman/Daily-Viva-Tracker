@@ -15,9 +15,12 @@ const gradingConfigSchema = new mongoose.Schema({
   collegeId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'College',
-    required: true
+    required: false  // Can be null for global configs
   },
-  isActive: { type: Boolean, default: false },
+  isActive: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'College'
+  }],  // Array of college IDs that can use this config
   createdAt: { type: Date, default: Date.now }
 });
 

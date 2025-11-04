@@ -62,6 +62,13 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import axios from "@/lib/axios";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { SubjectSelector } from "@/components/SubjectSelector";
 
 interface Teacher {
   _id: string;
@@ -73,6 +80,11 @@ interface Teacher {
   dateOfBirth?: string;
   active: boolean;
   joinedAt: string;
+  subjectsTaught?: Array<{
+    _id: string;
+    subject: string;
+    class: number;
+  }>;
 }
 
 interface BulkImportResult {
@@ -133,6 +145,10 @@ export default function ManageTeachers() {
     dateOfBirth: "",
     role: "teacher"
   });
+
+  // Lesson management state
+  const [selectedSubjectForTeacher, setSelectedSubjectForTeacher] = useState("");
+  const [teacherClassNumber, setTeacherClassNumber] = useState("");
 
   // Check if user is super admin
   useEffect(() => {
@@ -357,6 +373,11 @@ export default function ManageTeachers() {
       dateOfBirth: teacher.dateOfBirth ? teacher.dateOfBirth.split('T')[0] : "",
       role: teacher.role || "teacher",
     });
+    
+    // Reset lesson form fields
+    setSelectedSubjectForTeacher("");
+    setTeacherClassNumber("");
+    
     setShowEditDialog(true);
   };
 
@@ -409,6 +430,104 @@ export default function ManageTeachers() {
   const handleViewClick = (teacher: Teacher) => {
     setSelectedTeacher(teacher);
     setShowViewDialog(true);
+  };
+
+  // Handle add lesson to teacher
+  const handleAddLessonToTeacher = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    if (!teacherClassNumber || !selectedSubjectForTeacher || !selectedTeacher) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await axios.post(`/api/teachers/${selectedTeacher._id}/subjects`, {
+        class: Number(teacherClassNumber),
+        subject: selectedSubjectForTeacher,
+      });
+
+      if (response.status === 200 || response.status === 201) {
+        // Update the teacher in local state
+        const updatedTeacher = response.data;
+        setTeachers(prevTeachers => 
+          prevTeachers.map(teacher => 
+            teacher._id === selectedTeacher._id ? updatedTeacher : teacher
+          )
+        );
+        setFilteredTeachers(prevFiltered => 
+          prevFiltered.map(teacher => 
+            teacher._id === selectedTeacher._id ? updatedTeacher : teacher
+          )
+        );
+        setSelectedTeacher(updatedTeacher);
+
+        toast({
+          title: "Success",
+          description: "Lesson added successfully",
+        });
+
+        // Reset form
+        setTeacherClassNumber("");
+        setSelectedSubjectForTeacher("");
+      }
+    } catch (error) {
+      console.error("Add lesson error:", error);
+      toast({
+        title: "Error",
+        description:
+          "Failed to add lesson: " +
+          ((error as any)?.response?.data?.error ||
+            (error as any)?.message ||
+            "Unknown error"),
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle remove lesson from teacher
+  const handleRemoveLessonFromTeacher = async (subjectId: string) => {
+    if (!selectedTeacher) return;
+
+    try {
+      const response = await axios.delete(`/api/teachers/${selectedTeacher._id}/subjects/${subjectId}`);
+
+      if (response.status === 200) {
+        // Update the teacher in local state
+        const updatedTeacher = response.data;
+        setTeachers(prevTeachers => 
+          prevTeachers.map(teacher => 
+            teacher._id === selectedTeacher._id ? updatedTeacher : teacher
+          )
+        );
+        setFilteredTeachers(prevFiltered => 
+          prevFiltered.map(teacher => 
+            teacher._id === selectedTeacher._id ? updatedTeacher : teacher
+          )
+        );
+        setSelectedTeacher(updatedTeacher);
+
+        toast({
+          title: "Success",
+          description: "Lesson removed successfully",
+        });
+      }
+    } catch (error) {
+      console.error("Remove lesson error:", error);
+      toast({
+        title: "Error",
+        description:
+          "Failed to remove lesson: " +
+          ((error as any)?.response?.data?.error ||
+            (error as any)?.message ||
+            "Unknown error"),
+        variant: "destructive",
+      });
+    }
   };
 
   // Show access denied for non-super admins
@@ -857,106 +976,212 @@ export default function ManageTeachers() {
 
         {/* Edit Teacher Dialog */}
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Teacher</DialogTitle>
               <DialogDescription>
-                Update teacher information below.
+                Update teacher information and manage lessons.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-name">Name *</Label>
-                  <Input
-                    id="edit-name"
-                    value={editTeacher.name}
-                    onChange={(e) =>
-                      setEditTeacher({ ...editTeacher, name: e.target.value })
-                    }
-                    placeholder="Teacher name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-email">Email *</Label>
-                  <Input
-                    id="edit-email"
-                    type="email"
-                    value={editTeacher.email}
-                    onChange={(e) =>
-                      setEditTeacher({ ...editTeacher, email: e.target.value })
-                    }
-                    placeholder="Email address"
-                  />
-                </div>
-              </div>
+            <Tabs defaultValue="info" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="info">Teacher Info</TabsTrigger>
+                <TabsTrigger value="lessons">Lessons</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="info" className="space-y-4 mt-6">
+                <div className="grid gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-name">Name *</Label>
+                      <Input
+                        id="edit-name"
+                        value={editTeacher.name}
+                        onChange={(e) =>
+                          setEditTeacher({ ...editTeacher, name: e.target.value })
+                        }
+                        placeholder="Teacher name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-email">Email *</Label>
+                      <Input
+                        id="edit-email"
+                        type="email"
+                        value={editTeacher.email}
+                        onChange={(e) =>
+                          setEditTeacher({ ...editTeacher, email: e.target.value })
+                        }
+                        placeholder="Email address"
+                      />
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-phone">Phone *</Label>
-                  <Input
-                    id="edit-phone"
-                    value={editTeacher.phone}
-                    onChange={(e) =>
-                      setEditTeacher({ ...editTeacher, phone: e.target.value })
-                    }
-                    placeholder="Phone number"
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-phone">Phone *</Label>
+                      <Input
+                        id="edit-phone"
+                        value={editTeacher.phone}
+                        onChange={(e) =>
+                          setEditTeacher({ ...editTeacher, phone: e.target.value })
+                        }
+                        placeholder="Phone number"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-role">Role</Label>
+                      <Select
+                        value={editTeacher.role}
+                        onValueChange={(value) =>
+                          setEditTeacher({ ...editTeacher, role: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="teacher">Teacher</SelectItem>
+                          <SelectItem value="super_admin">Super Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-qualification">Qualification</Label>
+                    <Textarea
+                      id="edit-qualification"
+                      value={editTeacher.qualification}
+                      onChange={(e) =>
+                        setEditTeacher({ ...editTeacher, qualification: e.target.value })
+                      }
+                      placeholder="Educational qualification"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-dateOfBirth">Date of Birth</Label>
+                    <Input
+                      id="edit-dateOfBirth"
+                      type="date"
+                      value={editTeacher.dateOfBirth}
+                      onChange={(e) =>
+                        setEditTeacher({ ...editTeacher, dateOfBirth: e.target.value })
+                      }
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-role">Role</Label>
-                  <Select
-                    value={editTeacher.role}
-                    onValueChange={(value) =>
-                      setEditTeacher({ ...editTeacher, role: value })
-                    }
+
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowEditDialog(false)}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="teacher">Teacher</SelectItem>
-                      <SelectItem value="super_admin">Super Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleUpdateTeacher}>Update Teacher</Button>
                 </div>
-              </div>
+              </TabsContent>
 
-              <div className="space-y-2">
-                <Label htmlFor="edit-qualification">Qualification</Label>
-                <Input
-                  id="edit-qualification"
-                  value={editTeacher.qualification}
-                  onChange={(e) =>
-                    setEditTeacher({ ...editTeacher, qualification: e.target.value })
-                  }
-                  placeholder="Educational qualification"
-                />
-              </div>
+              <TabsContent value="lessons" className="space-y-4 mt-6">
+                {selectedTeacher && (
+                  <div>
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold mb-2">Current Lessons</h3>
+                      {selectedTeacher.subjectsTaught && selectedTeacher.subjectsTaught.length > 0 ? (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Class</TableHead>
+                              <TableHead>Lesson</TableHead>
+                              <TableHead>Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {selectedTeacher.subjectsTaught
+                              .sort((a, b) => b.class - a.class)
+                              .map((subject: any) => (
+                                <TableRow key={subject._id}>
+                                  <TableCell>{subject.class}</TableCell>
+                                  <TableCell>{subject.subject}</TableCell>
+                                  <TableCell>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="destructive" size="sm">
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            This will remove {subject.subject} for class{" "}
+                                            {subject.class} from {selectedTeacher.name}'s lessons. 
+                                            This action cannot be undone.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() => handleRemoveLessonFromTeacher(subject._id)}
+                                            className="bg-red-500 hover:bg-red-600"
+                                          >
+                                            Remove
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                          </TableBody>
+                        </Table>
+                      ) : (
+                        <div className="text-center py-8 text-gray-500">
+                          <GraduationCap className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+                          <p className="text-sm">No lessons assigned yet.</p>
+                        </div>
+                      )}
+                    </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="edit-dateOfBirth">Date of Birth</Label>
-                <Input
-                  id="edit-dateOfBirth"
-                  type="date"
-                  value={editTeacher.dateOfBirth}
-                  onChange={(e) =>
-                    setEditTeacher({ ...editTeacher, dateOfBirth: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowEditDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleUpdateTeacher}>Update Teacher</Button>
-            </div>
+                    <div className="border-t pt-4">
+                      <h3 className="text-lg font-semibold mb-4">Add New Lesson</h3>
+                      <form onSubmit={handleAddLessonToTeacher} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="teacher-class">Class</Label>
+                            <Input
+                              id="teacher-class"
+                              type="number"
+                              placeholder="Class number (1-10)"
+                              value={teacherClassNumber}
+                              onChange={(e) => setTeacherClassNumber(e.target.value)}
+                              min="1"
+                              max="10"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <SubjectSelector
+                              selectedSubject={selectedSubjectForTeacher}
+                              onSubjectSelect={setSelectedSubjectForTeacher}
+                              label="Lesson"
+                              placeholder="Select or add lesson..."
+                            />
+                          </div>
+                        </div>
+                        <Button type="submit" className="w-full">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Lesson
+                        </Button>
+                      </form>
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </DialogContent>
         </Dialog>
 

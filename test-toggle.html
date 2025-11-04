@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Grading Config Toggle</title>
+</head>
+<body>
+    <h1>Grading Configuration Toggle Test</h1>
+    <div id="result"></div>
+    
+    <script>
+        // Test the grading config data structure
+        async function testGradingConfigs() {
+            try {
+                // First try to get configs (might need auth)
+                const response = await fetch('/api/grading-configs');
+                
+                if (response.status === 401) {
+                    document.getElementById('result').innerHTML = `
+                        <p style="color: red;">Authentication required. Please log in to the main app first.</p>
+                        <p><a href="/">Go to Login</a></p>
+                    `;
+                    return;
+                }
+                
+                const configs = await response.json();
+                
+                let html = '<h2>Current Grading Configurations:</h2>';
+                configs.forEach(config => {
+                    const activeText = Array.isArray(config.isActive) ? 
+                        `Array: [${config.isActive.join(', ')}]` : 
+                        `Boolean: ${config.isActive}`;
+                    
+                    html += `
+                        <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+                            <h3>${config.name}</h3>
+                            <p><strong>ID:</strong> ${config._id}</p>
+                            <p><strong>isActive:</strong> ${activeText}</p>
+                            <button onclick="toggleConfig('${config._id}')">Toggle Active</button>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('result').innerHTML = html;
+                
+            } catch (error) {
+                document.getElementById('result').innerHTML = `
+                    <p style="color: red;">Error: ${error.message}</p>
+                `;
+            }
+        }
+        
+        async function toggleConfig(configId) {
+            try {
+                const response = await fetch(`/api/grading-configs/${configId}/activate`, {
+                    method: 'PUT'
+                });
+                
+                const result = await response.json();
+                console.log('Toggle result:', result);
+                
+                // Refresh the list
+                testGradingConfigs();
+                
+            } catch (error) {
+                console.error('Toggle error:', error);
+                alert('Error toggling config: ' + error.message);
+            }
+        }
+        
+        // Load configs on page load
+        testGradingConfigs();
+    </script>
+</body>
+</html>

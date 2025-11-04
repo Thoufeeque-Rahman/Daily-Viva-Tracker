@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { GraduationCap, ArrowRight, User } from "lucide-react";
+import { GraduationCap, ArrowRight, User, Plus } from "lucide-react";
 import { ClassInfo, SubjectInfo } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import axios from "@/lib/axios";
@@ -15,6 +15,17 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import DvtMarksTable from "./DvtMarksTable2";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { SubjectSelector } from "./SubjectSelector";
 
 interface StartScreenProps {
   selectedClass: ClassInfo | null;
@@ -35,9 +46,14 @@ export default function StartScreen({
   isProceedEnabled,
   isLoading = false,
 }: StartScreenProps) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, updateUser } = useAuth();
   const [dvtMarks, setDvtMarks] = useState<any[]>([]);
   const baseUrl = import.meta.env.VITE_BASE_URL;
+
+  // Add lesson dialog state
+  const [showAddLessonDialog, setShowAddLessonDialog] = useState(false);
+  const [selectedSubjectForAdd, setSelectedSubjectForAdd] = useState("");
+  const [classNumber, setClassNumber] = useState("");
 
   useEffect(() => {
     fetchDvtMarks();
@@ -62,6 +78,54 @@ export default function StartScreen({
       toast({
         title: "Error",
         description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddLesson = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    if (!classNumber || !selectedSubjectForAdd) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await axios.post(`/api/teachers/${user?._id}/subjects`, {
+        class: Number(classNumber),
+        subject: selectedSubjectForAdd,
+      });
+
+      if (response.status === 200 || response.status === 201) {
+        // Update user state with the new subject
+        if (user && response.data) {
+          updateUser(response.data);
+        }
+
+        toast({
+          title: "Success",
+          description: "Lesson added successfully",
+        });
+
+        // Reset form
+        setClassNumber("");
+        setSelectedSubjectForAdd("");
+        setShowAddLessonDialog(false);
+      }
+    } catch (error) {
+      console.error("Add lesson error:", error);
+      toast({
+        title: "Error",
+        description:
+          "Failed to add lesson: " +
+          ((error as any)?.response?.data?.error ||
+            (error as any)?.message ||
+            "Unknown error"),
         variant: "destructive",
       });
     }
@@ -207,7 +271,76 @@ export default function StartScreen({
               </button>
             );
           })}
+          
+          {/* Add Lesson Button - Show when no lessons or always show */}
+          <Dialog open={showAddLessonDialog} onOpenChange={setShowAddLessonDialog}>
+            <DialogTrigger asChild>
+              <button
+                className="border-2 border-dashed border-gray-300 text-gray-500 hover:border-blue-500 hover:text-blue-500 font-medium rounded-lg py-3 px-4 text-center focus:outline-none transition-all flex items-center justify-center gap-2"
+                disabled={isLoading}
+              >
+                <Plus className="h-4 w-4" />
+                Add Lesson
+              </button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Plus className="h-5 w-5" />
+                  Add New Lesson
+                </DialogTitle>
+                <DialogDescription>
+                  Add a new lesson to your teaching subjects.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <form onSubmit={handleAddLesson} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="class">Class</Label>
+                  <Input
+                    id="class"
+                    type="number"
+                    placeholder="Enter class number (1-10)"
+                    value={classNumber}
+                    onChange={(e) => setClassNumber(e.target.value)}
+                    min="1"
+                    max="10"
+                  />
+                </div>
+                
+                <SubjectSelector
+                  selectedSubject={selectedSubjectForAdd}
+                  onSubjectSelect={setSelectedSubjectForAdd}
+                  label="Lesson"
+                  placeholder="Select or add lesson..."
+                />
+                
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowAddLessonDialog(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Lesson
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
+        
+        {/* Show message when no lessons are available */}
+        {sortedSubjects.length === 0 && (
+          <div className="text-center py-6 text-gray-500">
+            <GraduationCap className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+            <p className="text-sm">No lessons assigned yet.</p>
+            <p className="text-xs text-gray-400 mt-1">Click "Add Lesson" to get started.</p>
+          </div>
+        )}
       </div>
 
       <DvtMarksTable />

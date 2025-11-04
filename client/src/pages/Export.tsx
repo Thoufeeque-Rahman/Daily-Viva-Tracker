@@ -47,9 +47,7 @@ export default function Export() {
   const fetchExportOptions = async () => {
     try {
       const response = await fetch(`${baseUrl}/api/exports/options`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        credentials: "include",
       });
 
       if (response.ok) {
@@ -78,9 +76,7 @@ export default function Export() {
       if (filters.endDate) queryParams.append('endDate', filters.endDate);
 
       const response = await fetch(`${baseUrl}/api/exports/${type}?${queryParams}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        credentials: "include",
       });
 
       if (response.ok) {

@@ -85,7 +85,7 @@ interface GradingConfig {
   name: string;
   description?: string;
   levels: Level[];
-  isActive: boolean;
+  isActive: string[] | boolean; // Array of college IDs or legacy boolean
 }
 
 export default function SuperAdminDashboard() {
@@ -202,6 +202,23 @@ export default function SuperAdminDashboard() {
         variant: "destructive",
       });
     }
+  };
+
+  // Helper function to check if a grading config is active for current user's college
+  const isConfigActiveForUser = (config: GradingConfig): boolean => {
+    if (!user?.collegeId) return false;
+    
+    // Handle legacy boolean format
+    if (typeof config.isActive === 'boolean') {
+      return config.isActive;
+    }
+    
+    // Handle new array format - check if user's college ID is in the array
+    if (Array.isArray(config.isActive)) {
+      return config.isActive.includes(user.collegeId);
+    }
+    
+    return false;
   };
 
   const handleCreateSemester = async () => {
@@ -444,7 +461,7 @@ export default function SuperAdminDashboard() {
                               </Label>
                               <Switch
                                 id={`active-${config._id}`}
-                                checked={config.isActive}
+                                checked={isConfigActiveForUser(config)}
                                 onCheckedChange={(checked) =>
                                   handleActivateGradingConfig(config._id)
                                 }

@@ -171,10 +171,10 @@ export default function CollegeManagement() {
           </p>
         </div>
         
-        <Button onClick={handleCreateCollege} className="gap-2">
+        {/* <Button onClick={handleCreateCollege} className="gap-2">
           <Plus className="h-4 w-4" />
           Add College
-        </Button>
+        </Button> */}
       </div>
 
       {/* Search */}
@@ -267,12 +267,12 @@ export default function CollegeManagement() {
               <p className="text-gray-500 mb-4">
                 {searchTerm ? "No colleges match your search." : "Get started by creating your first college."}
               </p>
-              {!searchTerm && (
+              {/* {!searchTerm && (
                 <Button onClick={handleCreateCollege} className="gap-2">
                   <Plus className="h-4 w-4" />
                   Add College
                 </Button>
-              )}
+              )} */}
             </div>
           ) : (
             <Table>

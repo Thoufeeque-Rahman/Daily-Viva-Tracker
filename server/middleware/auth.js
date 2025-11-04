@@ -37,17 +37,32 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
+const mongoose = require('mongoose');
+
 // Middleware to add college filter to queries
 const addCollegeFilter = (req, res, next) => {
   // ALL users (including super admins) should be restricted to their college data
   if (req.user && req.user.collegeId) {
-    // Use the user's college ID for filtering
-    req.collegeFilter = { collegeId: req.user.collegeId };
-    console.log('College filter applied:', req.collegeFilter);
+    // Convert collegeId to proper ObjectId if it's a string
+    let collegeId = req.user.collegeId;
+    
+    // If it's a string that looks like an ObjectId, convert it
+    if (typeof collegeId === 'string' && mongoose.Types.ObjectId.isValid(collegeId)) {
+      collegeId = new mongoose.Types.ObjectId(collegeId);
+    }
+    
+    req.collegeFilter = { collegeId: collegeId };
+    console.log('College filter applied:', req.collegeFilter, 'Type:', typeof collegeId);
   } else if (req.collegeId) {
     // Fallback to legacy collegeId from middleware
-    req.collegeFilter = { collegeId: req.collegeId };
-    console.log('College filter applied (fallback):', req.collegeFilter);
+    let collegeId = req.collegeId;
+    
+    if (typeof collegeId === 'string' && mongoose.Types.ObjectId.isValid(collegeId)) {
+      collegeId = new mongoose.Types.ObjectId(collegeId);
+    }
+    
+    req.collegeFilter = { collegeId: collegeId };
+    console.log('College filter applied (fallback):', req.collegeFilter, 'Type:', typeof collegeId);
   } else {
     // If no college ID is available, this might be an error state
     console.warn('No college ID available for user:', req.user?.id);

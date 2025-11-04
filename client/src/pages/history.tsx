@@ -430,8 +430,8 @@ export default function History() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
+        credentials: "include",
         body: JSON.stringify({
           studentId: selectedStudent._id,
           subject: subject,

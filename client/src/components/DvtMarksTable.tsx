@@ -74,18 +74,16 @@ const DvtMarksTable: React.FC = () => {
     setError(null);
     try {
       const response = await fetch(`${baseUrl}/api/dvtmarks/dvtmarksbydate`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        credentials: "include", // Use cookies instead of Bearer token
       });
       if (!response.ok) throw new Error("Failed to fetch DVT marks");
       const data = await response.json();
-      console.log(data.data);
+      console.log("DVT marks data:", data.data);
       const sortedData = data.data.sort(
         (a: DayData, b: DayData) =>
           new Date(b.date).getTime() - new Date(a.date).getTime()
       );
-      console.log("sortedData:", sortedData);
+      console.log("Sorted DVT data:", sortedData);
 
       setTableData(sortedData);
     } catch (error) {

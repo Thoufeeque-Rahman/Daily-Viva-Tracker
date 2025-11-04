@@ -100,13 +100,17 @@ router.get("/stats/overall", isSuperAdmin, addCollegeFilter, async (req, res) =>
 });
 
 // Get class-wise statistics
-router.get("/stats/classes", isSuperAdmin, async (req, res) => {
+router.get("/stats/classes", isSuperAdmin, addCollegeFilter, async (req, res) => {
   try {
     const { range = "all" } = req.query;
     const dateFilter = getDateRangeFilter(range);
+    const collegeFilter = req.collegeFilter || {};
 
-    // Get all students grouped by class
+    console.log("Class stats college filter:", collegeFilter);
+
+    // Get all students grouped by class from user's college only
     const studentsByClass = await Students.aggregate([
+      { $match: collegeFilter },
       {
         $group: {
           _id: "$class",
@@ -167,13 +171,16 @@ router.get("/stats/classes", isSuperAdmin, async (req, res) => {
 });
 
 // Get teacher-wise statistics
-router.get("/stats/teachers", isSuperAdmin, async (req, res) => {
+router.get("/stats/teachers", isSuperAdmin, addCollegeFilter, async (req, res) => {
   try {
     const { range = "all" } = req.query;
     const dateFilter = getDateRangeFilter(range);
+    const collegeFilter = req.collegeFilter || {};
 
-    // Get all teachers
-    const teachers = await Teachers.find({});
+    console.log("Teacher stats college filter:", collegeFilter);
+
+    // Get all teachers from user's college only
+    const teachers = await Teachers.find(collegeFilter).select("name email _id");
 
     const teacherStats = [];
 
@@ -247,8 +254,11 @@ router.get("/stats/teachers", isSuperAdmin, async (req, res) => {
 });
 
 // Get detailed analytics (placeholder for future implementation)
-router.get("/stats/analytics", isSuperAdmin, async (req, res) => {
+router.get("/stats/analytics", isSuperAdmin, addCollegeFilter, async (req, res) => {
   try {
+    const collegeFilter = req.collegeFilter || {};
+    console.log("Analytics stats college filter:", collegeFilter);
+    
     // Placeholder for advanced analytics
     // This can include trends, performance over time, etc.
     res.json({
