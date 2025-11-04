@@ -273,12 +273,12 @@ export default function StartScreen({
           })}
           
           {/* Add Lesson Button - Show when no lessons or always show */}
-          <Dialog open={showAddLessonDialog} onOpenChange={setShowAddLessonDialog}>
+          {sortedSubjects.length === 0 && (<Dialog open={showAddLessonDialog} onOpenChange={setShowAddLessonDialog}>
             <DialogTrigger asChild>
               <button
                 className="border-2 border-dashed border-gray-300 text-gray-500 hover:border-blue-500 hover:text-blue-500 font-medium rounded-lg py-3 px-4 text-center focus:outline-none transition-all flex items-center justify-center gap-2"
                 disabled={isLoading}
-              >
+                >
                 <Plus className="h-4 w-4" />
                 Add Lesson
               </button>
@@ -330,7 +330,7 @@ export default function StartScreen({
                 </div>
               </form>
             </DialogContent>
-          </Dialog>
+          </Dialog>)}
         </div>
         
         {/* Show message when no lessons are available */}
