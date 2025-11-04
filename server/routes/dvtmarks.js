@@ -1,7 +1,7 @@
 const express = require("express");
 const DvtMarks = require("../models/DvtMarks");
 const Student = require("../models/Students");
-const { authenticateToken } = require("../middleware/auth");
+const { authenticateToken, addCollegeFilter } = require("../middleware/auth");
 const router = express.Router();
 
 // Get all DvtMarks
@@ -23,7 +23,7 @@ router.get("/", async (req, res) => {
 });
 
 // Create a new DvtMark
-router.post("/", authenticateToken, async (req, res) => {
+router.post("/", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
     const { studentId, subject, mark, class: classNumber, adNumber, tId } = req.body;
     console.log(req.body);
@@ -31,6 +31,16 @@ router.post("/", authenticateToken, async (req, res) => {
     const student = await Student.findOne({ _id: studentId });
     if (!student) {
       return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Get college ID from authenticated user
+    let collegeId;
+    if (req.user.role === 'super_admin') {
+      // For super admin, use the student's college or the provided college ID
+      collegeId = req.body.collegeId || student.collegeId;
+    } else {
+      // For regular users, use their college ID
+      collegeId = req.user.collegeId;
     }
 
     // Create the mark object
@@ -42,6 +52,7 @@ router.post("/", authenticateToken, async (req, res) => {
       studentId: student._id,
       adNumber,
       tId,
+      collegeId,
     }; 
 
     // Create a new DvtMarks document
@@ -53,6 +64,7 @@ router.post("/", authenticateToken, async (req, res) => {
       date: new Date(),
       adNumber,
       tId,
+      collegeId,
     });
 
     // Save the new DvtMarks document
@@ -135,7 +147,7 @@ router.delete("/:id", authenticateToken, async (req, res) => {
 });
 
 // Update a DvtMark
-router.put("/:id", authenticateToken, async (req, res) => {
+router.put("/:id", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
     const { mark } = req.body;
 
@@ -358,7 +370,7 @@ router.get("/dvtmarksbydate", authenticateToken, async (req, res) => {
 });
 
 // Bulk Evaluation - Batch Mode (save multiple students at once)
-router.post("/bulk-batch", authenticateToken, async (req, res) => {
+router.post("/bulk-batch", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
     const { evaluations, subject, class: classNumber, tId } = req.body;
     
@@ -385,6 +397,16 @@ router.post("/bulk-batch", authenticateToken, async (req, res) => {
           continue;
         }
 
+        // Get college ID from authenticated user or student
+        let collegeId;
+        if (req.user.role === 'super_admin') {
+          // For super admin, use the student's college or the provided college ID
+          collegeId = req.body.collegeId || student.collegeId;
+        } else {
+          // For regular users, use their college ID
+          collegeId = req.user.collegeId;
+        }
+
         // Create a new DvtMarks document
         const newDvtMark = new DvtMarks({
           studentId: student._id,
@@ -394,6 +416,7 @@ router.post("/bulk-batch", authenticateToken, async (req, res) => {
           date: new Date(),
           adNumber: student.adNumber,
           tId,
+          collegeId,
         });
 
         const savedMark = await newDvtMark.save();
@@ -440,7 +463,7 @@ router.post("/bulk-batch", authenticateToken, async (req, res) => {
 });
 
 // Bulk Evaluation - Individual Mode (save single student immediately)
-router.post("/bulk-individual", authenticateToken, async (req, res) => {
+router.post("/bulk-individual", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
     const { studentId, evaluation, mark, subject, class: classNumber, tId } = req.body;
     
@@ -461,6 +484,16 @@ router.post("/bulk-individual", authenticateToken, async (req, res) => {
       });
     }
 
+    // Get college ID from authenticated user or student
+    let collegeId;
+    if (req.user.role === 'super_admin') {
+      // For super admin, use the student's college or the provided college ID
+      collegeId = req.body.collegeId || student.collegeId;
+    } else {
+      // For regular users, use their college ID
+      collegeId = req.user.collegeId;
+    }
+
     // Create a new DvtMarks document
     const newDvtMark = new DvtMarks({
       studentId: student._id,
@@ -470,6 +503,7 @@ router.post("/bulk-individual", authenticateToken, async (req, res) => {
       date: new Date(),
       adNumber: student.adNumber,
       tId,
+      collegeId,
     });
 
     const savedMark = await newDvtMark.save();

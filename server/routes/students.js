@@ -129,7 +129,7 @@ router.put("/:id", authenticateToken, isSuperAdmin, async (req, res) => {
 
     const updateData = {
       name,
-      fullName: fullName || name,
+      fullName: fullName || name, 
       rollNumber,
       adNumber,
       class: studentClass,

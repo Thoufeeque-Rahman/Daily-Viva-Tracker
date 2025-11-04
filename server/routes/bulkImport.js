@@ -4,8 +4,10 @@ const multer = require("multer");
 const xlsx = require("xlsx");
 const Teachers = require("../models/Teachers");
 const Students = require("../models/Students");
+const College = require("../models/College");
 const { isSuperAdmin } = require("../middleware/isSuperAdmin");
 const { addCollegeFilter } = require("../middleware/auth");
+const { authenticateToken } = require("../middleware/auth");
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
@@ -21,6 +23,28 @@ const upload = multer({
   },
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
+  }
+});
+
+// Get available colleges for bulk import (Super Admin only)
+router.get("/colleges-for-import", authenticateToken, isSuperAdmin, async (req, res) => {
+  try {
+    const colleges = await College.find({ isActive: true })
+      .select('_id name address')
+      .sort({ name: 1 });
+    
+    res.json({
+      success: true,
+      colleges: colleges,
+      message: `Found ${colleges.length} active colleges`
+    });
+  } catch (error) {
+    console.error('Error fetching colleges for import:', error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching colleges",
+      error: error.message
+    });
   }
 });
 
@@ -228,19 +252,33 @@ router.post("/bulk-import/teachers", isSuperAdmin, addCollegeFilter, upload.sing
         // Get college ID from authenticated user
         let collegeId;
         if (req.user.role === 'super_admin') {
-          // Super admin must specify college ID in request body or use default
+          // Super admin can specify college ID in request body, or we'll use default logic
           collegeId = req.body.collegeId;
+          
           if (!collegeId) {
-            results.failed.push({
-              row: i + 2,
-              data: row,
-              error: "College ID is required for super admin bulk import"
-            });
-            continue;
+            // If no college ID specified, use the super admin's college (if they have one)
+            // or find the first active college in the system
+            if (req.user.collegeId) {
+              collegeId = req.user.collegeId;
+            } else {
+              // Find the first active college
+              const College = require('../models/College');
+              const firstCollege = await College.findOne({ isActive: true }).sort({ createdAt: 1 });
+              if (firstCollege) {
+                collegeId = firstCollege._id;
+              } else {
+                results.failed.push({
+                  row: i + 2,
+                  data: row,
+                  error: "No active college found in system. Please create a college first."
+                });
+                continue;
+              }
+            }
           }
         } else {
           // Regular admin uses their own college ID
-          collegeId = req.collegeId;
+          collegeId = req.collegeId || req.user.collegeId;
         }
 
         // Create teacher object
@@ -371,19 +409,33 @@ router.post("/bulk-import/students", isSuperAdmin, addCollegeFilter, upload.sing
         // Get college ID from authenticated user
         let collegeId;
         if (req.user.role === 'super_admin') {
-          // Super admin must specify college ID in request body or use default
+          // Super admin can specify college ID in request body, or we'll use default logic
           collegeId = req.body.collegeId;
+          
           if (!collegeId) {
-            results.failed.push({
-              row: i + 2,
-              data: row,
-              error: "College ID is required for super admin bulk import"
-            });
-            continue;
+            // If no college ID specified, use the super admin's college (if they have one)
+            // or find the first active college in the system
+            if (req.user.collegeId) {
+              collegeId = req.user.collegeId;
+            } else {
+              // Find the first active college
+              const College = require('../models/College');
+              const firstCollege = await College.findOne({ isActive: true }).sort({ createdAt: 1 });
+              if (firstCollege) {
+                collegeId = firstCollege._id;
+              } else {
+                results.failed.push({
+                  row: i + 2,
+                  data: row,
+                  error: "No active college found in system. Please create a college first."
+                });
+                continue;
+              }
+            }
           }
         } else {
           // Regular admin uses their own college ID
-          collegeId = req.collegeId;
+          collegeId = req.collegeId || req.user.collegeId;
         }
 
         // Create student object
