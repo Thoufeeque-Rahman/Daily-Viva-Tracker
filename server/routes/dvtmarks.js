@@ -5,10 +5,10 @@ const { authenticateToken, addCollegeFilter } = require("../middleware/auth");
 const router = express.Router();
 
 // Get all DvtMarks
-router.get("/", async (req, res) => {
+router.get("/", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
-    // console.log("Fetching all DvtMarks...");
-    const dvtMarks = await DvtMarks.find({}).sort({ date: -1 }); // Sort by date descending
+    console.log("Fetching DvtMarks with college filter:", req.collegeFilter);
+    const dvtMarks = await DvtMarks.find(req.collegeFilter || {}).sort({ date: -1 }); // Sort by date descending
 
     // console.log(`Found ${dvtMarks.length} DvtMarks documents`);
     if (dvtMarks.length > 0) {

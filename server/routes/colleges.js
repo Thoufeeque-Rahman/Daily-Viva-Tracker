@@ -1,23 +1,38 @@
 const express = require('express');
 const router = express.Router();
 const College = require('../models/College');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, addCollegeFilter } = require('../middleware/auth');
 const { isSuperAdmin } = require('../middleware/isSuperAdmin');
 
-// Get all colleges (super admin only)
-router.get('/', authenticateToken, isSuperAdmin, async (req, res) => {
+// Get user's college (super admin can only see their own college)
+router.get('/', authenticateToken, async (req, res) => {
   try {
-    const colleges = await College.find({ isActive: true }).sort({ createdAt: -1 });
-    res.json(colleges);
+    if (!req.user.collegeId) {
+      return res.status(400).json({ error: 'No college associated with this user' });
+    }
+    
+    // User can only see their own college
+    const college = await College.findById(req.user.collegeId);
+    if (!college || !college.isActive) {
+      return res.status(404).json({ error: 'College not found' });
+    }
+    
+    // Return as array for compatibility with existing frontend code
+    res.json([college]);
   } catch (error) {
-    console.error('Error fetching colleges:', error);
-    res.status(500).json({ error: 'Failed to fetch colleges' });
+    console.error('Error fetching college:', error);
+    res.status(500).json({ error: 'Failed to fetch college' });
   }
 });
 
-// Get specific college by ID (super admin only)
-router.get('/:id', authenticateToken, isSuperAdmin, async (req, res) => {
+// Get specific college by ID (user can only access their own college)
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
+    // Check if user is trying to access their own college
+    if (req.params.id !== req.user.collegeId.toString()) {
+      return res.status(403).json({ error: 'Access denied: You can only access your own college' });
+    }
+    
     const college = await College.findById(req.params.id);
     if (!college || !college.isActive) {
       return res.status(404).json({ error: 'College not found' });
@@ -78,9 +93,13 @@ router.post('/', authenticateToken, isSuperAdmin, async (req, res) => {
   }
 });
 
-// Update college (super admin only)
+// Update college (super admin can only update their own college)
 router.put('/:id', authenticateToken, isSuperAdmin, async (req, res) => {
   try {
+    // Check if user is trying to update their own college
+    if (req.params.id !== req.user.collegeId.toString()) {
+      return res.status(403).json({ error: 'Access denied: You can only update your own college' });
+    }
     const {
       name,
       address,
@@ -156,10 +175,15 @@ router.delete('/:id', authenticateToken, isSuperAdmin, async (req, res) => {
   }
 });
 
-// Get college stats (super admin only)
+// Get college stats (super admin can only see their own college stats)
 router.get('/:id/stats', authenticateToken, isSuperAdmin, async (req, res) => {
   try {
     const collegeId = req.params.id;
+    
+    // Check if user is trying to access their own college stats
+    if (collegeId !== req.user.collegeId.toString()) {
+      return res.status(403).json({ error: 'Access denied: You can only access your own college statistics' });
+    }
     
     // Import models here to avoid circular dependencies
     const Student = require('../models/Students');

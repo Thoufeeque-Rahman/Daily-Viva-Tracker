@@ -5,6 +5,7 @@ const Students = require("../models/Students");
 const Teachers = require("../models/Teachers");
 const Subjects = require("../models/Subjects");
 const Improvements = require("../models/Improvements");
+const { addCollegeFilter } = require("../middleware/auth");
 const { isSuperAdmin } = require("../middleware/isSuperAdmin");
 
 // Helper function to get date range filter
@@ -47,20 +48,23 @@ const calculateGradePercentage = (mark) => {
 };
 
 // Get overall system statistics
-router.get("/stats/overall", isSuperAdmin, async (req, res) => {
+router.get("/stats/overall", isSuperAdmin, addCollegeFilter, async (req, res) => {
   try {
     const { range = "all" } = req.query;
     const dateFilter = getDateRangeFilter(range);
+    const collegeFilter = req.collegeFilter || {};
 
-    // Get basic counts
+    console.log("Admin stats college filter:", collegeFilter);
+
+    // Get basic counts with college filter
     const [totalStudents, totalTeachers, totalSubjects] = await Promise.all([
-      Students.countDocuments({}),
-      Teachers.countDocuments({}),
-      Subjects.countDocuments({})
+      Students.countDocuments(collegeFilter),
+      Teachers.countDocuments(collegeFilter),
+      Subjects.countDocuments(collegeFilter)
     ]);
 
-    // Get evaluation counts
-    const totalEvaluations = await DvtMarks.countDocuments(dateFilter);
+    // Get evaluation counts with college and date filters
+    const totalEvaluations = await DvtMarks.countDocuments({ ...dateFilter, ...collegeFilter });
 
     // Get evaluations for different time periods
     const todayFilter = getDateRangeFilter("today");

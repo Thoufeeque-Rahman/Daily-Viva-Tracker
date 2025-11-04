@@ -25,8 +25,8 @@ const authenticateToken = (req, res, next) => {
     }
     req.user = user;
     
-    // Make college ID available in requests (except for super admins)
-    if (user.role !== 'super_admin' && user.collegeId) {
+    // Make college ID available in requests for ALL users (including super admins)
+    if (user.collegeId) {
       req.collegeId = user.collegeId;
     }
     
@@ -39,18 +39,18 @@ const authenticateToken = (req, res, next) => {
 
 // Middleware to add college filter to queries
 const addCollegeFilter = (req, res, next) => {
-  // If user is super admin, don't add college filter unless specified
-  if (req.user && req.user.role === 'super_admin') {
-    // Super admin can access all data or specify college in query params
-    if (req.query.collegeId) {
-      req.collegeFilter = { collegeId: req.query.collegeId };
-    } else {
-      req.collegeFilter = {}; // No filter for super admin by default
-    }
+  // ALL users (including super admins) should be restricted to their college data
+  if (req.user && req.user.collegeId) {
+    // Use the user's college ID for filtering
+    req.collegeFilter = { collegeId: req.user.collegeId };
+    console.log('College filter applied:', req.collegeFilter);
   } else if (req.collegeId) {
-    // Regular users only see their college data
+    // Fallback to legacy collegeId from middleware
     req.collegeFilter = { collegeId: req.collegeId };
+    console.log('College filter applied (fallback):', req.collegeFilter);
   } else {
+    // If no college ID is available, this might be an error state
+    console.warn('No college ID available for user:', req.user?.id);
     req.collegeFilter = {};
   }
   next();

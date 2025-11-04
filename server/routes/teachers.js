@@ -277,9 +277,10 @@ router.get('/me', authenticateToken, async (req, res) => {
 });
 
 // Get all teachers (admin only)
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, addCollegeFilter, async (req, res) => {
   try {
-    const teachers = await Teachers.find().select('-password');
+    console.log("Fetching teachers with college filter:", req.collegeFilter);
+    const teachers = await Teachers.find(req.collegeFilter || {}).select('-password');
     res.json(teachers);
   } catch (error) {
     console.error('Fetch teachers error:', error);
@@ -288,9 +289,10 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get teacher by ID
-router.get('/:teacherId', authenticateToken, async (req, res) => {
+router.get('/:teacherId', authenticateToken, addCollegeFilter, async (req, res) => {
   try {
-    const teacher = await Teachers.findById(req.params.teacherId).select('-password');
+    const query = { ...req.collegeFilter, _id: req.params.teacherId };
+    const teacher = await Teachers.findOne(query).select('-password');
     if (!teacher) {
       return res.status(404).json({ error: 'Teacher not found' });
     }

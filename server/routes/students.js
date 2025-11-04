@@ -51,9 +51,10 @@ router.post("/", addCollegeFilter, async (req, res) => {
 });
 
 // Get all students (All authenticated users can view)
-router.get("/", authenticateToken, async (req, res) => {
+router.get("/", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
-    const students = await Student.find(req.collegeFilter);
+    console.log("Fetching students with college filter:", req.collegeFilter);
+    const students = await Student.find(req.collegeFilter || {});
     res.json(students);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -61,7 +62,7 @@ router.get("/", authenticateToken, async (req, res) => {
 });
 
 // Get students by class (All authenticated users can view)
-router.get("/class/:class", authenticateToken, async (req, res) => {
+router.get("/class/:class", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
     const query = { ...req.collegeFilter, class: req.params.class };
     const students = await Student.find(query);
