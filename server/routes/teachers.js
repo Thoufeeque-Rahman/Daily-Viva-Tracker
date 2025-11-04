@@ -4,7 +4,7 @@ const Teachers = require('../models/Teachers');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const { authenticateToken, addCollegeFilter } = require('../middleware/auth');
-const isSuperAdmin = require('../middleware/isSuperAdmin');
+const { isSuperAdmin } = require('../middleware/isSuperAdmin');
 
 // Public routes
 // Registration - Disabled, use /api/registration/register-college instead (Super Admin Only for creating new teachers)
