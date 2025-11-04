@@ -12,6 +12,11 @@ const gradingConfigSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String },
   levels: [levelSchema],
+  collegeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'College',
+    required: true
+  },
   isActive: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });

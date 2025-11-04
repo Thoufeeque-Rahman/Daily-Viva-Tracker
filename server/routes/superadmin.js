@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Teacher = require('../models/Teachers');
 const { authenticateToken } = require('../middleware/auth');
-const isSuperAdmin = require('../middleware/isSuperAdmin');
+const { isSuperAdmin } = require('../middleware/isSuperAdmin');
 
 // Get all teachers
 router.get('/teachers', authenticateToken, isSuperAdmin, async (req, res) => {

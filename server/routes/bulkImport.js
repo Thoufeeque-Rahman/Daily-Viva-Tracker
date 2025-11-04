@@ -4,7 +4,8 @@ const multer = require("multer");
 const xlsx = require("xlsx");
 const Teachers = require("../models/Teachers");
 const Students = require("../models/Students");
-const isSuperAdmin = require("../middleware/isSuperAdmin");
+const { isSuperAdmin } = require("../middleware/isSuperAdmin");
+const { addCollegeFilter } = require("../middleware/auth");
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
@@ -167,7 +168,7 @@ router.get("/template/students", isSuperAdmin, async (req, res) => {
 });
 
 // Bulk import Teachers from Excel
-router.post("/bulk-import/teachers", isSuperAdmin, upload.single('excel'), async (req, res) => {
+router.post("/bulk-import/teachers", isSuperAdmin, addCollegeFilter, upload.single('excel'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
@@ -224,6 +225,24 @@ router.post("/bulk-import/teachers", isSuperAdmin, upload.single('excel'), async
           continue;
         }
 
+        // Get college ID from authenticated user
+        let collegeId;
+        if (req.user.role === 'super_admin') {
+          // Super admin must specify college ID in request body or use default
+          collegeId = req.body.collegeId;
+          if (!collegeId) {
+            results.failed.push({
+              row: i + 2,
+              data: row,
+              error: "College ID is required for super admin bulk import"
+            });
+            continue;
+          }
+        } else {
+          // Regular admin uses their own college ID
+          collegeId = req.collegeId;
+        }
+
         // Create teacher object
         const teacherData = {
           name: row.name.trim(),
@@ -232,7 +251,8 @@ router.post("/bulk-import/teachers", isSuperAdmin, upload.single('excel'), async
           password: row.password.toString(),
           qualification: row.qualification ? row.qualification.trim() : undefined,
           role: row.role && ['teacher', 'super_admin'].includes(row.role) ? row.role : 'teacher',
-          dateOfBirth: row.dateOfBirth ? new Date(row.dateOfBirth) : undefined
+          dateOfBirth: row.dateOfBirth ? new Date(row.dateOfBirth) : undefined,
+          collegeId: collegeId
         };
 
         // Validate dateOfBirth if provided
@@ -277,7 +297,7 @@ router.post("/bulk-import/teachers", isSuperAdmin, upload.single('excel'), async
 });
 
 // Bulk import Students from Excel
-router.post("/bulk-import/students", isSuperAdmin, upload.single('excel'), async (req, res) => {
+router.post("/bulk-import/students", isSuperAdmin, addCollegeFilter, upload.single('excel'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
@@ -348,6 +368,24 @@ router.post("/bulk-import/students", isSuperAdmin, upload.single('excel'), async
           continue;
         }
 
+        // Get college ID from authenticated user
+        let collegeId;
+        if (req.user.role === 'super_admin') {
+          // Super admin must specify college ID in request body or use default
+          collegeId = req.body.collegeId;
+          if (!collegeId) {
+            results.failed.push({
+              row: i + 2,
+              data: row,
+              error: "College ID is required for super admin bulk import"
+            });
+            continue;
+          }
+        } else {
+          // Regular admin uses their own college ID
+          collegeId = req.collegeId;
+        }
+
         // Create student object
         const studentData = {
           name: row.name.trim(),
@@ -355,7 +393,8 @@ router.post("/bulk-import/students", isSuperAdmin, upload.single('excel'), async
           rollNumber: parseInt(row.rollNumber),
           adNumber: parseInt(row.adNumber),
           class: parseInt(row.class),
-          dateOfBirth: row.dateOfBirth ? new Date(row.dateOfBirth) : undefined
+          dateOfBirth: row.dateOfBirth ? new Date(row.dateOfBirth) : undefined,
+          collegeId: collegeId
         };
 
         // Validate dateOfBirth if provided

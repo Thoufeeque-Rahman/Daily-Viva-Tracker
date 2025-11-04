@@ -46,6 +46,7 @@ import {
   Upload,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import CollegeManagement from "./CollegeManagement";
 
 interface Semester {
   _id: string;
@@ -385,7 +386,7 @@ export default function SuperAdminDashboard() {
   }
 
   return (
-    <div className="mx-auto max-w-md bg-white min-h-screen shadow-lg relative h-full flex flex-col">
+    <div className="mx-auto max-w-7xl bg-white min-h-screen shadow-lg relative h-full flex flex-col">
       <Header showContext={true} onHomeClick={() => {}} />
       <main className="relative h-full">
         <div className="flex-1 p-6">
@@ -395,345 +396,27 @@ export default function SuperAdminDashboard() {
             </h1>
           </div>
 
-          <Tabs defaultValue="teachers" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="teachers">Teachers</TabsTrigger>
+          <Tabs defaultValue="colleges" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="colleges">Colleges</TabsTrigger>
+              {/* <TabsTrigger value="teachers">Teachers</TabsTrigger> */}
               <TabsTrigger value="grading">Grading</TabsTrigger>
-              <TabsTrigger value="semesters" disabled>
+              {/* <TabsTrigger value="semesters" disabled>
                 Semesters
               </TabsTrigger>
               <TabsTrigger value="subjects" disabled>
                 Subjects
-              </TabsTrigger>
+              </TabsTrigger> */}
             </TabsList>
 
-            {/* Teachers Tab */}
-            <TabsContent value="teachers" className="space-y-6">
-              {/* <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Create New Teacher
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="teacher-name">Name</Label>
-                      <Input
-                        id="teacher-name"
-                        value={newTeacher.name}
-                        onChange={(e) =>
-                          setNewTeacher({ ...newTeacher, name: e.target.value })
-                        }
-                        placeholder="Teacher name"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="teacher-email">Email</Label>
-                      <Input
-                        id="teacher-email"
-                        type="email"
-                        value={newTeacher.email}
-                        onChange={(e) =>
-                          setNewTeacher({
-                            ...newTeacher,
-                            email: e.target.value,
-                          })
-                        }
-                        placeholder="teacher@example.com"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="teacher-phone">Phone</Label>
-                      <Input
-                        id="teacher-phone"
-                        value={newTeacher.phone}
-                        onChange={(e) =>
-                          setNewTeacher({
-                            ...newTeacher,
-                            phone: e.target.value,
-                          })
-                        }
-                        placeholder="Phone number"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="teacher-password">Password</Label>
-                      <Input
-                        id="teacher-password"
-                        type="password"
-                        value={newTeacher.password}
-                        onChange={(e) =>
-                          setNewTeacher({
-                            ...newTeacher,
-                            password: e.target.value,
-                          })
-                        }
-                        placeholder="Password"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="teacher-qualification">Qualification</Label>
-                    <Textarea
-                      id="teacher-qualification"
-                      value={newTeacher.qualification}
-                      onChange={(e) =>
-                        setNewTeacher({
-                          ...newTeacher,
-                          qualification: e.target.value,
-                        })
-                      }
-                      placeholder="Educational qualifications..."
-                      rows={2}
-                    />
-                  </div>
-                  <Button onClick={handleCreateTeacher} className="w-full">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Teacher
-                  </Button>
-                </CardContent>
-              </Card> */}
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Teachers</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {/* <a href="/admin/teachers">teachers</a> */}
-                  <div className="space-y-2">
-                    {teachers.map((teacher) => (
-                      <div
-                        key={teacher._id}
-                        onClick={() => {
-                          if (teacher._id) {
-                            console.log("Navigating to teacher:", teacher._id);
-                            navigate(`/admin/teachers/${teacher._id}`);
-                          } else {
-                            console.error("Missing teacher ID");
-                            toast({
-                              title: "Error",
-                              description: "Teacher ID is missing",
-                              variant: "destructive",
-                            });
-                          }
-                        }}
-                        className="flex justify-between items-center p-3 border rounded"
-                      >
-                        <div>
-                          <h3 className="font-medium">{teacher.name}</h3>
-                          <p className="text-sm text-gray-600">
-                            {teacher.email}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={
-                              teacher.role === "super_admin"
-                                ? "destructive"
-                                : "default"
-                            }
-                          >
-                            {teacher.role === "super_admin"
-                              ? "Super Admin"
-                              : "Teacher"}
-                          </Badge>
-                          <Badge
-                            variant={teacher.active ? "default" : "secondary"}
-                          >
-                            {teacher.active ? "Active" : "Inactive"}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Semesters Tab */}
-            <TabsContent value="semesters" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Create New Semester
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="semester-name">Semester Name</Label>
-                      <Input
-                        id="semester-name"
-                        value={newSemester.name}
-                        onChange={(e) =>
-                          setNewSemester({
-                            ...newSemester,
-                            name: e.target.value,
-                          })
-                        }
-                        placeholder="e.g., Spring 2024"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="start-date">Start Date</Label>
-                      <Input
-                        id="start-date"
-                        type="date"
-                        value={newSemester.startDate}
-                        onChange={(e) =>
-                          setNewSemester({
-                            ...newSemester,
-                            startDate: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="end-date">End Date</Label>
-                      <Input
-                        id="end-date"
-                        type="date"
-                        value={newSemester.endDate}
-                        onChange={(e) =>
-                          setNewSemester({
-                            ...newSemester,
-                            endDate: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-                  <Button onClick={handleCreateSemester} className="w-full">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Semester
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Current Semesters</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {semesters.map((semester) => (
-                      <div
-                        key={semester._id}
-                        className="flex justify-between items-center p-3 border rounded"
-                      >
-                        <div>
-                          <h3 className="font-medium">{semester.name}</h3>
-                          <p className="text-sm text-gray-600">
-                            {new Date(semester.startDate).toLocaleDateString()}{" "}
-                            - {new Date(semester.endDate).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={
-                              semester.isActive ? "default" : "secondary"
-                            }
-                          >
-                            {semester.isActive ? "Active" : "Inactive"}
-                          </Badge>
-                          {!semester.isActive && (
-                            <Button
-                              size="sm"
-                              onClick={() =>
-                                handleActivateSemester(semester._id)
-                              }
-                            >
-                              Activate
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Subjects Tab */}
-            <TabsContent value="subjects" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BookOpen className="h-5 w-5" />
-                    Create New Subject
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="subject-name">Subject Name</Label>
-                    <Input
-                      id="subject-name"
-                      value={newSubject.name}
-                      onChange={(e) =>
-                        setNewSubject({ ...newSubject, name: e.target.value })
-                      }
-                      placeholder="e.g., Mathematics"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="subject-description">Description</Label>
-                    <Textarea
-                      id="subject-description"
-                      value={newSubject.description}
-                      onChange={(e) =>
-                        setNewSubject({
-                          ...newSubject,
-                          description: e.target.value,
-                        })
-                      }
-                      placeholder="Subject description..."
-                      rows={3}
-                    />
-                  </div>
-                  <Button onClick={handleCreateSubject} className="w-full">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Subject
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Available Subjects</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {subjects.map((subject) => (
-                      <div
-                        key={subject._id}
-                        className="flex justify-between items-center p-3 border rounded"
-                      >
-                        <div>
-                          <h3 className="font-medium">{subject.name}</h3>
-                          {subject.description && (
-                            <p className="text-sm text-gray-600">
-                              {subject.description}
-                            </p>
-                          )}
-                        </div>
-                        <Badge
-                          variant={subject.isActive ? "default" : "secondary"}
-                        >
-                          {subject.isActive ? "Active" : "Inactive"}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Colleges Tab */}
+            <TabsContent value="colleges" className="space-y-6">
+              <CollegeManagement />
             </TabsContent>
 
             {/* Grading Tab */}
             <TabsContent value="grading" className="space-y-6">
-              <Card>
+              <Card className="mx-auto max-w-2xl">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span>Grading Configurations</span>

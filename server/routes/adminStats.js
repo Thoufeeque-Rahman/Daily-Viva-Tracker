@@ -5,7 +5,7 @@ const Students = require("../models/Students");
 const Teachers = require("../models/Teachers");
 const Subjects = require("../models/Subjects");
 const Improvements = require("../models/Improvements");
-const isSuperAdmin = require("../middleware/isSuperAdmin");
+const { isSuperAdmin } = require("../middleware/isSuperAdmin");
 
 // Helper function to get date range filter
 const getDateRangeFilter = (range) => {

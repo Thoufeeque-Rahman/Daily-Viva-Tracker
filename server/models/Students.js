@@ -10,6 +10,11 @@ const studentSchema = new mongoose.Schema({
   rollNumber: Number,
   adNumber: Number,
   class: Number,
+  collegeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'College',
+    required: true
+  },
   dateOfBirth: { type: Date, required: false }, // Optional DOB field
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },

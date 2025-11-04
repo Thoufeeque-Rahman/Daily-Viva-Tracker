@@ -15,6 +15,11 @@ const dvtMarksSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  collegeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'College',
+    required: true
+  },
   mark: {
     type: Number,
     required: true,

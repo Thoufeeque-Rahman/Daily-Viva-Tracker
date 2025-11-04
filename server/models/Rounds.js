@@ -8,6 +8,11 @@ const RoundsSchema = new mongoose.Schema(
     studentsNotAsked: { type: [String], default: [] },
     studentsAsked: { type: [String], default: [] },
     totalStudents: { type: Number, required: true },
+    collegeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'College',
+      required: true
+    },
     isCompleted: { type: Boolean, default: false },
     startedAt: { type: Date, required: true },
     endedAt: { type: Date, default: null },

@@ -3,11 +3,17 @@ const jwt = require('jsonwebtoken');
 const Teachers = require('../models/Teachers');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, addCollegeFilter } = require('../middleware/auth');
 
 // Public routes
-// Registration
+// Registration - Disabled, use /api/registration/register-college instead
 router.post('/register', async (req, res) => {
+  return res.status(403).json({ 
+    error: 'Public registration is disabled. Please use the college registration system or contact an administrator.' 
+  });
+  
+  // Original registration code commented out
+  /*
   try {
     const { email, password, name, phone, qualification, dateOfBirth } = req.body;
     
@@ -43,7 +49,8 @@ router.post('/register', async (req, res) => {
       { 
         id: teacher._id, 
         email: teacher.email,
-        role: teacher.role // Include role in token
+        role: teacher.role, // Include role in token
+        collegeId: teacher.collegeId // Include college ID in token
       },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
@@ -70,6 +77,7 @@ router.post('/register', async (req, res) => {
     console.error('Registration error:', error);
     res.status(500).json({ error: error.message });
   }
+  */
 });
 
 // Login
@@ -99,7 +107,8 @@ router.post('/login', async (req, res) => {
       { 
         id: teacher._id, 
         email: teacher.email,
-        role: teacher.role // Include role in token
+        role: teacher.role, // Include role in token
+        collegeId: teacher.collegeId // Include college ID in token
       },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
@@ -150,6 +159,71 @@ router.post('/logout', (req, res) => {
 });
 
 // Protected routes - require authentication
+
+// Create new teacher (for admins)
+router.post('/create', authenticateToken, addCollegeFilter, async (req, res) => {
+  try {
+    const { name, email, phone, password, qualification, role, dateOfBirth } = req.body;
+    
+    // Validate required fields
+    if (!name || !email || !phone || !password) {
+      return res.status(400).json({ error: 'Name, email, phone, and password are required' });
+    }
+
+    // Check if teacher already exists
+    const existingTeacher = await Teachers.findOne({ email });
+    if (existingTeacher) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    // Get college ID - only admins from same college or super admins can create teachers
+    let collegeId;
+    if (req.user.role === 'super_admin') {
+      // Super admin can create teachers for any college, but must specify college ID
+      collegeId = req.body.collegeId;
+      if (!collegeId) {
+        return res.status(400).json({ error: 'College ID is required when creating teachers as super admin' });
+      }
+    } else {
+      // Regular admin creates teachers for their own college
+      collegeId = req.collegeId;
+      if (!collegeId) {
+        return res.status(400).json({ error: 'College ID not found in your account' });
+      }
+    }
+
+    // Create teacher data
+    const teacherData = {
+      name,
+      email,
+      phone,
+      password, // Will be hashed by pre-save middleware
+      qualification,
+      role: role && ['teacher'].includes(role) ? role : 'teacher', // Prevent creating super_admin via this route
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+      collegeId,
+      active: true,
+      joinedAt: new Date()
+    };
+
+    const teacher = new Teachers(teacherData);
+    await teacher.save();
+
+    // Return teacher data (excluding password)
+    const teacherResponse = teacher.toObject();
+    delete teacherResponse.password;
+    teacherResponse.tId = teacherResponse._id.toString();
+
+    res.status(201).json({
+      message: 'Teacher created successfully',
+      teacher: teacherResponse
+    });
+  } catch (error) {
+    console.error('Teacher creation error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Change Password
 router.put('/change-password', authenticateToken, async (req, res) => {
   try {

@@ -5,6 +5,12 @@ interface Subject {
   class: number;
 }
 
+interface College {
+  _id: string;
+  name: string;
+  address?: string;
+}
+
 interface User {
   id: number;
   _id: number;
@@ -18,6 +24,8 @@ interface User {
   qualification?: string;
   joinedAt?: string;
   active?: boolean;
+  collegeId?: string;
+  college?: College;
 }
 
 interface AuthContextType {

@@ -1,4 +1,4 @@
-module.exports = (req, res, next) => {
+const isSuperAdmin = (req, res, next) => {
     if (req.user && req.user.role === 'super_admin') {  // Changed from 'superadmin' to 'super_admin'
         next();
     } else {
@@ -6,3 +6,5 @@ module.exports = (req, res, next) => {
         res.status(403).json({ message: 'Access denied. Super admin rights required.' });
     }
 };
+
+module.exports = { isSuperAdmin };

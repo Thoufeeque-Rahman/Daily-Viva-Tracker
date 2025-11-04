@@ -19,6 +19,11 @@ const improvementSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  collegeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'College',
+    required: true
+  },
   description: {
     type: String,
     required: true

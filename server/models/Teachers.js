@@ -9,6 +9,14 @@ const teacherSchema = new mongoose.Schema({
     role: { type: String, enum: ['teacher', 'super_admin'], default: 'teacher' },
     qualification: { type: String },
     dateOfBirth: { type: Date, required: false }, // Optional DOB field
+    collegeId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'College',
+        required: function() {
+            // Super admin doesn't need college ID, but teachers do
+            return this.role !== 'super_admin';
+        }
+    },
     subjectsTaught: [
         {
             _id: { type: mongoose.Schema.Types.ObjectId, auto: true },

@@ -3,9 +3,10 @@ const router = express.Router();
 const mongoose = require("mongoose");
 const Student = require("../models/Students");
 const DvtMarks = require("../models/DvtMarks");
+const { addCollegeFilter } = require('../middleware/auth');
 
 // Add a new student
-router.post("/", async (req, res) => {
+router.post("/", addCollegeFilter, async (req, res) => {
   try {
     const { name, fullName, rollNumber, adNumber, class: studentClass, dateOfBirth } = req.body;
     
@@ -14,12 +15,24 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ message: "Missing required fields: name, rollNumber, adNumber, and class are required" });
     }
 
+    // For regular teachers, use their college ID; for super admin, require college ID in request
+    let collegeId;
+    if (req.user.role === 'super_admin') {
+      collegeId = req.body.collegeId;
+      if (!collegeId) {
+        return res.status(400).json({ message: "College ID is required" });
+      }
+    } else {
+      collegeId = req.collegeId;
+    }
+
     const studentData = {
       name,
       fullName: fullName || name,
       rollNumber,
       adNumber,
       class: studentClass,
+      collegeId,
     };
 
     // Only add dateOfBirth if it's provided
@@ -37,9 +50,9 @@ router.post("/", async (req, res) => {
 });
 
 // Get all students
-router.get("/", async (req, res) => {
+router.get("/", addCollegeFilter, async (req, res) => {
   try {
-    const students = await Student.find();
+    const students = await Student.find(req.collegeFilter);
     res.json(students);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -47,9 +60,10 @@ router.get("/", async (req, res) => {
 });
 
 // Get students by class
-router.get("/class/:class", async (req, res) => {
+router.get("/class/:class", addCollegeFilter, async (req, res) => {
   try {
-    const students = await Student.find({ class: req.params.class });
+    const query = { ...req.collegeFilter, class: req.params.class };
+    const students = await Student.find(query);
     res.json(students);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -57,9 +71,10 @@ router.get("/class/:class", async (req, res) => {
 });
 
 // Get a single student by adNumber
-router.get("/adNumber/:adNumber", async (req, res) => {
+router.get("/adNumber/:adNumber", addCollegeFilter, async (req, res) => {
   try {
-    const student = await Student.findOne({ adNumber: req.params.adNumber });
+    const query = { ...req.collegeFilter, adNumber: req.params.adNumber };
+    const student = await Student.findOne(query);
     if (!student) return res.status(404).json({ message: "Student not found" });
     res.json(student);
   } catch (err) {
@@ -68,7 +83,7 @@ router.get("/adNumber/:adNumber", async (req, res) => {
 });
 
 // Get a student by Id
-router.get("/:id", async (req, res) => {
+router.get("/:id", addCollegeFilter, async (req, res) => {
   try {
     console.log("Fetching student with ID:", req.params.id);
     
@@ -78,7 +93,8 @@ router.get("/:id", async (req, res) => {
       return res.status(400).json({ message: "Invalid student ID format" });
     }
 
-    const student = await Student.findById(req.params.id);
+    const query = { ...req.collegeFilter, _id: req.params.id };
+    const student = await Student.findOne(query);
     if (!student) {
       console.log("Student not found");
       return res.status(404).json({ message: "Student not found" });
@@ -93,7 +109,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // Update a student
-router.put("/:id", async (req, res) => {
+router.put("/:id", addCollegeFilter, async (req, res) => {
   try {
     console.log("Updating student with ID:", req.params.id);
     
@@ -123,8 +139,10 @@ router.put("/:id", async (req, res) => {
       updateData.dateOfBirth = dateOfBirth;
     }
 
-    const updatedStudent = await Student.findByIdAndUpdate(
-      req.params.id,
+    // Find with college filter and update
+    const query = { ...req.collegeFilter, _id: req.params.id };
+    const updatedStudent = await Student.findOneAndUpdate(
+      query,
       updateData,
       { new: true, runValidators: true }
     );
@@ -143,7 +161,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // Delete a student
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", addCollegeFilter, async (req, res) => {
   try {
     console.log("Deleting student with ID:", req.params.id);
     
@@ -153,7 +171,9 @@ router.delete("/:id", async (req, res) => {
       return res.status(400).json({ message: "Invalid student ID format" });
     }
 
-    const deletedStudent = await Student.findByIdAndDelete(req.params.id);
+    // Find with college filter and delete
+    const query = { ...req.collegeFilter, _id: req.params.id };
+    const deletedStudent = await Student.findOneAndDelete(query);
 
     if (!deletedStudent) {
       console.log("Student not found");

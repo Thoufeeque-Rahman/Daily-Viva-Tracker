@@ -51,10 +51,15 @@ export default function Navigation() {
         href: "/admin/students",
       },
       {
-        title: "Admin Statistics",
+        title: "Super Admin Dashboard",
         icon: BarChart3,
-        href: "/admin/stats",
-      },
+        href: "/admin/superadmin",
+      }
+      // {
+      //   title: "Admin Statistics",
+      //   icon: BarChart3,
+      //   href: "/admin/stats",
+      // },
     ] : [])
   ]
 
