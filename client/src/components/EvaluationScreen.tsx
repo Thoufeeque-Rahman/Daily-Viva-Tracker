@@ -391,26 +391,28 @@ export default function EvaluationScreen({
                     Force close round & move to next
                   </DropdownMenuItem>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      Are you absolutely sure?
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action will immediately end the current evaluation
-                      round. This action cannot be undone and any unsaved
-                      progress will be lost.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={onEnd}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Force Close
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
+                <AlertDialogContent className="bg-transparent border-0 shadow-none">
+                  <div className="rounded-lg mx-3 justify-center bg-white p-6 shadow-lg">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        Are you absolutely sure?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action will immediately end the current evaluation
+                        round. This action cannot be undone and any unsaved
+                        progress will be lost.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={onEnd}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Force Close
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </div>
                 </AlertDialogContent>
               </AlertDialog>
               {/* <DropdownMenuSeparator /> */}
@@ -517,7 +519,7 @@ export default function EvaluationScreen({
                             ? "bg-blue-100 border-blue-200"
                             : ""
                         }`}
-                      > 
+                      >
                         <div className="flex justify-between items-center">
                           <span className="text-xs font-medium text-gray-900 truncate flex-1">
                             ({student.adNumber}) {student.name}

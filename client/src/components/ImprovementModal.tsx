@@ -34,12 +34,12 @@ export function ImprovementModal({
 }: ImprovementModalProps) {
   const { toast } = useToast();
   const createImprovement = useCreateImprovement();
-  
+
   // Get tomorrow's date as default
   const getTomorrowDate = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    return tomorrow.toISOString().split("T")[0];
   };
 
   const [formData, setFormData] = useState({
@@ -49,7 +49,7 @@ export function ImprovementModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.description.trim() || !formData.dueDate) {
       toast({
         title: "Error",
@@ -102,59 +102,62 @@ export function ImprovementModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Assign Improvement Task</DialogTitle>
-          <DialogDescription>
-            Assign an improvement task to {student.name} ({student.rollNumber}) for {subject} - Class {classNumber}.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="description">
-                What is the punishment/improvement needed?
-              </Label>
-              <Textarea
-                id="description"
-                placeholder="Describe what the student needs to improve..."
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                rows={4}
-                disabled={createImprovement.isPending}
-              />
+    <Dialog open={isOpen} onOpenChange={handleClose}> 
+      <DialogContent className="sm:max-w-[425px] bg-transparent border-0 shadow-none">
+        <div className="rounded-lg mx-3 justify-center bg-white p-6 shadow-lg">
+          <DialogHeader>
+            <DialogTitle>Assign Improvement Task</DialogTitle>
+            <DialogDescription>
+              Assign an improvement task to {student.name} ({student.rollNumber}
+              ) for {subject} - Class {classNumber}.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="description">
+                  What is the punishment/improvement needed?
+                </Label>
+                <Textarea
+                  id="description"
+                  placeholder="Describe what the student needs to improve..."
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  rows={4}
+                  disabled={createImprovement.isPending}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dueDate">Due Date</Label>
+                <Input
+                  id="dueDate"
+                  type="date"
+                  value={formData.dueDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, dueDate: e.target.value })
+                  }
+                  min={new Date().toISOString().split("T")[0]}
+                  disabled={createImprovement.isPending}
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="dueDate">Due Date</Label>
-              <Input
-                id="dueDate"
-                type="date"
-                value={formData.dueDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, dueDate: e.target.value })
-                }
-                min={new Date().toISOString().split('T')[0]}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose} className="md:mt-0 mt-2"
                 disabled={createImprovement.isPending}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={createImprovement.isPending}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={createImprovement.isPending}>
-              {createImprovement.isPending ? "Assigning..." : "Assign Task"}
-            </Button>
-          </DialogFooter>
-        </form>
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createImprovement.isPending}>
+                {createImprovement.isPending ? "Assigning..." : "Assign Task"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -3,7 +3,8 @@ const router = express.Router();
 const mongoose = require("mongoose");
 const Student = require("../models/Students");
 const DvtMarks = require("../models/DvtMarks");
-const { addCollegeFilter } = require('../middleware/auth');
+const { authenticateToken, addCollegeFilter } = require('../middleware/auth');
+const { isSuperAdmin } = require('../middleware/isSuperAdmin');
 
 // Add a new student
 router.post("/", addCollegeFilter, async (req, res) => {
@@ -49,8 +50,8 @@ router.post("/", addCollegeFilter, async (req, res) => {
   }
 });
 
-// Get all students
-router.get("/", addCollegeFilter, async (req, res) => {
+// Get all students (All authenticated users can view)
+router.get("/", authenticateToken, async (req, res) => {
   try {
     const students = await Student.find(req.collegeFilter);
     res.json(students);
@@ -59,8 +60,8 @@ router.get("/", addCollegeFilter, async (req, res) => {
   }
 });
 
-// Get students by class
-router.get("/class/:class", addCollegeFilter, async (req, res) => {
+// Get students by class (All authenticated users can view)
+router.get("/class/:class", authenticateToken, async (req, res) => {
   try {
     const query = { ...req.collegeFilter, class: req.params.class };
     const students = await Student.find(query);
@@ -70,8 +71,8 @@ router.get("/class/:class", addCollegeFilter, async (req, res) => {
   }
 });
 
-// Get a single student by adNumber
-router.get("/adNumber/:adNumber", addCollegeFilter, async (req, res) => {
+// Get a single student by adNumber (All authenticated users can view)
+router.get("/adNumber/:adNumber", authenticateToken, async (req, res) => {
   try {
     const query = { ...req.collegeFilter, adNumber: req.params.adNumber };
     const student = await Student.findOne(query);
@@ -82,8 +83,8 @@ router.get("/adNumber/:adNumber", addCollegeFilter, async (req, res) => {
   }
 });
 
-// Get a student by Id
-router.get("/:id", addCollegeFilter, async (req, res) => {
+// Get a student by Id (All authenticated users can view)
+router.get("/:id", authenticateToken, async (req, res) => {
   try {
     console.log("Fetching student with ID:", req.params.id);
     
@@ -108,8 +109,8 @@ router.get("/:id", addCollegeFilter, async (req, res) => {
   }
 });
 
-// Update a student
-router.put("/:id", addCollegeFilter, async (req, res) => {
+// Update a student (Super Admin Only)
+router.put("/:id", authenticateToken, isSuperAdmin, async (req, res) => {
   try {
     console.log("Updating student with ID:", req.params.id);
     

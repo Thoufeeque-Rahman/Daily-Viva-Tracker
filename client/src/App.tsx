@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import AuthPage from "@/pages/auth-page";
 import { ProtectedRoute } from "./lib/protected-route";
+import { SuperAdminRoute } from "./lib/super-admin-route";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Dashboard from "./pages/admin/dashboard";
 import SuperAdminDashboard from "./pages/admin/SuperAdminDashboard";
@@ -26,13 +27,13 @@ function Router() {
   return ( // TODO: Add a loading state
     <Switch>
       <Route path="/auth" component={AuthPage} />
-      <ProtectedRoute path="/admin/teachers/:id" component={TeacherDetails} />
-      <ProtectedRoute path="/admin/teachers" component={ManageTeachers} />
-      <ProtectedRoute path="/admin/students" component={ManageStudents} />
-      <ProtectedRoute path="/admin/superadmin" component={SuperAdminDashboard} />
-      <ProtectedRoute path="/admin/stats" component={AdminStats} />
-      <ProtectedRoute path="/admin/grading" component={GradingConfig} />
-      <ProtectedRoute path="/admin/*" component={Dashboard} />
+      <SuperAdminRoute path="/admin/teachers/:id" component={TeacherDetails} />
+      <SuperAdminRoute path="/admin/teachers" component={ManageTeachers} />
+      <SuperAdminRoute path="/admin/students" component={ManageStudents} />
+      <SuperAdminRoute path="/admin/superadmin" component={SuperAdminDashboard} />
+      <SuperAdminRoute path="/admin/stats" component={AdminStats} />
+      <SuperAdminRoute path="/admin/grading" component={GradingConfig} />
+      <SuperAdminRoute path="/admin/*" component={Dashboard} />
       <ProtectedRoute path="/" component={Home} />
       <ProtectedRoute path="/history" component={History} />
       <ProtectedRoute path="/performance" component={Performance} />
