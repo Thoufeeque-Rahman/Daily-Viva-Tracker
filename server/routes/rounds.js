@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const Rounds = require("../models/Rounds");
+const { authenticateToken, addCollegeFilter } = require("../middleware/auth");
 
 // Add a new round
-router.post("/", async (req, res) => {
+router.post("/", authenticateToken, addCollegeFilter, async (req, res) => {
     console.log(req.body);
   const round = new Rounds({
     class: req.body.class,
@@ -11,6 +12,7 @@ router.post("/", async (req, res) => {
     studentsNotAsked: req.body.studentsNotAsked || [], // Assuming studentsNotAsked is an array of students roll numbers
     totalStudents: req.body.totalStudents,
     startedAt: new Date(),
+    collegeId: req.user.collegeId, // Add college ID from authenticated user
     // endedAt: { type: Date, default: null },
   });
 
@@ -23,7 +25,7 @@ router.post("/", async (req, res) => {
 });
 
 // fetch rounds by class and subject
-router.get("/:subject/:class", async (req, res) => {
+router.get("/:subject/:class", authenticateToken, addCollegeFilter, async (req, res) => {
   const { class: classNumber, subject } = req.params;
     console.log(classNumber, subject);
     
@@ -31,6 +33,7 @@ router.get("/:subject/:class", async (req, res) => {
     const rounds = await Rounds.find({
       class: classNumber,
       subject: subject,
+      ...(req.collegeFilter || {}), // Add college filtering
     });
     if (rounds.length === 0) res.status(404).json(rounds); else res.status(200).json(rounds);
     // res.status(200).json(rounds);
@@ -43,11 +46,11 @@ router.get("/:subject/:class", async (req, res) => {
 });
 
 // remove Student from round 
-router.post("/:id/students/:studentId", async (req, res) => {
+router.post("/:id/students/:studentId", authenticateToken, addCollegeFilter, async (req, res) => {
   const { id } = req.params;
   const { studentId } = req.params;
   try {
-    const round = await Rounds.findById(id);
+    const round = await Rounds.findOne({ _id: id, ...(req.collegeFilter || {}) });
     if (!round) return res.status(404).json({ message: "Round not found" });
 
     // Remove the student from the studentsNotAsked array
@@ -66,6 +69,7 @@ router.post("/:id/students/:studentId", async (req, res) => {
     const rounds = await Rounds.find({
       class: round.class,
       subject: round.subject,
+      ...(req.collegeFilter || {}), // Add college filtering
     });
     
     res.status(200).json(rounds);
@@ -75,10 +79,10 @@ router.post("/:id/students/:studentId", async (req, res) => {
 });
 
 // Increase round number
-router.post("/:id/increaseRound", async (req, res) => {
+router.post("/:id/increaseRound", authenticateToken, addCollegeFilter, async (req, res) => {
   const { id } = req.params;
   try {
-    const round = await Rounds.findById(id);
+    const round = await Rounds.findOne({ _id: id, ...(req.collegeFilter || {}) });
     if (!round) return res.status(404).json({ message: "Round not found" });
 
     round.roundNumber += 1;
@@ -91,6 +95,7 @@ router.post("/:id/increaseRound", async (req, res) => {
     const rounds = await Rounds.find({
       class: round.class,
       subject: round.subject,
+      ...(req.collegeFilter || {}), // Add college filtering
     });
     res.status(200).json(rounds);
   } catch (err) {

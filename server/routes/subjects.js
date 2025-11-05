@@ -1,12 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const Subjects = require("../models/Subjects");
-const { authenticateToken } = require("../middleware/auth");
+const { authenticateToken, addCollegeFilter } = require("../middleware/auth");
 
 // Get all subjects
-router.get("/", authenticateToken, async (req, res) => {
+router.get("/", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
-    const subjects = await Subjects.find().sort({ name: 1 });
+    const subjects = await Subjects.find(req.collegeFilter || {}).sort({ name: 1 });
     res.json(subjects);
   } catch (error) {
     console.error("Error fetching subjects:", error);
@@ -15,7 +15,7 @@ router.get("/", authenticateToken, async (req, res) => {
 });
 
 // Create a new subject
-router.post("/", authenticateToken, async (req, res) => {
+router.post("/", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
     const { name, description } = req.body;
 
@@ -24,15 +24,19 @@ router.post("/", authenticateToken, async (req, res) => {
       return res.status(400).json({ error: "Subject name is required" });
     }
 
-    // Check if subject already exists
-    const existingSubject = await Subjects.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') } });
+    // Check if subject already exists within this college
+    const existingSubject = await Subjects.findOne({ 
+      name: { $regex: new RegExp(`^${name}$`, 'i') },
+      ...(req.collegeFilter || {})
+    });
     if (existingSubject) {
       return res.status(400).json({ error: "Subject with this name already exists" });
     }
 
     const subject = new Subjects({
       name,
-      description: description || ""
+      description: description || "",
+      collegeId: req.user.collegeId, // Add college ID from authenticated user
     });
 
     await subject.save();
@@ -44,12 +48,12 @@ router.post("/", authenticateToken, async (req, res) => {
 });
 
 // Update subject
-router.put("/:id", authenticateToken, async (req, res) => {
+router.put("/:id", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
     const { name, description, isActive } = req.body;
 
-    const subject = await Subjects.findByIdAndUpdate(
-      req.params.id,
+    const subject = await Subjects.findOneAndUpdate(
+      { _id: req.params.id, ...(req.collegeFilter || {}) },
       { name, description, isActive },
       { new: true }
     );
@@ -66,9 +70,12 @@ router.put("/:id", authenticateToken, async (req, res) => {
 });
 
 // Delete subject
-router.delete("/:id", authenticateToken, async (req, res) => {
+router.delete("/:id", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
-    const subject = await Subjects.findByIdAndDelete(req.params.id);
+    const subject = await Subjects.findOneAndDelete({ 
+      _id: req.params.id, 
+      ...(req.collegeFilter || {}) 
+    });
 
     if (!subject) {
       return res.status(404).json({ error: "Subject not found" });
@@ -82,9 +89,12 @@ router.delete("/:id", authenticateToken, async (req, res) => {
 });
 
 // Toggle subject active status
-router.put("/:id/toggle", authenticateToken, async (req, res) => {
+router.put("/:id/toggle", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
-    const subject = await Subjects.findById(req.params.id);
+    const subject = await Subjects.findOne({ 
+      _id: req.params.id, 
+      ...(req.collegeFilter || {}) 
+    });
 
     if (!subject) {
       return res.status(404).json({ error: "Subject not found" });
