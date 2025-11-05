@@ -62,6 +62,7 @@ import {
   getMarkEmoji,
   getMarkCardColors,
 } from "@/lib/grading-utils";
+import { useLocation } from "wouter";
 
 interface Student {
   _id: string;
@@ -479,6 +480,8 @@ export default function History() {
       });
     }
   };
+
+  const [, setLocation] = useLocation();
 
   return (
     <div className="mx-auto max-w-md bg-white min-h-screen shadow-lg relative h-full flex flex-col">

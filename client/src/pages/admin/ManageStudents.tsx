@@ -64,6 +64,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import axios from "@/lib/axios";
+import { BulkDeleteActions, useBulkSelection } from "@/components/BulkDeleteActions";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Student {
   _id: string;
@@ -105,6 +107,14 @@ export default function ManageStudents() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [classFilter, setClassFilter] = useState("all");
+
+  // Bulk selection hook
+  const {
+    selectedItems: selectedStudents,
+    handleSelectAll,
+    handleSelectItem,
+    clearSelection,
+  } = useBulkSelection(filteredStudents);
 
   // Dialog states
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -441,6 +451,23 @@ export default function ManageStudents() {
         description: error.response?.data?.message || "Failed to update student.",
         variant: "destructive",
       });
+    }
+  };
+
+  // Handle bulk delete students
+  const handleBulkDeleteStudents = async (studentIds: string[]) => {
+    try {
+      await axios.delete("/api/students/bulk", {
+        data: { studentIds }
+      });
+      
+      // Refresh the students list
+      await fetchStudents();
+      
+      // Clear selection
+      clearSelection();
+    } catch (error: any) {
+      throw error; // Let BulkDeleteActions handle the error display
     }
   };
 
@@ -952,6 +979,19 @@ export default function ManageStudents() {
           </CardContent>
         </Card>
 
+        {/* Bulk Delete Actions */}
+        {filteredStudents.length > 0 && (
+          <BulkDeleteActions
+            selectedItems={selectedStudents}
+            onSelectAll={handleSelectAll}
+            onSelectItem={handleSelectItem}
+            onBulkDelete={handleBulkDeleteStudents}
+            totalItems={filteredStudents.length}
+            entityName="students"
+            disabled={isLoading}
+          />
+        )}
+
         {/* Students Table */}
         <Card>
           <CardHeader>
@@ -981,6 +1021,15 @@ export default function ManageStudents() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={selectedStudents.length === filteredStudents.length && filteredStudents.length > 0}
+                          ref={(el) => {
+                            if (el) el.indeterminate = selectedStudents.length > 0 && selectedStudents.length < filteredStudents.length;
+                          }}
+                          onCheckedChange={handleSelectAll}
+                        />
+                      </TableHead>
                       <TableHead>Student</TableHead>
                       <TableHead>Class</TableHead>
                       <TableHead>Roll No.</TableHead>
@@ -1007,6 +1056,12 @@ export default function ManageStudents() {
                       
                       return sortedStudents.map((student) => (
                       <TableRow key={student._id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedStudents.includes(student._id)}
+                            onCheckedChange={(checked) => handleSelectItem(student._id, checked as boolean)}
+                          />
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-3">
                             <div className="h-10 w-10 rounded-full bg-gradient-to-r from-green-500 to-teal-600 flex items-center justify-center">

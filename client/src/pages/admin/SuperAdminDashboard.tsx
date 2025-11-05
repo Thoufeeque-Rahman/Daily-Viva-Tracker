@@ -402,6 +402,8 @@ export default function SuperAdminDashboard() {
     );
   }
 
+  const [, setLocation] = useLocation();
+
   return (
     <div className="mx-auto max-w-7xl bg-white min-h-screen shadow-lg relative h-full flex flex-col">
       <Header showContext={true} onHomeClick={() => {setLocation('/')}} />
@@ -415,13 +417,13 @@ export default function SuperAdminDashboard() {
 
           <Tabs defaultValue="colleges" className="space-y-6">
             <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="colleges">Colleges</TabsTrigger>
+              <TabsTrigger value="colleges">College Profile</TabsTrigger>
               {/* <TabsTrigger value="teachers">Teachers</TabsTrigger> */}
-              <TabsTrigger value="grading">Grading</TabsTrigger>
+              <TabsTrigger value="grading">Grading Configration</TabsTrigger>
               {/* <TabsTrigger value="semesters" disabled>
                 Semesters
               </TabsTrigger>
-              <TabsTrigger value="subjects" disabled>
+              <TabsTrigger value="subjects" disabled> 
                 Subjects
               </TabsTrigger> */}
             </TabsList>

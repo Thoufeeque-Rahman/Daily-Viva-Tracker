@@ -162,6 +162,65 @@ router.put("/:id", authenticateToken, isSuperAdmin, async (req, res) => {
   }
 });
 
+// Bulk delete students (Super Admin Only)
+router.delete("/bulk", authenticateToken, isSuperAdmin, addCollegeFilter, async (req, res) => {
+  try {
+    const { studentIds } = req.body;
+    
+    // Validate input
+    if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+      return res.status(400).json({ message: "Student IDs array is required" });
+    }
+    
+    // Validate all IDs are valid ObjectIds
+    const invalidIds = studentIds.filter(id => !mongoose.Types.ObjectId.isValid(id));
+    if (invalidIds.length > 0) {
+      return res.status(400).json({ 
+        message: "Invalid student ID format", 
+        invalidIds 
+      });
+    }
+    
+    console.log(`Bulk deleting ${studentIds.length} students:`, studentIds);
+    
+    // Find students to be deleted (for logging and verification)
+    const studentsToDelete = await Student.find({
+      ...req.collegeFilter,
+      _id: { $in: studentIds }
+    });
+    
+    if (studentsToDelete.length === 0) {
+      return res.status(404).json({ message: "No students found to delete" });
+    }
+    
+    // Delete associated DVT marks first
+    const marksDeleteResult = await DvtMarks.deleteMany({
+      ...req.collegeFilter,
+      studentId: { $in: studentIds }
+    });
+    
+    console.log(`Deleted ${marksDeleteResult.deletedCount} associated DVT marks`);
+    
+    // Delete the students
+    const deleteResult = await Student.deleteMany({
+      ...req.collegeFilter,
+      _id: { $in: studentIds }
+    });
+    
+    console.log(`Successfully deleted ${deleteResult.deletedCount} students`);
+    
+    res.json({ 
+      message: `Successfully deleted ${deleteResult.deletedCount} students`,
+      deletedCount: deleteResult.deletedCount,
+      deletedMarks: marksDeleteResult.deletedCount,
+      requestedCount: studentIds.length
+    });
+  } catch (err) {
+    console.error("Error in bulk delete students:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Delete a student
 router.delete("/:id", addCollegeFilter, async (req, res) => {
   try {

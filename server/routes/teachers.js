@@ -418,6 +418,67 @@ router.put('/:teacherId', authenticateToken, isSuperAdmin, async (req, res) => {
   }
 });
 
+// Super admin: Bulk delete teachers
+router.delete('/bulk', authenticateToken, isSuperAdmin, addCollegeFilter, async (req, res) => {
+  try {
+    const { teacherIds } = req.body;
+    
+    // Validate input
+    if (!teacherIds || !Array.isArray(teacherIds) || teacherIds.length === 0) {
+      return res.status(400).json({ error: 'Teacher IDs array is required' });
+    }
+    
+    // Validate all IDs are valid ObjectIds
+    const mongoose = require('mongoose');
+    const invalidIds = teacherIds.filter(id => !mongoose.Types.ObjectId.isValid(id));
+    if (invalidIds.length > 0) {
+      return res.status(400).json({ 
+        error: 'Invalid teacher ID format', 
+        invalidIds 
+      });
+    }
+    
+    console.log(`Bulk deleting ${teacherIds.length} teachers:`, teacherIds);
+    
+    // Find teachers to be deleted (for logging and verification)
+    const teachersToDelete = await Teachers.find({
+      ...req.collegeFilter,
+      _id: { $in: teacherIds }
+    }).select('-password');
+    
+    if (teachersToDelete.length === 0) {
+      return res.status(404).json({ error: 'No teachers found to delete' });
+    }
+    
+    // Prevent deletion of super admin accounts
+    const superAdmins = teachersToDelete.filter(teacher => teacher.role === 'super_admin');
+    if (superAdmins.length > 0) {
+      return res.status(403).json({ 
+        error: 'Cannot delete super admin accounts',
+        superAdminIds: superAdmins.map(admin => admin._id)
+      });
+    }
+    
+    // Delete the teachers
+    const deleteResult = await Teachers.deleteMany({
+      ...req.collegeFilter,
+      _id: { $in: teacherIds },
+      role: { $ne: 'super_admin' } // Additional safety check
+    });
+    
+    console.log(`Successfully deleted ${deleteResult.deletedCount} teachers`);
+    
+    res.json({ 
+      message: `Successfully deleted ${deleteResult.deletedCount} teachers`,
+      deletedCount: deleteResult.deletedCount,
+      requestedCount: teacherIds.length
+    });
+  } catch (error) {
+    console.error('Bulk delete teachers error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Super admin: Delete teacher
 router.delete('/:teacherId', authenticateToken, isSuperAdmin, async (req, res) => {
   try {

@@ -167,7 +167,7 @@ export default function CollegeManagement() {
             College Management
           </h1>
           <p className="text-gray-500 mt-1">
-            Manage colleges in the system ({colleges.length} total)
+            Manage college in the system
           </p>
         </div>
         
@@ -175,10 +175,10 @@ export default function CollegeManagement() {
           <Plus className="h-4 w-4" />
           Add College
         </Button> */}
-      </div>
+      </div> 
 
       {/* Search */}
-      <Card>
+      {/* <Card>
         <CardContent className="pt-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -190,12 +190,12 @@ export default function CollegeManagement() {
             />
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Stats Overview */}
       {colleges.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* <Card>
             <CardContent className="pt-6">
               <div className="flex items-center space-x-2">
                 <Building className="h-8 w-8 text-blue-600" />
@@ -205,7 +205,7 @@ export default function CollegeManagement() {
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
           
           <Card>
             <CardContent className="pt-6">
@@ -254,10 +254,10 @@ export default function CollegeManagement() {
       {/* Colleges Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Colleges</CardTitle>
-          <CardDescription>
+          <CardTitle>College</CardTitle>
+          {/* <CardDescription>
             {filteredColleges.length} of {colleges.length} colleges
-          </CardDescription>
+          </CardDescription> */}
         </CardHeader>
         <CardContent>
           {filteredColleges.length === 0 ? (
