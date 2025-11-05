@@ -31,6 +31,7 @@ interface SubjectSelectorProps {
   onSubjectSelect: (subject: string) => void;
   label?: string;
   placeholder?: string;
+  showAllSubjects?: boolean; // New prop to show subjects from all colleges
 }
 
 export function SubjectSelector({
@@ -38,6 +39,7 @@ export function SubjectSelector({
   onSubjectSelect,
   label = "Lesson",
   placeholder = "Select lesson...",
+  showAllSubjects = false, // Default to false (college-filtered)
 }: SubjectSelectorProps) {
   const { toast } = useToast();
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -48,7 +50,11 @@ export function SubjectSelector({
   // Fetch subjects from database
   const fetchSubjects = async () => {
     try {
-      const response = await axios.get("/api/subjects");
+      // Use different endpoint based on showAllSubjects prop
+      const endpoint = showAllSubjects ? "/api/subjects/all" : "/api/subjects";
+      console.log("SubjectSelector: Fetching subjects from:", endpoint, "showAllSubjects:", showAllSubjects);
+      const response = await axios.get(endpoint);
+      console.log("SubjectSelector: Received subjects:", response.data.length, "subjects");
       setSubjects(response.data);
     } catch (error) {
       console.error("Error fetching subjects:", error);
@@ -95,10 +101,10 @@ export function SubjectSelector({
     }
   };
 
-  // Load subjects on component mount
+  // Load subjects on component mount and when showAllSubjects changes
   useEffect(() => {
     fetchSubjects();
-  }, []);
+  }, [showAllSubjects]); // Add showAllSubjects as dependency
 
   // Filter subjects based on search input
   const filteredSubjects = subjects.filter(subject =>

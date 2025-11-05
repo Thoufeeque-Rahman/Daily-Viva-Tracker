@@ -482,7 +482,7 @@ export default function History() {
 
   return (
     <div className="mx-auto max-w-md bg-white min-h-screen shadow-lg relative h-full flex flex-col">
-      <Header showContext={false} onHomeClick={() => {}} />
+      <Header showContext={true} onHomeClick={() => {setLocation('/')}} />
       <main className="flex-1 p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-blue-600">

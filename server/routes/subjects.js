@@ -3,7 +3,7 @@ const router = express.Router();
 const Subjects = require("../models/Subjects");
 const { authenticateToken, addCollegeFilter } = require("../middleware/auth");
 
-// Get all subjects
+// Get all subjects (college-filtered)
 router.get("/", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
     const subjects = await Subjects.find(req.collegeFilter || {}).sort({ name: 1 });
@@ -11,6 +11,24 @@ router.get("/", authenticateToken, addCollegeFilter, async (req, res) => {
   } catch (error) {
     console.error("Error fetching subjects:", error);
     res.status(500).json({ error: "Failed to fetch subjects" });
+  }
+});
+
+// Get ALL subjects from ALL colleges (for lesson management)
+router.get("/all", authenticateToken, async (req, res) => {
+  try {
+    console.log("🔍 /api/subjects/all called by user:", req.user?.email, "Role:", req.user?.role);
+    
+    // Fetch all subjects without college filtering
+    const subjects = await Subjects.find({}).sort({ name: 1 });
+    
+    console.log("📚 Found", subjects.length, "total subjects across all colleges:");
+    console.log("Subjects:", subjects.map(s => `${s.name} (College: ${s.collegeId})`));
+    
+    res.json(subjects);
+  } catch (error) {
+    console.error("Error fetching all subjects:", error);
+    res.status(500).json({ error: "Failed to fetch all subjects" });
   }
 });
 

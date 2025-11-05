@@ -385,7 +385,7 @@ export default function SuperAdminDashboard() {
   if (user?.role !== "super_admin") {
     return (
       <div className="mx-auto max-w-md bg-white min-h-screen shadow-lg relative h-full flex flex-col">
-        <Header showContext={false} onHomeClick={() => {}} />
+        <Header showContext={false} onHomeClick={() => {setLocation('/')}} />
         <main className="flex-1 p-6 flex items-center justify-center">
           <Card>
             <CardContent className="p-6 text-center">
@@ -404,7 +404,7 @@ export default function SuperAdminDashboard() {
 
   return (
     <div className="mx-auto max-w-7xl bg-white min-h-screen shadow-lg relative h-full flex flex-col">
-      <Header showContext={true} onHomeClick={() => {}} />
+      <Header showContext={true} onHomeClick={() => {setLocation('/')}} />
       <main className="relative h-full">
         <div className="flex-1 p-6">
           <div className="flex justify-start items-center mb-6">

@@ -67,7 +67,7 @@ export default function StartScreen({
     try {
       const response = await axios.get(`/api/dvtmarks/dvtmarksbydate`);
       console.log("Fetch DVT marks response:", response);
-      
+
       setDvtMarks(response.data.data);
     } catch (error) {
       console.error("Error fetching DVT marks:", error);
@@ -85,7 +85,7 @@ export default function StartScreen({
 
   const handleAddLesson = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     if (!classNumber || !selectedSubjectForAdd) {
       toast({
         title: "Error",
@@ -179,8 +179,8 @@ export default function StartScreen({
     },
   ];
 
-  const sortedSubjects = [...(user?.subjectsTaught || [])].sort((a, b) =>
-    b.class - a.class
+  const sortedSubjects = [...(user?.subjectsTaught || [])].sort(
+    (a, b) => b.class - a.class
   );
 
   if (isLoading) {
@@ -212,11 +212,30 @@ export default function StartScreen({
           </div>
         </div>
 
-        <div className="space-y-3">
-          <div className="h-6 bg-gray-200 rounded animate-pulse w-1/3" />
-          <div className="space-y-2">
+        <div className="p-3 bg-white rounded-lg shadow-lg">
+          <div className="flex justify-between items-center mb-3">
+            <div className="h-6 bg-gray-200 rounded animate-pulse w-32"></div>
+            <div className="flex gap-2">
+              <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          </div>
+          <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" />
+              <div
+                key={i}
+                className="flex justify-between items-center p-3 border rounded"
+              >
+                <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
+                <div className="flex gap-2">
+                  {Array.from({ length: 4 }).map((_, j) => (
+                    <div
+                      key={j}
+                      className="h-6 w-12 bg-gray-200 rounded animate-pulse"
+                    ></div>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </div>
@@ -227,11 +246,11 @@ export default function StartScreen({
   return (
     <div className="p-6 transition-all duration-300 transform bg-white shadow-lg h-full min-h-dvh">
       {/* <div className="text-start mb-8 mt-4 flex gap-3 items-center"> */}
-        {/* <div className="bg-blue-500 inline-block p-3 rounded-full">
+      {/* <div className="bg-blue-500 inline-block p-3 rounded-full">
           <User className="text-white w-3 h-3" />
         </div> */}
-        {/*<h2 className="text-2xl font-bold text-blue-600">Daily Viva Tracker</h2> */}
-        {/* <p className="font-medium mt-2 text-blue-600">
+      {/*<h2 className="text-2xl font-bold text-blue-600">Daily Viva Tracker</h2> */}
+      {/* <p className="font-medium mt-2 text-blue-600">
           Hi,{" "}
           {user?.name
             ? user.name.charAt(0).toUpperCase() +
@@ -250,11 +269,13 @@ export default function StartScreen({
           {sortedSubjects.map((subject, index) => {
             const colorIndex = index % colorClasses.length; // Cycle through colors
             const colors = colorClasses[colorIndex];
-            
+
             return (
               <button
                 key={index}
-                className={`border bg-gradient-to-r ${colors.bg} text-white font-medium border-gray-200 rounded-lg py-3 px-4 text-center hover:bg-gray-50 focus:outline-none transition-all ${
+                className={`border bg-gradient-to-r ${
+                  colors.bg
+                } text-white font-medium border-gray-200 rounded-lg py-3 px-4 text-center hover:bg-gray-50 focus:outline-none transition-all ${
                   isLoading ? "opacity-50 cursor-not-allowed" : ""
                 }`}
                 onClick={() => {
@@ -271,74 +292,80 @@ export default function StartScreen({
               </button>
             );
           })}
-          
-          {/* Add Lesson Button - Show when no lessons or always show */}
-          {sortedSubjects.length === 0 && (<Dialog open={showAddLessonDialog} onOpenChange={setShowAddLessonDialog}>
+
+          {/* Add Lesson Button - Always show */}
+          {/* <Dialog
+            open={showAddLessonDialog}
+            onOpenChange={setShowAddLessonDialog}
+          >
             <DialogTrigger asChild>
               <button
                 className="border-2 border-dashed border-gray-300 text-gray-500 hover:border-blue-500 hover:text-blue-500 font-medium rounded-lg py-3 px-4 text-center focus:outline-none transition-all flex items-center justify-center gap-2"
                 disabled={isLoading}
-                >
+              >
                 <Plus className="h-4 w-4" />
                 Add Lesson
               </button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[400px]">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Plus className="h-5 w-5" />
-                  Add New Lesson
-                </DialogTitle>
-                <DialogDescription>
-                  Add a new lesson to your teaching subjects.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <form onSubmit={handleAddLesson} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="class">Class</Label>
-                  <Input
-                    id="class"
-                    type="number"
-                    placeholder="Enter class number (1-10)"
-                    value={classNumber}
-                    onChange={(e) => setClassNumber(e.target.value)}
-                    min="1"
-                    max="10"
+              <DialogContent className="sm:max-w-[400px]">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Plus className="h-5 w-5" />
+                    Add New Lesson
+                  </DialogTitle>
+                  <DialogDescription>
+                    Add a new lesson to your teaching subjects.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <form onSubmit={handleAddLesson} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="class">Class</Label>
+                    <Input
+                      id="class"
+                      type="number"
+                      placeholder="Enter class number (1-10)"
+                      value={classNumber}
+                      onChange={(e) => setClassNumber(e.target.value)}
+                      min="1"
+                      max="10"
+                    />
+                  </div>
+
+                  <SubjectSelector
+                    selectedSubject={selectedSubjectForAdd}
+                    onSubjectSelect={setSelectedSubjectForAdd}
+                    label="Lesson"
+                    placeholder="Select or add lesson..."
+                    showAllSubjects={true} 
                   />
-                </div>
-                
-                <SubjectSelector
-                  selectedSubject={selectedSubjectForAdd}
-                  onSubjectSelect={setSelectedSubjectForAdd}
-                  label="Lesson"
-                  placeholder="Select or add lesson..."
-                />
-                
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowAddLessonDialog(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Lesson
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>)}
+
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowAddLessonDialog(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Lesson
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog> */}
         </div>
-        
+
         {/* Show message when no lessons are available */}
         {sortedSubjects.length === 0 && (
           <div className="text-center py-6 text-gray-500">
             <GraduationCap className="h-12 w-12 mx-auto mb-3 text-gray-400" />
             <p className="text-sm">No lessons assigned yet.</p>
-            <p className="text-xs text-gray-400 mt-1">Click "Add Lesson" to get started.</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Go to Profile and Click "Add Lesson" to get started.
+            </p>
           </div>
         )}
       </div>

@@ -148,7 +148,7 @@ export default function GradingConfig() {
 
   return (
     <div className="mx-auto max-w-5xl bg-white min-h-screen shadow-lg relative">
-      <Header showContext={false} onHomeClick={() => {}} />
+      <Header showContext={false} onHomeClick={() => {setLocation('/')}} />
       <main className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Grading Templates</h1>

@@ -236,7 +236,7 @@ export default function Performance() {
 
   return (
     <div className="mx-auto max-w-md bg-white min-h-screen shadow-lg relative h-full flex flex-col">
-      <Header showContext={false} onHomeClick={() => {}} />
+      <Header showContext={true} onHomeClick={() => {setLocation('/')}} />
       <main className="flex-1 p-6">
         <div className="flex justify-start items-center mb-4">
           <h1 className="text-2xl font-bold text-blue-600">

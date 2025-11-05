@@ -571,7 +571,7 @@ export default function ManageTeachers() {
 
   return (
     <div className="mx-auto max-w-7xl bg-white min-h-screen shadow-lg">
-      <Header showContext={false} onHomeClick={() => setLocation("/")} />
+      <Header showContext={true} onHomeClick={() => setLocation("/")} />
       
       <main className="p-6">
         <div className="flex items-center justify-between mb-6">
@@ -1169,6 +1169,7 @@ export default function ManageTeachers() {
                               onSubjectSelect={setSelectedSubjectForTeacher}
                               label="Lesson"
                               placeholder="Select or add lesson..."
+                              showAllSubjects={true}
                             />
                           </div>
                         </div>

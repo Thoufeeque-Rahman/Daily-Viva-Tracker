@@ -49,13 +49,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SubjectSelector } from "@/components/SubjectSelector";
+import { useLocation } from "wouter";
 
 export default function Profile() {
   const { user, updateUser } = useAuth();
@@ -80,11 +76,13 @@ export default function Profile() {
   });
 
   const [selectedSubject, setSelectedSubject] = useState("");
-  
+
   // Loading states
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [isDeletingSubject, setIsDeletingSubject] = useState<string | null>(null);
+  const [isDeletingSubject, setIsDeletingSubject] = useState<string | null>(
+    null
+  );
 
   const handleSave = async () => {
     setIsSavingProfile(true);
@@ -205,8 +203,6 @@ export default function Profile() {
     }
   };
 
-
-
   const handleRemoveSubject = async (subjectId: string) => {
     try {
       const response = await axios.delete(
@@ -248,15 +244,21 @@ export default function Profile() {
     setIsEditing(false);
   };
 
-  const sortedSubjects = [...(user?.subjectsTaught || [])].sort((a, b) => b.class - a.class);
+  const sortedSubjects = [...(user?.subjectsTaught || [])].sort(
+    (a, b) => b.class - a.class
+  );
 
   if (!user) {
     return null;
   }
 
+
+
+  const [, navigate] = useLocation(); 
+
   return (
     <div className="mx-auto max-w-md bg-white min-h-screen shadow-lg relative h-full flex flex-col">
-      <Header showContext={false} onHomeClick={() => {}} />
+      <Header showContext={true} onHomeClick={() => {navigate("/")}} />
 
       <main className="flex-1 p-6">
         <div className="flex justify-start items-center mb-6">
@@ -271,7 +273,10 @@ export default function Profile() {
                 <User className="h-5 w-5" />
                 Profile Overview
               </div>
-              <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
+              <Dialog
+                open={showProfileDialog}
+                onOpenChange={setShowProfileDialog}
+              >
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
                     <User className="h-4 w-4 mr-2" />
@@ -288,9 +293,11 @@ export default function Profile() {
                   <Tabs defaultValue="profile" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
                       <TabsTrigger value="profile">Profile Info</TabsTrigger>
-                      <TabsTrigger value="password">Change Password</TabsTrigger>
+                      <TabsTrigger value="password">
+                        Change Password
+                      </TabsTrigger>
                     </TabsList>
-                    
+
                     <TabsContent value="profile" className="space-y-4 mt-6">
                       <div className="space-y-4">
                         <div className="space-y-2">
@@ -299,7 +306,10 @@ export default function Profile() {
                             id="dialog-name"
                             value={profileData.name}
                             onChange={(e) =>
-                              setProfileData({ ...profileData, name: e.target.value })
+                              setProfileData({
+                                ...profileData,
+                                name: e.target.value,
+                              })
                             }
                           />
                         </div>
@@ -311,7 +321,10 @@ export default function Profile() {
                             type="email"
                             value={profileData.email}
                             onChange={(e) =>
-                              setProfileData({ ...profileData, email: e.target.value })
+                              setProfileData({
+                                ...profileData,
+                                email: e.target.value,
+                              })
                             }
                           />
                         </div>
@@ -322,13 +335,18 @@ export default function Profile() {
                             id="dialog-phone"
                             value={profileData.phone}
                             onChange={(e) =>
-                              setProfileData({ ...profileData, phone: e.target.value })
+                              setProfileData({
+                                ...profileData,
+                                phone: e.target.value,
+                              })
                             }
                           />
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="dialog-qualification">Qualification</Label>
+                          <Label htmlFor="dialog-qualification">
+                            Qualification
+                          </Label>
                           <Textarea
                             id="dialog-qualification"
                             value={profileData.qualification}
@@ -342,7 +360,11 @@ export default function Profile() {
                           />
                         </div>
 
-                        <Button onClick={handleSave} className="w-full" loading={isSavingProfile}>
+                        <Button
+                          onClick={handleSave}
+                          className="w-full"
+                          loading={isSavingProfile}
+                        >
                           {isSavingProfile ? "Updating..." : "Update Profile"}
                         </Button>
                       </div>
@@ -367,7 +389,9 @@ export default function Profile() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="dialog-newPassword">New Password</Label>
+                          <Label htmlFor="dialog-newPassword">
+                            New Password
+                          </Label>
                           <Input
                             id="dialog-newPassword"
                             type="password"
@@ -396,8 +420,14 @@ export default function Profile() {
                             }
                           />
                         </div>
-                        <Button onClick={handlePasswordChange} className="w-full" loading={isChangingPassword}>
-                          {isChangingPassword ? "Updating..." : "Update Password"}
+                        <Button
+                          onClick={handlePasswordChange}
+                          className="w-full"
+                          loading={isChangingPassword}
+                        >
+                          {isChangingPassword
+                            ? "Updating..."
+                            : "Update Password"}
                         </Button>
                       </div>
                     </TabsContent>
@@ -447,7 +477,7 @@ export default function Profile() {
         </Card>
 
         {/* Subjects Taught */}
-        {user?.subjectsTaught && user.subjectsTaught.length > 0 && (
+        {user?.subjectsTaught && (
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -455,11 +485,23 @@ export default function Profile() {
                   <GraduationCap className="h-5 w-5" />
                   Lessons Teaching
                 </div>
-                <Dialog open={showLessonsDialog} onOpenChange={setShowLessonsDialog}>
+                <Dialog
+                  open={showLessonsDialog}
+                  onOpenChange={setShowLessonsDialog}
+                >
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm">
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit Lessons
+                      {user.subjectsTaught.length > 0 ? (
+                        <>
+                          <Edit className="h-4 w-4" />
+                          Edit Lessons
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4" /> 
+                          Add Lesson
+                        </>
+                      )}
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
@@ -497,17 +539,24 @@ export default function Profile() {
                                       </AlertDialogTrigger>
                                       <AlertDialogContent>
                                         <AlertDialogHeader>
-                                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                          <AlertDialogTitle>
+                                            Are you sure?
+                                          </AlertDialogTitle>
                                           <AlertDialogDescription>
-                                            This will remove {subject.subject} for class{" "}
-                                            {subject.class} from your subjects. This action
-                                            cannot be undone.
+                                            This will remove {subject.subject}{" "}
+                                            for class {subject.class} from your
+                                            subjects. This action cannot be
+                                            undone.
                                           </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
-                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                          <AlertDialogCancel>
+                                            Cancel
+                                          </AlertDialogCancel>
                                           <AlertDialogAction
-                                            onClick={() => handleRemoveSubject(subject._id)}
+                                            onClick={() =>
+                                              handleRemoveSubject(subject._id)
+                                            }
                                             className="bg-red-500 hover:bg-red-600"
                                           >
                                             Delete
@@ -522,8 +571,13 @@ export default function Profile() {
                           </Table>
 
                           <div className="mt-4">
-                            <h3 className="text-lg font-semibold mb-2">Add New Lesson</h3>
-                            <form onSubmit={handleAddSubject} className="space-y-4">
+                            <h3 className="text-lg font-semibold mb-2">
+                              Add New Lesson
+                            </h3>
+                            <form
+                              onSubmit={handleAddSubject}
+                              className="space-y-4"
+                            >
                               <div className="flex flex-col gap-4">
                                 <div>
                                   <Label htmlFor="dialog-class">Class</Label>
@@ -539,6 +593,7 @@ export default function Profile() {
                                   onSubjectSelect={setSelectedSubject}
                                   label="Lesson"
                                   placeholder="Select lesson..."
+                                  showAllSubjects={true}
                                 />
                               </div>
                               <Button type="submit">
@@ -731,8 +786,6 @@ export default function Profile() {
             </div>
           </CardContent>
         </Card> */}
-
-
       </main>
     </div>
   );
