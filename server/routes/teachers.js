@@ -241,9 +241,8 @@ router.put('/change-password', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Current password is incorrect' });
     }
 
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    teacher.password = hashedPassword;
+    // Set the new password - let the pre-save middleware handle the hashing
+    teacher.password = newPassword;
     await teacher.save();
 
     res.json({ message: 'Password updated successfully' });
