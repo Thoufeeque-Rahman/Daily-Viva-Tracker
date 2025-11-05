@@ -885,7 +885,9 @@ export default function ManageTeachers() {
                         <Checkbox
                           checked={selectedTeachers.length === filteredTeachers.length && filteredTeachers.length > 0}
                           ref={(el) => {
-                            if (el) el.indeterminate = selectedTeachers.length > 0 && selectedTeachers.length < filteredTeachers.length;
+                            if (el && 'indeterminate' in el) {
+                              (el as any).indeterminate = selectedTeachers.length > 0 && selectedTeachers.length < filteredTeachers.length;
+                            }
                           }}
                           onCheckedChange={handleSelectAll}
                         />

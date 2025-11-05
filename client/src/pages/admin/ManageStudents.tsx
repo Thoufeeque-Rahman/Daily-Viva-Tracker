@@ -1025,7 +1025,9 @@ export default function ManageStudents() {
                         <Checkbox
                           checked={selectedStudents.length === filteredStudents.length && filteredStudents.length > 0}
                           ref={(el) => {
-                            if (el) el.indeterminate = selectedStudents.length > 0 && selectedStudents.length < filteredStudents.length;
+                            if (el && 'indeterminate' in el) {
+                              (el as any).indeterminate = selectedStudents.length > 0 && selectedStudents.length < filteredStudents.length;
+                            }
                           }}
                           onCheckedChange={handleSelectAll}
                         />

@@ -67,7 +67,9 @@ export function BulkDeleteActions({
         <Checkbox
           checked={isAllSelected}
           ref={(el) => {
-            if (el) el.indeterminate = isIndeterminate;
+            if (el && 'indeterminate' in el) {
+              (el as any).indeterminate = isIndeterminate;
+            }
           }}
           onCheckedChange={onSelectAll}
           disabled={disabled || totalItems === 0}
