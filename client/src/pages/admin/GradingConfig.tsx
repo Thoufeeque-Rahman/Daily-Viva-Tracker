@@ -27,6 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
+import { useLocation } from "wouter";
 
 interface Level {
   name: string;
@@ -99,7 +100,26 @@ export default function GradingConfig() {
       queryClient.invalidateQueries({ queryKey: ["gradingTemplates"] });
       toast({ title: "Success", description: "Template deleted successfully" });
     },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.response?.data?.error || "Failed to delete template",
+        variant: "destructive" 
+      });
+    },
   });
+
+  const handleDeleteTemplate = (templateId: string) => {
+    if (templates?.length === 1) {
+      toast({
+        title: "Cannot Delete",
+        description: "Cannot delete the only grading configuration. At least one must exist.",
+        variant: "destructive"
+      });
+      return;
+    }
+    deleteTemplate.mutate(templateId);
+  };
 
   const handleAddLevel = () => {
     setNewTemplate({
@@ -135,16 +155,40 @@ export default function GradingConfig() {
     createTemplate.mutate(newTemplate);
   };
 
-  const handleToggleActive = (templateId: string, isActive: boolean) => {
-    updateTemplate.mutate({
-      id: templateId,
-      data: { isActive },
-    });
+  const handleToggleActive = (templateId: string, currentlyActive: boolean) => {
+    // Show warning for deactivation attempts
+    if (currentlyActive && templates?.length === 1) {
+      toast({
+        title: "Cannot Deactivate",
+        description: "At least one grading configuration must remain active.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Call the activate endpoint
+    axios.put(`/api/grading-configs/${templateId}/activate`)
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ["gradingTemplates"] });
+        toast({ 
+          title: "Success", 
+          description: currentlyActive ? "Template deactivated successfully" : "Template activated successfully"
+        });
+      })
+      .catch((error) => {
+        toast({ 
+          title: "Error", 
+          description: error.response?.data?.error || "Failed to update template status",
+          variant: "destructive" 
+        });
+      });
   };
 
   if (isLoading) {
     return <div>Loading...</div>;
   }
+
+  const [, setLocation] = useLocation();
 
   return (
     <div className="mx-auto max-w-5xl bg-white min-h-screen shadow-lg relative">
@@ -281,15 +325,17 @@ export default function GradingConfig() {
                     <Switch
                       id={`active-${template._id}`}
                       checked={template.isActive}
-                      onCheckedChange={(checked) =>
-                        handleToggleActive(template._id!, checked)
+                      onCheckedChange={() =>
+                        handleToggleActive(template._id!, template.isActive)
                       }
+                      disabled={template.isActive && templates?.length === 1}
                     />
                   </div>
                   <Button
                     variant="destructive"
                     size="icon"
-                    onClick={() => deleteTemplate.mutate(template._id!)}
+                    onClick={() => handleDeleteTemplate(template._id!)}
+                    disabled={templates?.length === 1}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

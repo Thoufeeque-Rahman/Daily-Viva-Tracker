@@ -7,9 +7,8 @@ export const useActiveGradingConfig = () => {
     queryKey: ["active-grading-config"],
     queryFn: async () => {
       try {
-        const response = await axios.get("/api/grading-configs");
-        const configs: GradingConfig[] = response.data;
-        return configs.find(config => config.isActive) || null;
+        const response = await axios.get("/api/grading-configs/active");
+        return response.data;
       } catch (error) {
         console.error("Error fetching active grading config:", error);
         return null;

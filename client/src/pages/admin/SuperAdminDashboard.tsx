@@ -85,7 +85,8 @@ interface GradingConfig {
   name: string;
   description?: string;
   levels: Level[];
-  isActive: string[] | boolean; // Array of college IDs or legacy boolean
+  collegeId: string;
+  isActive: boolean;
 }
 
 export default function SuperAdminDashboard() {
@@ -206,19 +207,7 @@ export default function SuperAdminDashboard() {
 
   // Helper function to check if a grading config is active for current user's college
   const isConfigActiveForUser = (config: GradingConfig): boolean => {
-    if (!user?.collegeId) return false;
-    
-    // Handle legacy boolean format
-    if (typeof config.isActive === 'boolean') {
-      return config.isActive;
-    }
-    
-    // Handle new array format - check if user's college ID is in the array
-    if (Array.isArray(config.isActive)) {
-      return config.isActive.includes(user.collegeId);
-    }
-    
-    return false;
+    return config.isActive;
   };
 
   const handleCreateSemester = async () => {
@@ -416,7 +405,7 @@ export default function SuperAdminDashboard() {
           </div>
 
           <Tabs defaultValue="colleges" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-2 mb-4">
               <TabsTrigger value="colleges">College Profile</TabsTrigger>
               {/* <TabsTrigger value="teachers">Teachers</TabsTrigger> */}
               <TabsTrigger value="grading">Grading Configration</TabsTrigger>
@@ -467,12 +456,14 @@ export default function SuperAdminDashboard() {
                                 onCheckedChange={(checked) =>
                                   handleActivateGradingConfig(config._id)
                                 }
+                                disabled={isConfigActiveForUser(config) && gradingConfigs.length === 1}
                               />
                             </div>
                             <Button
                               variant="destructive"
                               size="icon"
                               onClick={() => deleteGradingConfig(config._id)}
+                              disabled={isConfigActiveForUser(config) && gradingConfigs.length === 1}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

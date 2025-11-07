@@ -3,105 +3,12 @@ const router = express.Router();
 const GradingConfig = require("../models/GradingConfig");
 const { authenticateToken, addCollegeFilter } = require("../middleware/auth");
 
-// Debug route to check current state of all configs
-router.get("/debug", authenticateToken, async (req, res) => {
-  try {
-    const userCollegeId = req.user.collegeId;
-    const allConfigs = await GradingConfig.find();
-    
-    const debugInfo = allConfigs.map(config => ({
-      id: config._id.toString(),
-      name: config.name,
-      collegeId: config.collegeId?.toString() || 'global',
-      isActive: config.isActive.map(id => id.toString()),
-      isActiveForUser: Array.isArray(config.isActive) && 
-        config.isActive.some(id => id.toString() === userCollegeId.toString())
-    }));
-    
-    res.json({
-      userCollegeId: userCollegeId.toString(),
-      configs: debugInfo
-    });
-  } catch (error) {
-    console.error("Debug error:", error);
-    res.status(500).json({ error: "Debug failed" });
-  }
-});
-
-// Migration route to convert old boolean isActive to new array format
-router.post("/migrate", authenticateToken, async (req, res) => {
-  try {
-    console.log("Starting migration of grading configs from boolean to array format...");
-    
-    const allConfigs = await GradingConfig.find();
-    let migratedCount = 0;
-    
-    for (const config of allConfigs) {
-      if (!Array.isArray(config.isActive)) {
-        console.log(`Migrating config: ${config.name} (${config._id})`);
-        
-        // Convert boolean to array
-        let newIsActive = [];
-        if (config.isActive === true) {
-          // If it was active, make it active for its own college (or first college if no collegeId)
-          newIsActive = config.collegeId ? [config.collegeId] : [];
-        }
-        
-        config.isActive = newIsActive;
-        await config.save();
-        migratedCount++;
-        
-        console.log(`  -> Converted to array:`, newIsActive);
-      }
-    }
-    
-    console.log(`Migration completed. Migrated ${migratedCount} configs.`);
-    res.json({ 
-      success: true, 
-      message: `Migration completed. Migrated ${migratedCount} grading configurations.`,
-      migratedCount 
-    });
-  } catch (error) {
-    console.error("Error during migration:", error);
-    res.status(500).json({ error: "Migration failed" });
-  }
-});
-
-// Get grading configurations (global configs + configs active for user's college)
+// Get grading configurations filtered by college
 router.get("/", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
-    const userCollegeId = req.user.collegeId;
-    console.log("Fetching grading configs for college:", userCollegeId);
-    
-    // Get all configs first, then filter programmatically to handle migration
-    const allConfigs = await GradingConfig.find().sort({ createdAt: -1 });
-    
-    const accessibleConfigs = [];
-    
-    for (const config of allConfigs) {
-      // Handle migration from old boolean schema
-      if (!Array.isArray(config.isActive)) {
-        console.log("Migrating config:", config.name, "from boolean to array format");
-        const newIsActive = config.isActive === true ? [config.collegeId || userCollegeId] : [];
-        config.isActive = newIsActive;
-        await config.save();
-      }
-      
-      // Check if config is accessible:
-      // 1. Global configs (no collegeId)
-      // 2. Configs where user's college ID is in the isActive array
-      const isGlobal = !config.collegeId;
-      const userCollegeIdStr = userCollegeId.toString();
-      const isActiveForCollege = Array.isArray(config.isActive) && 
-        config.isActive.some(id => id.toString() === userCollegeIdStr);
-      
-      if (isGlobal || isActiveForCollege) {
-        accessibleConfigs.push(config);
-      }
-    }
-    
-    console.log(`Found ${accessibleConfigs.length} accessible grading configs`);
-    res.json(accessibleConfigs);
+    console.log("Fetching grading configs with college filter:", req.collegeFilter);
+    const configs = await GradingConfig.find(req.collegeFilter || {}).sort({ createdAt: -1 });
+    res.json(configs);
   } catch (error) {
     console.error("Error fetching grading configurations:", error);
     res.status(500).json({ error: "Failed to fetch grading configurations" });
@@ -109,10 +16,9 @@ router.get("/", authenticateToken, addCollegeFilter, async (req, res) => {
 });
 
 // Create a new grading configuration
-router.post("/", authenticateToken, async (req, res) => {
+router.post("/", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
-    const { name, emoji, description, levels, isGlobal } = req.body;
-    const userCollegeId = req.user.collegeId;
+    const { name, description, levels } = req.body;
 
     // Validate input
     if (!name || !levels || !Array.isArray(levels) || levels.length === 0) {
@@ -121,22 +27,29 @@ router.post("/", authenticateToken, async (req, res) => {
 
     // Validate each level has required fields
     const invalidLevel = levels.find(
-      level => !level.name || level.mark === undefined || !level.color || !level.emoji
+      level => !level.name || level.mark === undefined || !level.color
     );
     if (invalidLevel) {
       return res.status(400).json({ 
-        error: 'Each level must have a name, mark, color, and emoji' 
+        error: 'Each level must have a name, mark, and color' 
       });
+    }
+
+    // For regular teachers, use their college ID; for super admin, require college ID in request
+    let collegeId;
+    if (req.user.role === 'super_admin') {
+      collegeId = req.body.collegeId;
+      if (!collegeId) {
+        return res.status(400).json({ error: "College ID is required" });
+      }
+    } else {
+      collegeId = req.collegeId;
     }
 
     // Check if configuration with this name already exists for this college
     const existingConfig = await GradingConfig.findOne({ 
       name,
-      $or: [
-        { collegeId: userCollegeId },
-        { collegeId: { $exists: false } },
-        { collegeId: null }
-      ]
+      collegeId
     });
     if (existingConfig) {
       return res.status(400).json({ error: "Configuration with this name already exists" });
@@ -144,15 +57,14 @@ router.post("/", authenticateToken, async (req, res) => {
 
     const config = new GradingConfig({
       name,
-      emoji,
       description,
       levels,
-      collegeId: isGlobal ? null : userCollegeId,
-      isActive: isGlobal ? [] : [userCollegeId] // Auto-activate for creating college
+      collegeId,
+      isActive: false // Default to inactive
     });
 
     await config.save();
-    console.log("Created grading config:", config.name, "for college:", userCollegeId);
+    console.log("Created grading config:", config.name, "for college:", collegeId);
     res.status(201).json(config);
   } catch (error) {
     console.error("Error creating grading configuration:", error);
@@ -160,111 +72,75 @@ router.post("/", authenticateToken, async (req, res) => {
   }
 });
 
-// Activate/Deactivate a grading configuration for user's college
-router.put("/:id/activate", authenticateToken, async (req, res) => {
+// Toggle activation of a grading configuration
+router.put("/:id/activate", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
-    const userCollegeId = req.user.collegeId;
-    const config = await GradingConfig.findById(req.params.id);
+    const config = await GradingConfig.findOne({
+      ...req.collegeFilter,
+      _id: req.params.id
+    });
 
     if (!config) {
       return res.status(404).json({ error: "Grading configuration not found" });
     }
 
-    // Handle migration from old boolean schema to new array schema
-    if (!Array.isArray(config.isActive)) {
-      console.log("Migrating old grading config format to new array format");
-      // If it's not an array (old schema), convert it
-      const newIsActive = config.isActive === true ? [userCollegeId] : [];
-      config.isActive = newIsActive;
+    if (config.isActive) {
+      // Check if this is the only grading config for this college
+      const totalConfigs = await GradingConfig.countDocuments(req.collegeFilter);
+      const activeConfigs = await GradingConfig.countDocuments({
+        ...req.collegeFilter,
+        isActive: true
+      });
+
+      // Prevent deactivating if this is the only config or the only active config
+      if (totalConfigs === 1) {
+        return res.status(400).json({ 
+          error: "Cannot deactivate the only grading configuration. At least one grading configuration must remain active." 
+        });
+      }
+
+      if (activeConfigs === 1) {
+        return res.status(400).json({ 
+          error: "Cannot deactivate the last active grading configuration. At least one grading configuration must remain active." 
+        });
+      }
+
+      // Deactivate this config
+      config.isActive = false;
       await config.save();
-    }
-    
-    // Refresh config to get latest state
-    const freshConfig = await GradingConfig.findById(req.params.id);
-    
-    // Check if college ID is in isActive array (convert to strings for comparison)
-    const userCollegeIdStr = userCollegeId.toString();
-    const isCurrentlyActive = Array.isArray(freshConfig.isActive) && 
-      freshConfig.isActive.some(id => id.toString() === userCollegeIdStr);
-    
-    console.log("=== TOGGLE DEBUG ===");
-    console.log("Config name:", freshConfig.name);
-    console.log("User College ID:", userCollegeIdStr);
-    console.log("Config active array:", freshConfig.isActive.map(id => id.toString()));
-    console.log("Is currently active:", isCurrentlyActive);
-    console.log("===================");
-    
-    let updatedConfig;
-    if (isCurrentlyActive) {
-      // Deactivate: Remove college ID from isActive array
-      console.log("DEACTIVATING config:", freshConfig.name, "for college:", userCollegeIdStr);
-      updatedConfig = await GradingConfig.findByIdAndUpdate(
-        req.params.id,
-        { $pull: { isActive: userCollegeId } },
-        { new: true }
-      );
-      console.log("DEACTIVATED - New active array:", updatedConfig.isActive.map(id => id.toString()));
+      console.log("DEACTIVATED config:", config.name);
     } else {
-      // Activate: First deactivate all other configs for this college, then activate this one
-      console.log("ACTIVATING config:", freshConfig.name, "for college:", userCollegeIdStr);
-      
-      // Step 1: Remove this college ID from ALL other configs
+      // Activate this config and deactivate all others for this college
       await GradingConfig.updateMany(
         { 
-          _id: { $ne: req.params.id }, // Exclude current config
-          isActive: userCollegeId 
+          ...req.collegeFilter,
+          _id: { $ne: req.params.id } 
         },
-        { $pull: { isActive: userCollegeId } }
+        { isActive: false }
       );
       
-      console.log("Deactivated all other configs for this college");
-      
-      // Step 2: Activate this config for the college
-      updatedConfig = await GradingConfig.findByIdAndUpdate(
-        req.params.id,
-        { $addToSet: { isActive: userCollegeId } },
-        { new: true }
-      );
-      console.log("ACTIVATED - New active array:", updatedConfig.isActive.map(id => id.toString()));
+      config.isActive = true;
+      await config.save();
+      console.log("ACTIVATED config:", config.name);
     }
 
-    res.json(updatedConfig);
+    res.json(config);
   } catch (error) {
     console.error("Error toggling grading configuration:", error);
     res.status(500).json({ error: "Failed to toggle grading configuration" });
   }
 });
 
-// Get active grading configurations for user's college
-router.get("/active", authenticateToken, async (req, res) => {
+// Get active grading configuration for user's college
+router.get("/active", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
-    const userCollegeId = req.user.collegeId;
+    console.log("Fetching active grading config with college filter:", req.collegeFilter);
+    const activeConfig = await GradingConfig.findOne({
+      ...req.collegeFilter,
+      isActive: true
+    });
     
-    // Get all configs and find ones active for this college
-    const allConfigs = await GradingConfig.find();
-    let activeConfig = null;
-    
-    for (const config of allConfigs) {
-      // Handle migration from old boolean schema
-      if (!Array.isArray(config.isActive)) {
-        console.log("Migrating active config:", config.name, "from boolean to array format");
-        const newIsActive = config.isActive === true ? [config.collegeId || userCollegeId] : [];
-        config.isActive = newIsActive;
-        await config.save();
-      }
-      
-      // Check if this config is active for the user's college
-      const userCollegeIdStr = userCollegeId.toString();
-      const isActiveForThisCollege = Array.isArray(config.isActive) && 
-        config.isActive.some(id => id.toString() === userCollegeIdStr);
-        
-      if (isActiveForThisCollege) {
-        activeConfig = config;
-        break; // Use the first active one found
-      }
-    }
-    
-    console.log("Active grading config for college:", userCollegeId, "->", activeConfig?.name || "none");
+    console.log("Active grading config:", activeConfig?.name || "none");
     res.json(activeConfig);
   } catch (error) {
     console.error("Error fetching active grading configuration:", error);
@@ -273,7 +149,7 @@ router.get("/active", authenticateToken, async (req, res) => {
 });
 
 // Update grading configuration
-router.put("/:id", authenticateToken, async (req, res) => {
+router.put("/:id", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
     const { name, description, levels, isActive } = req.body;
 
@@ -291,18 +167,24 @@ router.put("/:id", authenticateToken, async (req, res) => {
       });
     }
 
-    // If this template is being set as active, deactivate all others
+    // If this template is being set as active, deactivate all others for this college
     if (isActive) {
       await GradingConfig.updateMany(
-        { _id: { $ne: req.params.id } },
+        { 
+          ...req.collegeFilter,
+          _id: { $ne: req.params.id } 
+        },
         { isActive: false }
       );
     }
 
-    const config = await GradingConfig.findByIdAndUpdate(
-      req.params.id,
+    const config = await GradingConfig.findOneAndUpdate(
+      {
+        ...req.collegeFilter,
+        _id: req.params.id
+      },
       { name, description, levels, isActive },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
     if (!config) {
@@ -317,13 +199,45 @@ router.put("/:id", authenticateToken, async (req, res) => {
 });
 
 // Delete grading configuration
-router.delete("/:id", authenticateToken, async (req, res) => {
+router.delete("/:id", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
-    const config = await GradingConfig.findByIdAndDelete(req.params.id);
+    // Check if this is the only grading config for this college
+    const totalConfigs = await GradingConfig.countDocuments(req.collegeFilter);
+    
+    if (totalConfigs === 1) {
+      return res.status(400).json({ 
+        error: "Cannot delete the only grading configuration. At least one grading configuration must exist." 
+      });
+    }
 
-    if (!config) {
+    const configToDelete = await GradingConfig.findOne({
+      ...req.collegeFilter,
+      _id: req.params.id
+    });
+
+    if (!configToDelete) {
       return res.status(404).json({ error: "Grading configuration not found" });
     }
+
+    // If deleting an active config, activate another one
+    if (configToDelete.isActive) {
+      const otherConfig = await GradingConfig.findOne({
+        ...req.collegeFilter,
+        _id: { $ne: req.params.id }
+      });
+
+      if (otherConfig) {
+        otherConfig.isActive = true;
+        await otherConfig.save();
+        console.log("Activated config:", otherConfig.name, "as replacement");
+      }
+    }
+
+    // Now delete the config
+    await GradingConfig.findOneAndDelete({
+      ...req.collegeFilter,
+      _id: req.params.id
+    });
 
     res.json({ message: "Grading configuration deleted successfully" });
   } catch (error) {
