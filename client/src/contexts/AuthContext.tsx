@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { apiFetch } from "@/lib/api-utils";
 
 interface Subject {
   subject: string;
@@ -53,12 +54,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const checkAuth = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`${baseUrl}/api/teachers/me`, {
-          credentials: "include",
-        });
+        const response = await apiFetch('/api/teachers/me');
         if (response.ok) {
           const userData = await response.json();
           setUser(userData);
+        } else {
+          console.log('Auth check failed:', response.status, response.statusText);
         }
       } catch (error) {
         console.error("Failed to check authentication:", error);
@@ -68,18 +69,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     checkAuth();
-  }, [baseUrl]);
+  }, []);
 
   const login = async (username: string, password: string) => {
     try {
       setIsLoginLoading(true);
-      const response = await fetch(`${baseUrl}/api/teachers/login`, {
+      const response = await apiFetch('/api/teachers/login', {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({ email: username, password }),
-        credentials: "include",
       });
 
       if (!response.ok) {
@@ -100,9 +97,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       setIsLogoutLoading(true);
-      await fetch(`${baseUrl}/api/teachers/logout`, {
+      await apiFetch('/api/teachers/logout', {
         method: "POST",
-        credentials: "include",
       });
       setUser(null);
     } catch (error) {
