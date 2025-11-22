@@ -21,8 +21,8 @@ const sessionConfig = {
   }),
   cookie: {
     httpOnly: true,
-    secure: true, // Always use secure cookies in production
-    sameSite: 'none', // Allow cross-site cookies
+    secure: true, // Always use secure cookies
+    sameSite: process.env.VERCEL_ENV ? 'lax' : 'none', // Use lax for first-party (Vercel proxy), none for cross-site
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   },
   name: 'sid', // Change the cookie name from 'connect.sid'

@@ -60,8 +60,8 @@ router.post('/register', authenticateToken, isSuperAdmin, async (req, res) => {
     // Set token in cookie
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      secure: true, // Always use secure
+      sameSite: process.env.VERCEL_ENV ? 'lax' : 'none', // Use lax for first-party (Vercel proxy), none for cross-site
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
@@ -118,8 +118,8 @@ router.post('/login', async (req, res) => {
     // Set token in cookie
     res.cookie('token', token, {
       httpOnly: true,
-      secure: true, // Always use secure in production
-      sameSite: 'none', // Allow cross-site cookies
+      secure: true, // Always use secure 
+      sameSite: process.env.VERCEL_ENV ? 'lax' : 'none', // Use lax for first-party (Vercel proxy), none for cross-site
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
@@ -142,8 +142,12 @@ router.post('/login', async (req, res) => {
 
 // Logout
 router.post('/logout', (req, res) => {
-  // Clear the token cookie
-  res.clearCookie('token');
+  // Clear the token cookie with same settings as when it was set
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: true,
+    sameSite: process.env.VERCEL_ENV ? 'lax' : 'none'
+  });
   
   // Clear session if it exists
   if (req.session) {
