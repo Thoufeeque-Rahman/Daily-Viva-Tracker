@@ -6,20 +6,44 @@ const { authenticateToken, addCollegeFilter } = require("../middleware/auth");
 // Add a new round
 router.post("/", authenticateToken, addCollegeFilter, async (req, res) => {
     console.log(req.body);
-  const round = new Rounds({
-    class: req.body.class,
-    subject: req.body.subject,
-    studentsNotAsked: req.body.studentsNotAsked || [], // Assuming studentsNotAsked is an array of students roll numbers
-    totalStudents: req.body.totalStudents,
-    startedAt: new Date(),
-    collegeId: req.user.collegeId, // Add college ID from authenticated user
-    // endedAt: { type: Date, default: null },
-  });
-
+  
   try {
+    const { studentsNotAsked, class: classNum, subject, totalStudents } = req.body;
+    const studentIds = studentsNotAsked || [];
+    
+    // Validate that all student IDs belong to the teacher's college
+    if (studentIds.length > 0) {
+      const Student = require("../models/Students");
+      
+      // Check if all students belong to the same college as the teacher
+      const studentCount = await Student.countDocuments({
+        _id: { $in: studentIds },
+        collegeId: req.user.collegeId
+      });
+      
+      if (studentCount !== studentIds.length) {
+        return res.status(403).json({ 
+          message: "Access denied: Some students do not belong to your college",
+          details: `Expected ${studentIds.length} students from your college, found ${studentCount}`
+        });
+      }
+      
+      console.log(`Validated ${studentCount} students belong to college ${req.user.collegeId}`);
+    }
+
+    const round = new Rounds({
+      class: classNum,
+      subject: subject,
+      studentsNotAsked: studentIds,
+      totalStudents: totalStudents,
+      startedAt: new Date(),
+      collegeId: req.user.collegeId, // Add college ID from authenticated user
+    });
+
     const newRound = await round.save();
     res.status(201).json(newRound);
   } catch (err) {
+    console.error("Error creating round:", err);
     res.status(400).json({ message: err.message });
   }
 });
@@ -85,8 +109,30 @@ router.post("/:id/increaseRound", authenticateToken, addCollegeFilter, async (re
     const round = await Rounds.findOne({ _id: id, ...(req.collegeFilter || {}) });
     if (!round) return res.status(404).json({ message: "Round not found" });
 
+    const studentIds = req.body.studentsNotAsked || [];
+    
+    // Validate that all student IDs belong to the teacher's college
+    if (studentIds.length > 0) {
+      const Student = require("../models/Students");
+      
+      // Check if all students belong to the same college as the teacher
+      const studentCount = await Student.countDocuments({
+        _id: { $in: studentIds },
+        collegeId: req.user.collegeId
+      });
+      
+      if (studentCount !== studentIds.length) {
+        return res.status(403).json({ 
+          message: "Access denied: Some students do not belong to your college",
+          details: `Expected ${studentIds.length} students from your college, found ${studentCount}`
+        });
+      }
+      
+      console.log(`Validated ${studentCount} students belong to college ${req.user.collegeId} for round increase`);
+    }
+
     round.roundNumber += 1;
-    round.studentsNotAsked = req.body.studentsNotAsked; // Assuming studentsNotAsked is an array of students roll numbers
+    round.studentsNotAsked = studentIds;
     round.studentsAsked = [];
     round.startedAt = new Date();
     round.endedAt = null;
@@ -99,6 +145,7 @@ router.post("/:id/increaseRound", authenticateToken, addCollegeFilter, async (re
     });
     res.status(200).json(rounds);
   } catch (err) {
+    console.error("Error increasing round:", err);
     res.status(500).json({ message: err.message });
   }
 });
