@@ -119,8 +119,7 @@ router.post('/login', async (req, res) => {
     res.cookie('token', token, {
       httpOnly: true,
       secure: true, // Always use secure 
-      sameSite: 'none',
-      // sameSite: process.env.VERCEL_ENV ? 'lax' : 'none', // Use lax for first-party (Vercel proxy), none for cross-site
+      sameSite: 'lax', // Force lax for same-site cookies
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
@@ -131,7 +130,7 @@ router.post('/login', async (req, res) => {
     // Add tId field for frontend compatibility
     teacherData.tId = teacherData._id.toString();
 
-    res.json({
+    res.json({ 
       teacher: teacherData,
       token // Include token in response for client storage
     });
@@ -147,8 +146,7 @@ router.post('/logout', (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
     secure: true,
-    sameSite: 'none',
-    // sameSite: process.env.VERCEL_ENV ? 'lax' : 'none'
+    sameSite: 'lax'
   });
   
   // Clear session if it exists

@@ -58,19 +58,7 @@ app.options("*", (req, res) => {
   res.sendStatus(200);
 });
 
-// Configure cookie settings
-app.use((req, res, next) => {
-  // Login / Auth response
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "none",
-    path: "/",
-    domain: process.env.NODE_ENV === "production" ? "daily-viva-tracker.vercel.app" : undefined,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
-  next();
-});
+// Remove unnecessary cookie middleware - cookies are set in auth routes
 
 // Session middleware
 app.use(session(sessionConfig));
