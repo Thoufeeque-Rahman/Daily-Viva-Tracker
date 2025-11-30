@@ -147,7 +147,8 @@ router.post('/logout', (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
     secure: true,
-    sameSite: process.env.VERCEL_ENV ? 'lax' : 'none'
+    sameSite: 'none',
+    // sameSite: process.env.VERCEL_ENV ? 'lax' : 'none'
   });
   
   // Clear session if it exists

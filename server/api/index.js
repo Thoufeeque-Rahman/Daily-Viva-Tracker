@@ -64,7 +64,7 @@ app.use((req, res, next) => {
   res.cookie("token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "none",
     path: "/",
     domain: process.env.NODE_ENV === "production" ? "daily-viva-tracker.vercel.app" : undefined,
     maxAge: 7 * 24 * 60 * 60 * 1000,
