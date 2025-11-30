@@ -1,4 +1,5 @@
 import { Student } from "@/types";
+import { apiFetch } from "@/lib/api-utils";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -113,7 +114,7 @@ export default function EvaluationScreen({
   // Get auth context and toast
   const { user } = useAuth();
   const { toast } = useToast();
-  const baseUrl = import.meta.env.VITE_BASE_URL;
+  // const baseUrl = import.meta.env.VITE_BASE_URL;
 
   // Utility functions for styling
   const getGradientClass = (color: string) => {
@@ -153,9 +154,7 @@ export default function EvaluationScreen({
   // Fetch all students with statistics
   const fetchAllStudentsData = async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/students`, {
-        credentials: "include",
-      });
+      const response = await apiFetch(`/api/students`);
       if (!response.ok) throw new Error("Failed to fetch students");
       const data = await response.json();
       setAllStudentsData(data);
@@ -167,9 +166,7 @@ export default function EvaluationScreen({
   // Fetch DVT marks for statistics
   const fetchDvtMarks = async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/dvtmarks`, {
-        credentials: "include",
-      });
+      const response = await apiFetch(`/api/dvtmarks`);
       if (!response.ok) throw new Error("Failed to fetch DVT marks");
       const data = await response.json();
       setDvtMarks(data);

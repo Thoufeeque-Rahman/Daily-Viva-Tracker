@@ -64,9 +64,9 @@ app.use((req, res, next) => {
   res.cookie("token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "none",
+    sameSite: "lax",
     path: "/",
-    domain: "daily-viva-tracker.vercel.app", // if frontend and backend are on different subdomains
+    domain: process.env.NODE_ENV === "production" ? "daily-viva-tracker.vercel.app" : undefined,
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
   next();

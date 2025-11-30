@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api-utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 import Header from "@/components/Header";
@@ -83,7 +84,7 @@ export default function AdminStats() {
   const [classStats, setClassStats] = useState<ClassStats[]>([]);
   const [teacherStats, setTeacherStats] = useState<TeacherStats[]>([]);
   
-  const baseUrl = import.meta.env.VITE_BASE_URL;
+  // const baseUrl = import.meta.env.VITE_BASE_URL;
 
   // Check if user is super admin
   useEffect(() => {
@@ -100,9 +101,7 @@ export default function AdminStats() {
   // Fetch overall statistics
   const fetchOverallStats = async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/admin/stats/overall?range=${selectedTimeRange}`, {
-        credentials: "include",
-      });
+      const response = await apiFetch(`/api/admin/stats/overall?range=${selectedTimeRange}`);
       if (!response.ok) throw new Error("Failed to fetch overall stats");
       const data = await response.json();
       setOverallStats(data);
@@ -119,9 +118,7 @@ export default function AdminStats() {
   // Fetch class-wise statistics
   const fetchClassStats = async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/admin/stats/classes?range=${selectedTimeRange}`, {
-        credentials: "include",
-      });
+      const response = await apiFetch(`/api/admin/stats/classes?range=${selectedTimeRange}`);
       if (!response.ok) throw new Error("Failed to fetch class stats");
       const data = await response.json();
       setClassStats(data);
@@ -138,9 +135,7 @@ export default function AdminStats() {
   // Fetch teacher-wise statistics
   const fetchTeacherStats = async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/admin/stats/teachers?range=${selectedTimeRange}`, {
-        credentials: "include",
-      });
+      const response = await apiFetch(`/api/admin/stats/teachers?range=${selectedTimeRange}`);
       if (!response.ok) throw new Error("Failed to fetch teacher stats");
       const data = await response.json();
       setTeacherStats(data);

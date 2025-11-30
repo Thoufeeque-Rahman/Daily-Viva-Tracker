@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api-utils";
 import { Calendar, RefreshCw, Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { getPerformanceColors } from "@/lib/colors";
@@ -64,7 +65,7 @@ const DvtMarksTable: React.FC = () => {
   const [tableData, setTableData] = useState<DayData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const baseUrl = import.meta.env.VITE_BASE_URL;
+  // const baseUrl = import.meta.env.VITE_BASE_URL;
 
   // Default date range to today
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -79,9 +80,7 @@ const DvtMarksTable: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${baseUrl}/api/dvtmarks/dvtmarksbydate`, {
-        credentials: 'include', // This will send the cookie
-      });
+      const response = await apiFetch(`/api/dvtmarks/dvtmarksbydate`);
       if (!response.ok) throw new Error("Failed to fetch DVT marks");
       const data = await response.json();
       console.log(data.data);

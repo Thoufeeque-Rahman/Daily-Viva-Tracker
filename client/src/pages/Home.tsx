@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api-utils";
 import Header from "@/components/Header";
 import StartScreen from "@/components/StartScreen";
 import EvaluationScreen from "@/components/EvaluationScreen";
@@ -61,18 +62,14 @@ export default function Home() {
   };
 
   // const baseUrl = "http://localhost:5000"; // Change to your backend URL
-  const baseUrl = import.meta.env.VITE_BASE_URL; // Change to your backend URL
+  // const baseUrl = import.meta.env.VITE_BASE_URL; // Change to your backend URL
 
   // Fetch students based on selected class
   const fetchStudents = async (classId: number) => {
     console.log("Fetching students for class ID:", classId);
 
-    const response = await fetch(`${baseUrl}/api/students/class/${classId}`, {
+    const response = await apiFetch(`/api/students/class/${classId}`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
     });
     if (!response.ok) {
       throw new Error("Failed to fetch students");
@@ -86,12 +83,8 @@ export default function Home() {
   const createRound = async (subject: SubjectInfo, students: Student[]) => {
     console.log("Creating round for subject:", subject);
 
-    const response = await fetch(`${baseUrl}/api/rounds/`, {
+    const response = await apiFetch(`/api/rounds/`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
       body: JSON.stringify({
         studentsNotAsked: students.map((student) => student._id),
         subject: subject.subject,
@@ -118,14 +111,10 @@ export default function Home() {
     console.log("Fetching round for subject:", subject);
     setIsLoadingRound(true);
     try {
-      const response = await fetch(
-        `${baseUrl}/api/rounds/${subject.subject}/${subject.class}`,
+      const response = await apiFetch(
+        `/api/rounds/${subject.subject}/${subject.class}`,
         {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
         }
       );
       if (!response.ok) {
@@ -169,17 +158,13 @@ export default function Home() {
 
   const increaseRound = async () => {
     console.log("Increasing round", rounds[0]);
-    const response = await fetch(
-      `${baseUrl}/api/rounds/${rounds[0]._id}/increaseRound`,
+    const response = await apiFetch(
+      `/api/rounds/${rounds[0]._id}/increaseRound`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           studentsNotAsked: students.map((student) => student._id),
         }),
-        credentials: "include",
       }
     );
     if (!response.ok) {
@@ -197,12 +182,8 @@ export default function Home() {
 
   const fetchStudent = async (studentId: string) => {
     console.log("Fetching student with ID:", studentId);
-    const response = await fetch(`${baseUrl}/api/students/${studentId}`, {
+    const response = await apiFetch(`/api/students/${studentId}`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
     });
     if (!response.ok) {
       console.log("Failed to fetch student:", response.statusText);
@@ -266,15 +247,11 @@ export default function Home() {
       return;
     }
     console.log("Removing student from round:", studentId);
-    const response = await fetch(
-      `${baseUrl}/api/rounds/${rounds[0]._id}/students/${studentId}`,
+    const response = await apiFetch(
+      `/api/rounds/${rounds[0]._id}/students/${studentId}`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({}),
-        credentials: "include",
       }
     );
     if (!response.ok) {
@@ -404,11 +381,8 @@ export default function Home() {
 
     setIsSavingEvaluation(true);
     try {
-        const response = await fetch(`${baseUrl}/api/dvtmarks`, {
+        const response = await apiFetch(`/api/dvtmarks`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           studentId: currentStudent._id,
           subject: selectedSubject.subject,
@@ -418,7 +392,6 @@ export default function Home() {
           tId: user?.tId,
           punishment,
         }),
-        credentials: "include",
       }); 
 
       const data = await response.json();

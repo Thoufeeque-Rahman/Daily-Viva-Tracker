@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -74,7 +75,7 @@ export default function CollegeRegistration() {
   const checkRegistrationStatus = async () => {
     try {
       setCheckingStatus(true);
-      const response = await fetch('/api/registration/registration-status');
+      const response = await apiFetch('/api/registration/registration-status');
       const data = await response.json();
       setRegistrationEnabled(data.enabled);
     } catch (error) {
@@ -203,12 +204,8 @@ export default function CollegeRegistration() {
         adminDateOfBirth: formData.adminDateOfBirth || undefined,
       };
 
-      const response = await fetch('/api/registration/register-college', {
+      const response = await apiFetch('/api/registration/register-college', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
         body: JSON.stringify(registrationData),
       });
 

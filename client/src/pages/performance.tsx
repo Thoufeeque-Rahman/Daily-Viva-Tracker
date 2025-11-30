@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api-utils";
 import Header from "@/components/Header";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -59,13 +60,11 @@ export default function Performance() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [isAskMeModalOpen, setIsAskMeModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const baseUrl = import.meta.env.VITE_BASE_URL;
+  // const baseUrl = import.meta.env.VITE_BASE_URL;
 
   const fetchStudents = async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/students`, {
-        credentials: "include",
-      });
+      const response = await apiFetch(`/api/students`);
       if (!response.ok) throw new Error("Failed to fetch students");
       const data = await response.json();
       console.log(data);
@@ -82,9 +81,7 @@ export default function Performance() {
 
   const fetchDvtMarks = async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/dvtmarks`, {
-        credentials: "include",
-      });
+      const response = await apiFetch(`/api/dvtmarks`);
       if (!response.ok) throw new Error("Failed to fetch DVT marks");
       const data = await response.json();
       setDvtMarks(data);
@@ -180,12 +177,8 @@ export default function Performance() {
     const classNum = parseInt(selectedSubject.split("|")[1]);
 
     try {
-      const response = await fetch(`${baseUrl}/api/dvtmarks`, {
+      const response = await apiFetch(`/api/dvtmarks`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
         body: JSON.stringify({
           studentId: selectedStudent._id,
           subject: subject,

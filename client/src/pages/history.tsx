@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api-utils";
 import Header from "@/components/Header";
 import {
   Select,
@@ -223,7 +224,7 @@ export default function History() {
   const [dvtMarks, setDvtMarks] = useState<DvtMark[]>([]);
   const [students, setStudents] = useState<{ [key: string]: Student }>({});
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const baseUrl = import.meta.env.VITE_BASE_URL;
+  // const baseUrl = import.meta.env.VITE_BASE_URL;
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isAskMeModalOpen, setIsAskMeModalOpen] = useState(false);
 
@@ -233,9 +234,7 @@ export default function History() {
   // Fetch all students when component mounts
   const fetchStudents = async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/students`, {
-        credentials: "include",
-      });
+      const response = await apiFetch(`/api/students`);
       if (!response.ok) throw new Error("Failed to fetch students");
       const data = await response.json();
       console.log(data);
@@ -260,9 +259,7 @@ export default function History() {
   // Fetch all DvtMarks when component mounts
   const fetchDvtMarks = async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/dvtMarks`, {
-        credentials: "include",
-      });
+      const response = await apiFetch(`/api/dvtMarks`);
       if (!response.ok) throw new Error("Failed to fetch DvtMarks");
       const data = await response.json();
       console.log("Fetched DvtMarks:", data);
@@ -278,9 +275,8 @@ export default function History() {
   const handleDelete = async (id: string) => {
     try {
       const token = localStorage.getItem("token"); // Get token from localStorage
-      const response = await fetch(`${baseUrl}/api/dvtMarks/${id}`, {
+      const response = await apiFetch(`/api/dvtMarks/${id}`, {
         method: "DELETE",
-        credentials: "include",
         headers: {
           Authorization: `Bearer ${token}`, // Include token in headers
         },
@@ -312,13 +308,11 @@ export default function History() {
   const handleEdit = async (id: string, mark: number, punishment?: string) => {
     try {
       const token = localStorage.getItem("token"); // Get token from localStorage
-      const response = await fetch(`${baseUrl}/api/dvtMarks/${id}`, {
+      const response = await apiFetch(`/api/dvtMarks/${id}`, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`, // Include token in headers
         },
-        credentials: "include",
         body: JSON.stringify({ mark, punishment }),
       });
 
@@ -427,12 +421,8 @@ export default function History() {
     const classNum = parseInt(selectedSubject.split("|")[1]);
 
     try {
-      const response = await fetch(`${baseUrl}/api/dvtmarks`, {
+      const response = await apiFetch(`/api/dvtmarks`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
         body: JSON.stringify({
           studentId: selectedStudent._id,
           subject: subject,

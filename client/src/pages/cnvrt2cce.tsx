@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api-utils";
 import Header from "@/components/Header";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -71,17 +72,13 @@ export default function Cnvrt2CCE() {
   const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const [isLoadingMarks, setIsLoadingMarks] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const baseUrl = import.meta.env.VITE_BASE_URL;
+  // const baseUrl = import.meta.env.VITE_BASE_URL;
 
   const fetchStudents = async () => {
     setIsLoadingStudents(true);
     try {
-      const response = await fetch(`${baseUrl}/api/students`, {
+      const response = await apiFetch(`/api/students`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to fetch students");
       const data = await response.json();
@@ -102,12 +99,8 @@ export default function Cnvrt2CCE() {
   const fetchDvtMarks = async () => {
     setIsLoadingMarks(true);
     try {
-      const response = await fetch(`${baseUrl}/api/dvtmarks`, {
+      const response = await apiFetch(`/api/dvtmarks`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to fetch DVT marks");
       const data = await response.json();
@@ -206,12 +199,8 @@ export default function Cnvrt2CCE() {
     const classNum = parseInt(selectedSubject.split("|")[1]);
 
     try {
-      const response = await fetch(`${baseUrl}/api/dvtmarks`, {
+      const response = await apiFetch(`/api/dvtmarks`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
         body: JSON.stringify({
           studentId: selectedStudent._id,
           subject: subject,

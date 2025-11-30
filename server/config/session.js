@@ -21,7 +21,7 @@ const sessionConfig = {
   }),
   cookie: {
     httpOnly: true,
-    secure: true, // Always use secure cookies
+    secure: true, // Always use secure
     sameSite: process.env.VERCEL_ENV ? 'lax' : 'none', // Use lax for first-party (Vercel proxy), none for cross-site
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   },
@@ -31,4 +31,4 @@ const sessionConfig = {
 // Log MongoDB connection for debugging
 console.log('MongoDB URL for session store:', MONGODB_URL.replace(/\/\/([^:]+):([^@]+)@/, '//<credentials>@'));
 
-module.exports = sessionConfig; 
+module.exports = sessionConfig;

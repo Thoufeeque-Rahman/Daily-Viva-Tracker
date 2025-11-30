@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api-utils";
 import Header from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ interface ExportOptions {
 
 export default function Export() {
   const { toast } = useToast();
-  const baseUrl = import.meta.env.VITE_BASE_URL;
+  // const baseUrl = import.meta.env.VITE_BASE_URL;
 
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
     subjects: [],
@@ -46,9 +47,7 @@ export default function Export() {
 
   const fetchExportOptions = async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/exports/options`, {
-        credentials: "include",
-      });
+      const response = await apiFetch(`/api/exports/options`);
 
       if (response.ok) {
         const data = await response.json();
@@ -75,9 +74,7 @@ export default function Export() {
       if (filters.startDate) queryParams.append('startDate', filters.startDate);
       if (filters.endDate) queryParams.append('endDate', filters.endDate);
 
-      const response = await fetch(`${baseUrl}/api/exports/${type}?${queryParams}`, {
-        credentials: "include",
-      });
+      const response = await apiFetch(`/api/exports/${type}?${queryParams}`);
 
       if (response.ok) {
         const blob = await response.blob();
