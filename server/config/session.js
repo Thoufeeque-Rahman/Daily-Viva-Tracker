@@ -21,8 +21,8 @@ const sessionConfig = {
   }),
   cookie: {
     httpOnly: true,
-    secure: true, // Always use secure
-    sameSite: 'lax', // Force lax for same-site cookies
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   },
   name: 'sid', // Change the cookie name from 'connect.sid'

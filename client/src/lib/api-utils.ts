@@ -1,17 +1,18 @@
 // API utility for consistent URL handling across dev and production
 const baseUrl = import.meta.env.VITE_BASE_URL;
+const productionApiUrl = 'https://daily-viva-tracker-3p9w.vercel.app';
 
 /**
  * Creates the correct API URL for fetch calls
- * - In production (Vercel): Uses relative URLs to work with proxy
- * - In development: Uses baseUrl for direct API calls
+ * - In development: Uses baseUrl (localhost)
+ * - In production: Uses direct backend URL for cross-site requests
  */
 export const getApiUrl = (endpoint: string): string => {
   // Remove leading slash if present to avoid double slashes
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   
-  // If baseUrl is set (development), use it. Otherwise use relative URL (production proxy)
-  return baseUrl ? `${baseUrl}${cleanEndpoint}` : cleanEndpoint;
+  // If baseUrl is set (development), use it. Otherwise use production backend URL
+  return baseUrl ? `${baseUrl}${cleanEndpoint}` : `${productionApiUrl}${cleanEndpoint}`;
 };
 
 /**

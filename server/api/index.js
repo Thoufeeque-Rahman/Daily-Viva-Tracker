@@ -79,6 +79,20 @@ app.get("/api/test", (req, res) => {
   });
 });
 
+// Debug endpoint to check cookies
+app.get("/api/debug/cookies", (req, res) => {
+  res.json({
+    message: "Cookie debug endpoint",
+    cookies: req.cookies,
+    headers: {
+      cookie: req.headers.cookie,
+      origin: req.headers.origin,
+      userAgent: req.headers['user-agent']
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Import routes
 const studentRoutes = require("../routes/students");
 const teachersRoutes = require("../routes/teachers");

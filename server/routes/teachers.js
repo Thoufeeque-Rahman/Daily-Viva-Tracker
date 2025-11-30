@@ -118,9 +118,10 @@ router.post('/login', async (req, res) => {
     // Set token in cookie
     res.cookie('token', token, {
       httpOnly: true,
-      secure: true, // Always use secure 
-      sameSite: 'lax', // Force lax for same-site cookies
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      secure: process.env.NODE_ENV === 'production', // Use secure only in production
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // none for cross-site (prod), lax for same-site (dev)
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      domain: process.env.NODE_ENV === 'production' ? undefined : undefined // Let browser handle domain
     });
 
     // Return teacher data (excluding password)
@@ -145,8 +146,8 @@ router.post('/logout', (req, res) => {
   // Clear the token cookie with same settings as when it was set
   res.clearCookie('token', {
     httpOnly: true,
-    secure: true,
-    sameSite: 'lax'
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   });
   
   // Clear session if it exists
