@@ -15,8 +15,6 @@ export default function Navigation() {
   const [location, navigate] = useLocation()
 
   const { user } = useAuth();
-  console.log("Current user in Navigation:", user);
-  console.log("User role in Navigation:", user?.role);
 
   const menuItems = [
     {

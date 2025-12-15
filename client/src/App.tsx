@@ -4,7 +4,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
-import Home from "@/pages/Home";
+import StartPage from "@/pages/StartPage";
+import EvaluationPage from "@/pages/EvaluationPage";
 import AuthPage from "@/pages/auth-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { SuperAdminRoute } from "./lib/super-admin-route";
@@ -38,7 +39,8 @@ function Router() {
       <SuperAdminRoute path="/admin/stats" component={AdminStats} />
       <SuperAdminRoute path="/admin/grading" component={GradingConfig} />
       <SuperAdminRoute path="/admin/*" component={Dashboard} />
-      <ProtectedRoute path="/" component={Home} />
+      <ProtectedRoute path="/" component={StartPage} />
+      <ProtectedRoute path="/evaluation" component={EvaluationPage} />
       <ProtectedRoute path="/history" component={History} />
       <ProtectedRoute path="/performance" component={Performance} />
       <ProtectedRoute path="/cnvrt2cce" component={Convert2CCE} />
