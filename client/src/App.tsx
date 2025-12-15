@@ -23,10 +23,12 @@ import AdminStats from "@/pages/admin/AdminStats";
 import ManageTeachers from "@/pages/admin/ManageTeachers";
 import ManageStudents from "@/pages/admin/ManageStudents";
 import SuperAdminRegistration from "@/pages/SuperAdminRegistration";
+import { Analytics } from "@vercel/analytics/react"
 
 function Router() {
   return ( // TODO: Add a loading state
     <Switch>
+      <Analytics />
       <Route path="/auth" component={AuthPage} />
       <Route path="/super-admin-registration/:token" component={SuperAdminRegistration} />
       <SuperAdminRoute path="/admin/teachers/:id" component={TeacherDetails} />

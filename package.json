@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@vercel/analytics": "^1.6.1",
     "xlsx": "^0.18.5"
   }
 }
