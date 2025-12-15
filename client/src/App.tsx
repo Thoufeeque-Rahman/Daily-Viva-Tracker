@@ -24,13 +24,11 @@ import ManageTeachers from "@/pages/admin/ManageTeachers";
 import ManageStudents from "@/pages/admin/ManageStudents";
 import SuperAdminRegistration from "@/pages/SuperAdminRegistration";
 import { Analytics } from "@vercel/analytics/react"
-import { SpeedInsights } from "@vercel/speed-insights/next"
+import { SpeedInsights } from "@vercel/speed-insights/react"
 
 function Router() {
   return ( // TODO: Add a loading state
     <Switch>
-      <Analytics />
-      <SpeedInsights />
       <Route path="/auth" component={AuthPage} />
       <Route path="/super-admin-registration/:token" component={SuperAdminRegistration} />
       <SuperAdminRoute path="/admin/teachers/:id" component={TeacherDetails} />
@@ -56,6 +54,8 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
+          <Analytics />
+          <SpeedInsights />
           <Router />
           <Toaster />
         </TooltipProvider>
