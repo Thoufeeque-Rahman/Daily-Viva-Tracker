@@ -30,7 +30,7 @@ app.use(
       "https://daily-viva-tracker-3p9w.vercel.app", // Backend Vercel deployment URL
       "https://v6xrx50k-5000.inc1.devtunnels.ms",
       "https://daily-viva-tracker-frontend-2.vercel.app",
-      "https://daily-viva.darulirfan.co",
+      "https://dailyviva.darulirfan.co",
       // Allow any vercel.app subdomain for flexibility
       /^https:\/\/.*\.vercel\.app$/,
       /^https:\/\/daily-viva-tracker.*\.vercel\.app$/,
