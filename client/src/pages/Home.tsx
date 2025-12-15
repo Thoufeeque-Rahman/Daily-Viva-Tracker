@@ -8,6 +8,7 @@ import FeedbackToast from "@/components/FeedbackToast";
 import { useQuery } from "@tanstack/react-query";
 import { type Student, type SubjectInfo, type ClassInfo } from "@/types";
 import PunishmentModal from "@/components/PunishmentModal";
+import AnnouncementModal from "@/components/AnnouncementModal";
 import { s } from "vite/dist/node/types.d-aGj9QkWt";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -471,6 +472,8 @@ export default function Home() {
         onSubmit={handlePunishmentSubmit}
         onCancel={handlePunishmentCancel}
       />
+
+      <AnnouncementModal />
     </div>
   );
 }
