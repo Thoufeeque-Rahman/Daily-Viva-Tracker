@@ -95,7 +95,7 @@ export function ImprovementList({
 
   if (!improvements.length) {
     return (
-      <Card className="h-full">
+      <Card className="bg-white border border-gray-200 rounded-2xl shadow-sm h-full">
         <CardHeader className="p-0">
           <CardTitle className="p-3 text-sm flex items-center justify-between gap-2 border-b border-gray-200">
             <div className="flex items-center gap-2">
