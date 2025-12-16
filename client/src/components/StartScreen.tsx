@@ -279,7 +279,7 @@ export default function StartScreen({
                   isLoading ? "opacity-50 cursor-not-allowed" : ""
                 }`}
                 onClick={() => {
-                  if (!isLoading) {
+                  if (!isLoading) { 
                     onSubjectSelect({
                       subject: subject.subject,
                       class: subject.class,
