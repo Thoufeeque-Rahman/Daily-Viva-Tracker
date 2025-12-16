@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Download, FileSpreadsheet, Calendar, Users, BookOpen, Hash } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface ExportOptions {
   subjects: string[];
@@ -188,22 +189,22 @@ export default function Export() {
 
               <div className="space-y-2">
                 <Label htmlFor="start-date">Start Date</Label>
-                <Input
+                <DatePicker
                   id="start-date"
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                  date={filters.startDate ? new Date(filters.startDate) : undefined}
+                  onDateChange={(date) => setFilters({ ...filters, startDate: date ? date.toISOString().split('T')[0] : '' })}
+                  placeholder="Pick start date..."
                 />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="end-date">End Date</Label>
-              <Input
+              <DatePicker
                 id="end-date"
-                type="date"
-                value={filters.endDate}
-                onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                date={filters.endDate ? new Date(filters.endDate) : undefined}
+                onDateChange={(date) => setFilters({ ...filters, endDate: date ? date.toISOString().split('T')[0] : '' })}
+                placeholder="Pick end date..."
               />
             </div>
 

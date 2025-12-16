@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Card,
   CardContent,
@@ -496,11 +497,11 @@ export default function CollegeRegistration() {
 
                   <div className="space-y-2">
                     <Label htmlFor="adminDateOfBirth">Date of Birth</Label>
-                    <Input
+                    <DatePicker
                       id="adminDateOfBirth"
-                      type="date"
-                      value={formData.adminDateOfBirth}
-                      onChange={(e) => handleInputChange("adminDateOfBirth", e.target.value)}
+                      date={formData.adminDateOfBirth ? new Date(formData.adminDateOfBirth) : undefined}
+                      onDateChange={(date) => handleInputChange("adminDateOfBirth", date ? date.toISOString().split('T')[0] : '')}
+                      placeholder="Pick date of birth..."
                       disabled={isLoading}
                     />
                   </div>

@@ -71,6 +71,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { SubjectSelector } from "@/components/SubjectSelector";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Teacher {
   _id: string;
@@ -679,11 +680,11 @@ export default function ManageTeachers() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                      <Input
+                      <DatePicker
                         id="dateOfBirth"
-                        type="date"
-                        value={newTeacher.dateOfBirth}
-                        onChange={(e) => setNewTeacher({ ...newTeacher, dateOfBirth: e.target.value })}
+                        date={newTeacher.dateOfBirth ? new Date(newTeacher.dateOfBirth) : undefined}
+                        onDateChange={(date) => setNewTeacher({ ...newTeacher, dateOfBirth: date ? date.toISOString().split('T')[0] : "" })}
+                        placeholder="Pick date or type naturally..."
                       />
                     </div>
                     <div className="space-y-2">
@@ -1121,13 +1122,11 @@ export default function ManageTeachers() {
 
                   <div className="space-y-2">
                     <Label htmlFor="edit-dateOfBirth">Date of Birth</Label>
-                    <Input
+                    <DatePicker
                       id="edit-dateOfBirth"
-                      type="date"
-                      value={editTeacher.dateOfBirth}
-                      onChange={(e) =>
-                        setEditTeacher({ ...editTeacher, dateOfBirth: e.target.value })
-                      }
+                      date={editTeacher.dateOfBirth ? new Date(editTeacher.dateOfBirth) : undefined}
+                      onDateChange={(date) => setEditTeacher({ ...editTeacher, dateOfBirth: date ? date.toISOString().split('T')[0] : "" })}
+                      placeholder="Pick date or type naturally..."
                     />
                   </div>
                 </div>

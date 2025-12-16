@@ -63,6 +63,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { DatePicker } from "@/components/ui/date-picker";
 import axios from "@/lib/axios";
 import { BulkDeleteActions, useBulkSelection } from "@/components/BulkDeleteActions";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -632,16 +633,16 @@ export default function ManageStudents() {
 
                   <div className="space-y-2">
                     <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                    <Input
+                    <DatePicker
                       id="dateOfBirth"
-                      type="date"
-                      value={newStudent.dateOfBirth}
-                      onChange={(e) =>
+                      date={newStudent.dateOfBirth ? new Date(newStudent.dateOfBirth) : undefined}
+                      onDateChange={(date) =>
                         setNewStudent({
                           ...newStudent,
-                          dateOfBirth: e.target.value,
+                          dateOfBirth: date ? date.toISOString().split('T')[0] : '',
                         })
                       }
+                      placeholder="Pick date of birth..."
                     />
                   </div>
                 </div>
@@ -749,16 +750,16 @@ export default function ManageStudents() {
 
               <div className="space-y-2">
                 <Label htmlFor="edit-dateOfBirth">Date of Birth</Label>
-                <Input
+                <DatePicker
                   id="edit-dateOfBirth"
-                  type="date"
-                  value={editStudent.dateOfBirth}
-                  onChange={(e) =>
+                  date={editStudent.dateOfBirth ? new Date(editStudent.dateOfBirth) : undefined}
+                  onDateChange={(date) =>
                     setEditStudent({
                       ...editStudent,
-                      dateOfBirth: e.target.value,
+                      dateOfBirth: date ? date.toISOString().split('T')[0] : '',
                     })
                   }
+                  placeholder="Pick date of birth..."
                 />
               </div>
             </div>

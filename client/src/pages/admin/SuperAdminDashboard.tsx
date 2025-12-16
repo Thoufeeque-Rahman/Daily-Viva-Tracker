@@ -127,6 +127,8 @@ export default function SuperAdminDashboard() {
 
   // Dialog states
   const [showGradingConfigDialog, setShowGradingConfigDialog] = useState(false);
+  const [showEditGradingConfigDialog, setShowEditGradingConfigDialog] = useState(false);
+  const [editingGradingConfig, setEditingGradingConfig] = useState<GradingConfig | null>(null);
 
   // Check if user is super admin
   useEffect(() => {
@@ -335,6 +337,61 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const handleEditGradingConfig = (config: GradingConfig) => {
+    setEditingGradingConfig({ ...config });
+    setShowEditGradingConfigDialog(true);
+  };
+
+  const handleUpdateGradingConfig = async () => {
+    if (!editingGradingConfig) return;
+
+    try {
+      if (editingGradingConfig.levels.length === 0) {
+        toast({
+          title: "Error",
+          description: "Please add at least one level.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate levels
+      const invalidLevel = editingGradingConfig.levels.find(
+        (level) => !level.name || level.mark === undefined || !level.color
+      );
+      if (invalidLevel) {
+        toast({
+          title: "Error",
+          description: "Each level must have a name, mark, and color.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await axios.put(`/api/grading-configs/${editingGradingConfig._id}`, {
+        name: editingGradingConfig.name,
+        description: editingGradingConfig.description,
+        levels: editingGradingConfig.levels,
+        isActive: editingGradingConfig.isActive,
+      });
+      toast({
+        title: "Success",
+        description: "Grading configuration has been updated successfully.",
+      });
+      setEditingGradingConfig(null);
+      setShowEditGradingConfigDialog(false);
+      fetchGradingConfigs();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.error ||
+          "Failed to update grading configuration.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const [location, navigate] = useLocation();
 
   const handleActivateSemester = async (semesterId: string) => {
@@ -459,6 +516,13 @@ export default function SuperAdminDashboard() {
                                 disabled={isConfigActiveForUser(config) && gradingConfigs.length === 1}
                               />
                             </div>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => handleEditGradingConfig(config)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
                             <Button
                               variant="destructive"
                               size="icon"
@@ -702,6 +766,208 @@ export default function SuperAdminDashboard() {
                             Create Template
                           </Button>
                         </div>
+                      </DialogContent>
+                    </Dialog>
+
+                    {/* Edit Grading Config Dialog */}
+                    <Dialog open={showEditGradingConfigDialog} onOpenChange={setShowEditGradingConfigDialog}>
+                      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center gap-2">
+                            <Edit className="h-5 w-5" />
+                            Edit Grading Configuration
+                          </DialogTitle>
+                          <DialogDescription>
+                            Update the grading template with custom levels, marks, and colors.
+                          </DialogDescription>
+                        </DialogHeader>
+                        {editingGradingConfig && (
+                          <div className="space-y-4 mt-6">
+                            <div>
+                              <Label htmlFor="edit-grading-name">Template Name</Label>
+                              <Input
+                                id="edit-grading-name"
+                                value={editingGradingConfig.name}
+                                onChange={(e) =>
+                                  setEditingGradingConfig({
+                                    ...editingGradingConfig,
+                                    name: e.target.value,
+                                  })
+                                }
+                                placeholder="e.g., Standard Grading"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="edit-description">Description</Label>
+                              <Textarea
+                                id="edit-description"
+                                value={editingGradingConfig.description || ""}
+                                onChange={(e) =>
+                                  setEditingGradingConfig({
+                                    ...editingGradingConfig,
+                                    description: e.target.value,
+                                  })
+                                }
+                                placeholder="Template description..."
+                              />
+                            </div>
+                            <div>
+                              <Label>Levels</Label>
+                              <div className="space-y-2 mt-2">
+                                {editingGradingConfig.levels.map((level, index) => (
+                                  <div
+                                    key={index}
+                                    className="flex items-start gap-2 p-2 border rounded-lg"
+                                  >
+                                    <div className="flex-1 flex flex-wrap gap-2">
+                                      <div className="w-20">
+                                        <Label>Emoji</Label>
+                                        <Input
+                                          value={level.emoji || ""}
+                                          onChange={(e) => {
+                                            const newLevels = [
+                                              ...editingGradingConfig.levels,
+                                            ];
+                                            newLevels[index] = {
+                                              ...newLevels[index],
+                                              emoji: e.target.value,
+                                            };
+                                            setEditingGradingConfig({
+                                              ...editingGradingConfig,
+                                              levels: newLevels,
+                                            });
+                                          }}
+                                          placeholder="e.g., 🙂"
+                                        />
+                                      </div>
+                                      <div className="col-span-3">
+                                        <Label>Name</Label>
+                                        <Input
+                                          value={level.name}
+                                          onChange={(e) => {
+                                            const newLevels = [
+                                              ...editingGradingConfig.levels,
+                                            ];
+                                            newLevels[index] = {
+                                              ...newLevels[index],
+                                              name: e.target.value,
+                                            };
+                                            setEditingGradingConfig({
+                                              ...editingGradingConfig,
+                                              levels: newLevels,
+                                            });
+                                          }}
+                                          placeholder="e.g., Excellent"
+                                        />
+                                      </div>
+                                      <div className="col-span-2">
+                                        <Label>Mark</Label>
+                                        <Input
+                                          type="number"
+                                          value={level.mark}
+                                          className="w-12 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none appearance-none"
+                                          onChange={(e) => {
+                                            const newLevels = [
+                                              ...editingGradingConfig.levels,
+                                            ];
+                                            newLevels[index] = {
+                                              ...newLevels[index],
+                                              mark: Number(e.target.value),
+                                            };
+                                            setEditingGradingConfig({
+                                              ...editingGradingConfig,
+                                              levels: newLevels,
+                                            });
+                                          }}
+                                          placeholder="0-100"
+                                        />
+                                      </div>
+                                      <div className="col-span-5">
+                                        <Label>Color</Label>
+                                        <div className="flex gap-2">
+                                          <Input
+                                            type="color"
+                                            value={level.color}
+                                            onChange={(e) => {
+                                              const newLevels = [
+                                                ...editingGradingConfig.levels,
+                                              ];
+                                              newLevels[index] = {
+                                                ...newLevels[index],
+                                                color: e.target.value,
+                                              };
+                                              setEditingGradingConfig({
+                                                ...editingGradingConfig,
+                                                levels: newLevels,
+                                              });
+                                            }}
+                                            className="w-14"
+                                          />
+                                          <Input
+                                            value={level.color}
+                                            className="w-24"
+                                            onChange={(e) => {
+                                              const newLevels = [
+                                                ...editingGradingConfig.levels,
+                                              ];
+                                              newLevels[index] = {
+                                                ...newLevels[index],
+                                                color: e.target.value,
+                                              };
+                                              setEditingGradingConfig({
+                                                ...editingGradingConfig,
+                                                levels: newLevels,
+                                              });
+                                            }}
+                                            placeholder="#000000"
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => {
+                                        const newLevels = editingGradingConfig.levels.filter(
+                                          (_, i) => i !== index
+                                        );
+                                        setEditingGradingConfig({
+                                          ...editingGradingConfig,
+                                          levels: newLevels,
+                                        });
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ))}
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setEditingGradingConfig({
+                                      ...editingGradingConfig,
+                                      levels: [
+                                        ...editingGradingConfig.levels,
+                                        { name: "", mark: 0, color: "#000000" },
+                                      ],
+                                    });
+                                  }}
+                                >
+                                  <Plus className="h-4 w-4 mr-2" /> Add Level
+                                </Button>
+                              </div>
+                            </div>
+                            <Button
+                              onClick={handleUpdateGradingConfig}
+                              className="w-full"
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Update Template
+                            </Button>
+                          </div>
+                        )}
                       </DialogContent>
                     </Dialog>
                   </div>

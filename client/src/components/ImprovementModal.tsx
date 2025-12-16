@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -131,14 +132,13 @@ export function ImprovementModal({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="dueDate">Due Date</Label>
-                <Input
+                <DatePicker
                   id="dueDate"
-                  type="date"
-                  value={formData.dueDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, dueDate: e.target.value })
+                  date={formData.dueDate ? new Date(formData.dueDate) : undefined}
+                  onDateChange={(date) =>
+                    setFormData({ ...formData, dueDate: date ? date.toISOString().split("T")[0] : "" })
                   }
-                  min={new Date().toISOString().split("T")[0]}
+                  placeholder="Pick due date or type naturally..."
                   disabled={createImprovement.isPending}
                 />
               </div>
