@@ -140,34 +140,17 @@ export function ImprovementList({
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-1">
                       <span className="text-xs font-medium text-gray-700">
-                        ({improvement.student.adNumber}){" "}
+                        ({improvement.student.adNumber}){" "} 
                         {improvement.student.name}
                       </span>
-                      {/* <Badge
-                        variant={
-                          improvement.status === "done"
-                            ? "default"
-                            : "secondary"
-                        }
-                        className={`text-[10px] py-0 ${
-                          improvement.status === "done"
-                            ? "bg-green-100 text-green-800 hover:bg-green-100"
-                            : "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
-                        }`}
-                      >
-                        {improvement.status === "done"
-                          ? "Com."
-                          : "Ass."}
-                      </Badge> */}
                     </div>
-                    <div className="flex items-center justify-between gap-1 text-xs text-gray-500">
-                      <p className="text-xs w-20 text-gray-600 mb-2 line-clamp-2 truncate">
+                    <div className="flex flex-col items-start justify-between gap-0 text-xs text-gray-500">
+                      <p className="text-xs w-30 text-gray-600 line-clamp-2 text-wrap">
                         {improvement.description}
                       </p>
-                      <div className="flex items-center gap-1">
-                        {/* <Calendar className="h-3 w-3" /> */}
+                      <div className="flex items-center gap-0 text-[10px]">
                         Due:{" "}
                         {(() => {
                           const d = new Date(improvement.dueDate);
