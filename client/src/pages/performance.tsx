@@ -255,9 +255,9 @@ export default function Performance() {
           </Select>
         </div>
 
-        {/* Sort Controls */}
+        {/* Sort Controls + Most/Least Asked Badges */}
         {selectedSubject && studentPerformance.length > 0 && (
-          <div className="mb-6 flex items-center gap-2">
+          <div className="mb-6 flex items-center gap-2 flex-wrap">
             <Select
               value={sortField}
               onValueChange={(value: SortField) => setSortField(value)}
@@ -288,7 +288,7 @@ export default function Performance() {
               className="bg-blue-50 text-blue-600 font-medium border-blue-600 hover:bg-blue-100 hover:text-blue-600 hover:border-blue-600 focus:bg-blue-100 focus:text-blue-600 focus:border-blue-600 focus:outline-none"
             >
               <ArrowUpDown className="w-4 h-4 mr-2" />
-              {sortDirection === "asc" ? "Ascending" : "Descending"}
+              {sortDirection === "asc" ? "Asc" : "Desc"}
             </Button>
 
             <Button
@@ -300,13 +300,40 @@ export default function Performance() {
               <RefreshCw className="h-4 w-4" />
               Refresh
             </Button>
+
+            {/* Most/Least Asked Badges */}
+            <span
+              className="ml-1 px-2 py-1 text-[10px] rounded-full bg-green-100 text-green-800 font-semibold cursor-pointer hover:bg-green-200 transition"
+              title="Sort by Most Asked"
+              onClick={() => {
+                setSortField("totalQuestions");
+                setSortDirection("desc");
+              }}
+            >
+              Most Asked Student
+            </span>
+            <span
+              className="ml-1 px-2 py-1 text-[10px] rounded-full bg-yellow-100 text-yellow-800 font-semibold cursor-pointer hover:bg-yellow-200 transition"
+              title="Sort by Least Asked"
+              onClick={() => {
+                setSortField("totalQuestions");
+                setSortDirection("asc");
+              }}
+            >
+              Least Asked Student
+            </span>
           </div>
         )}
 
         {/* Student Performance Cards */}
         <div className="space-y-4">
-          {studentPerformance.map((performance) => {
+          {studentPerformance.map((performance, idx) => {
             const colors = getPerformanceColors(performance.percentage);
+            // Find max/min totalQuestions for badge
+            const maxQuestions = Math.max(...studentPerformance.map(p => p.totalQuestions));
+            const minQuestions = Math.min(...studentPerformance.map(p => p.totalQuestions));
+            const isMostAsked = performance.totalQuestions === maxQuestions && maxQuestions !== minQuestions;
+            const isLeastAsked = performance.totalQuestions === minQuestions && maxQuestions !== minQuestions;
             return (
               <Card
                 key={performance.student._id}
@@ -330,13 +357,16 @@ export default function Performance() {
                         </h2>
                       </div>
                     </div>
-                    <div
-                      className="bg-white/20 px-3 py-1 rounded-full flex items-center text-center gap-2 cursor-pointer hover:bg-white/30 transition-colors justify-end"
-                      onClick={() => handleAskMeClick(performance.student)}
-                    >
-                      <span className="text-white text-sm font-medium">
-                        Ask Me
-                      </span>
+                    <div className="flex gap-2 items-center">
+                      
+                      <div
+                        className="bg-white/20 px-3 py-1 rounded-full flex items-center text-center gap-2 cursor-pointer hover:bg-white/30 transition-colors justify-end"
+                        onClick={() => handleAskMeClick(performance.student)}
+                      >
+                        <span className="text-white text-sm font-medium">
+                          Ask Me
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -357,7 +387,6 @@ export default function Performance() {
                           {performance.totalQuestions}
                         </p>
                       </div>
-
                       <div className="text-center">
                         <div className="flex items-center justify-center gap-2 mb-1">
                           <Trophy className={`w-4 h-4 ${colors.icon}`} />

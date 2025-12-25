@@ -278,10 +278,10 @@ export default function Cnvrt2CCE() {
           </Select>
         </div>
 
-        {/* Sort Controls */}
+        {/* Sort Controls + Most/Least Asked Badges */}
         {selectedSubject && studentPerformance.length > 0 && (
-          <div className="mb-6 flex items-center gap-2">
-            {/* <Select
+          <div className="mb-6 flex items-center gap-2 flex-wrap">
+            <Select
               value={sortField}
               onValueChange={(value: SortField) => setSortField(value)}
             >
@@ -302,8 +302,51 @@ export default function Cnvrt2CCE() {
                   </SelectItem>
                 </SelectGroup>
               </SelectContent>
-            </Select> */}
+            </Select>
 
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleSortDirection}
+              className="bg-blue-50 text-blue-600 font-medium border-blue-600 hover:bg-blue-100 hover:text-blue-600 hover:border-blue-600 focus:bg-blue-100 focus:text-blue-600 focus:border-blue-600 focus:outline-none"
+            >
+              <ArrowUpDown className="w-4 h-4 mr-2" />
+              {sortDirection === "asc" ? "Asc" : "Desc"}
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              loading={isRefreshing}
+              disabled={isLoadingStudents || isLoadingMarks}
+              className="flex items-center gap-2 bg-blue-50 text-blue-600 font-medium border-blue-600 hover:bg-blue-100 hover:text-blue-600 hover:border-blue-600 focus:bg-blue-100 focus:text-blue-600 focus:border-blue-600 focus:outline-none"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+              {isRefreshing ? "Refreshing..." : "Refresh"}
+            </Button>
+
+            {/* Most/Least Asked Badges */}
+            <span
+              className="ml-1 px-2 py-1 text-[10px] rounded-full bg-green-100 text-green-800 font-semibold cursor-pointer hover:bg-green-200 transition"
+              title="Sort by Most Asked" 
+              onClick={() => {
+                setSortField("totalQuestions");
+                setSortDirection("desc");
+              }}
+            >
+              Most Asked Student
+            </span>
+            <span
+              className="ml-1 px-2 py-1 text-[10px] rounded-full bg-yellow-100 text-yellow-800 font-semibold cursor-pointer hover:bg-yellow-200 transition"
+              title="Sort by Least Asked"
+              onClick={() => {
+                setSortField("totalQuestions");
+                setSortDirection("asc");
+              }}
+            >
+              Least Asked Student
+            </span>
             {/* Total CCE Mark Input */}
             {selectedSubject && (
               <div className="mb-4 flex items-center gap-2">
@@ -326,28 +369,6 @@ export default function Cnvrt2CCE() {
                 />
               </div>
             )}
-            <div className="mb-4 flex items-center gap-2">
-              {/* <Button
-                variant="outline"
-                size="sm"
-                onClick={toggleSortDirection}
-                className="bg-blue-50 text-blue-600 font-medium border-blue-600 hover:bg-blue-100 hover:text-blue-600 hover:border-blue-600 focus:bg-blue-100 focus:text-blue-600 focus:border-blue-600 focus:outline-none"
-              >
-                <ArrowUpDown className="w-4 h-4 mr-2" />
-                {sortDirection === "asc" ? "Ascending" : "Descending"}
-              </Button> */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                loading={isRefreshing}
-                disabled={isLoadingStudents || isLoadingMarks}
-                className="flex items-center gap-2 bg-blue-50 text-blue-600 font-medium border-blue-600 hover:bg-blue-100 hover:text-blue-600 hover:border-blue-600 focus:bg-blue-100 focus:text-blue-600 focus:border-blue-600 focus:outline-none"
-              >
-                <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-                {isRefreshing ? "Refreshing..." : "Refresh"}
-              </Button>
-            </div>
           </div>
         )}
 
@@ -360,118 +381,122 @@ export default function Cnvrt2CCE() {
               ))}
             </>
           ) : (
-            studentPerformance.map((performance) => {
-            const colors = getPerformanceColors(performance.percentage);
-            return (
-              <Card
-                key={performance.student._id}
-                className={`w-full max-w-md mx-auto border-0 shadow-xl overflow-hidden ${colors.card}`}
-              >
-                {/* Header Section */}
-                <div className={`px-4 py-3 ${colors.header}`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex flex-col items-center gap-1 text-start">
-                        <span className="text-white/80 text-xs font-normal">
-                          Sl. #{performance.student.rollNumber}
-                        </span>
-                        <span className="text-white/80 text-xs font-normal">
-                          Ad. {performance.student.adNumber}
-                        </span>
-                      </div>
-                      <div className="">
-                        <h2 className="text-base font-bold text-white leading-tight">
-                          {performance.student.name}
-                        </h2>
-                      </div>
-                    </div>
-                    {/* <div
-                      className="bg-white/20 px-3 py-1 rounded-full flex items-center text-center gap-2 cursor-pointer hover:bg-white/30 transition-colors justify-end"
-                      onClick={() => handleAskMeClick(performance.student)}
-                    >
-                      <span className="text-white text-sm font-medium">
-                        Ask Me
-                      </span>
-                    </div> */}
-                  </div>
-                </div>
-
-                {/* Content Section */}
-                <div className="px-3 py-4 space-y-2">
-                  {/* Performance Metrics */}
-                  <div className="bg-white/80 rounded-xl p-4 shadow-sm">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-2 mb-1">
-                          <Target className={`w-4 h-4 ${colors.icon}`} />
-                          <p className="text-xs text-gray-500 uppercase tracking-wide">
-                            Questions
-                          </p>
+            studentPerformance.map((performance, idx) => {
+              const colors = getPerformanceColors(performance.percentage);
+              // Find max/min totalQuestions for badge
+              const maxQuestions = Math.max(...studentPerformance.map(p => p.totalQuestions));
+              const minQuestions = Math.min(...studentPerformance.map(p => p.totalQuestions));
+              const isMostAsked = performance.totalQuestions === maxQuestions && maxQuestions !== minQuestions;
+              const isLeastAsked = performance.totalQuestions === minQuestions && maxQuestions !== minQuestions;
+              return (
+                <Card
+                  key={performance.student._id}
+                  className={`w-full max-w-md mx-auto border-0 shadow-xl overflow-hidden ${colors.card}`}
+                >
+                  {/* Header Section */}
+                  <div className={`px-4 py-3 ${colors.header}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex flex-col items-center gap-1 text-start">
+                          <span className="text-white/80 text-xs font-normal">
+                            Sl. #{performance.student.rollNumber}
+                          </span>
+                          <span className="text-white/80 text-xs font-normal">
+                            Ad. {performance.student.adNumber}
+                          </span>
                         </div>
-                        <p className="text-lg font-bold text-gray-800">
-                          {performance.totalQuestions}
-                        </p>
-                      </div>
-
-                      {/* <div className="text-center">
-                        <div className="flex items-center justify-center gap-2 mb-1">
-                          <Trophy className={`w-4 h-4 ${colors.icon}`} />
-                          <p className="text-xs text-gray-500 uppercase tracking-wide">
-                            Score
-                          </p>
+                        <div className="">
+                          <h2 className="text-base font-bold text-white leading-tight">
+                            {performance.student.name}
+                          </h2>
                         </div>
-                        <p className="text-lg font-bold text-gray-800">
-                          {performance.totalScore}
-                        </p>
+                      </div>
+                      {/* <div className="flex gap-2 items-center">
+                        {isMostAsked && (
+                          <span
+                            className="px-2 py-1 rounded-full bg-green-500 text-white text-xs font-semibold shadow"
+                            title="Most Asked Student"
+                          >
+                            Most Asked
+                          </span>
+                        )}
+                        {isLeastAsked && (
+                          <span
+                            className="px-2 py-1 rounded-full bg-yellow-400 text-white text-xs font-semibold shadow"
+                            title="Least Asked Student"
+                          >
+                            Least Asked
+                          </span>
+                        )}
                       </div> */}
+                    </div>
+                  </div>
 
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-2 mb-1">
-                          <ChartBar className={`w-4 h-4 ${colors.icon}`} />
-                          <p className="text-xs text-gray-500 uppercase tracking-wide">
-                            Percent
+                  {/* Content Section */}
+                  <div className="px-3 py-4 space-y-2">
+                    {/* Performance Metrics */}
+                    <div className="bg-white/80 rounded-xl p-4 shadow-sm">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="text-center">
+                          <div className="flex items-center justify-center gap-2 mb-1">
+                            <Target className={`w-4 h-4 ${colors.icon}`} />
+                            <p className="text-xs text-gray-500 uppercase tracking-wide">
+                              Questions
+                            </p>
+                          </div>
+                          <p className="text-lg font-bold text-gray-800">
+                            {performance.totalQuestions}
                           </p>
                         </div>
-                        <p className={`text-lg font-bold ${colors.text}`}>
-                          {performance.percentage.toFixed(1)}%
-                        </p>
-                      </div>
 
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-2 mb-1">
-                          <SquareChartGantt
-                            className={`w-4 h-4 ${colors.icon}`}
-                          />
-                          <p className="text-xs text-gray-500 uppercase tracking-wide">
-                            CCE Mark
+                        <div className="text-center">
+                          <div className="flex items-center justify-center gap-2 mb-1">
+                            <ChartBar className={`w-4 h-4 ${colors.icon}`} />
+                            <p className="text-xs text-gray-500 uppercase tracking-wide">
+                              Percent
+                            </p>
+                          </div>
+                          <p className={`text-lg font-bold ${colors.text}`}>
+                            {performance.percentage.toFixed(1)}%
                           </p>
                         </div>
-                        <p className={`text-lg font-bold ${colors.text}`}>
-                          {(
-                            (performance.percentage * (Number(totalCceMark) || 0)) /
-                            100
-                          ).toFixed(2)}
-                        </p>
+
+                        <div className="text-center">
+                          <div className="flex items-center justify-center gap-2 mb-1">
+                            <SquareChartGantt
+                              className={`w-4 h-4 ${colors.icon}`}
+                            />
+                            <p className="text-xs text-gray-500 uppercase tracking-wide">
+                              CCE Mark
+                            </p>
+                          </div>
+                          <p className={`text-lg font-bold ${colors.text}`}>
+                            {(
+                              (performance.percentage * (Number(totalCceMark) || 0)) /
+                              100
+                            ).toFixed(2)}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </Card>
-            );
-          }))}
-
-          {selectedSubject && studentPerformance.length === 0 && !isLoadingStudents && !isLoadingMarks && (
-            <p className="text-center text-gray-500 py-8">
-              No performance data found for this subject
-            </p>
-          )}
-
-          {!selectedSubject && (
-            <p className="text-center text-gray-500 py-8">
-              Select a subject to view performance data
-            </p>
+                </Card>
+              );
+            })
           )}
         </div>
+
+        {selectedSubject && studentPerformance.length === 0 && !isLoadingStudents && !isLoadingMarks && (
+          <p className="text-center text-gray-500 py-8">
+            No performance data found for this subject
+          </p>
+        )} 
+
+        {!selectedSubject && (
+          <p className="text-center text-gray-500 py-8">
+            Select a subject to view performance data
+          </p>
+        )}
       </main>
 
       {selectedStudent && (
