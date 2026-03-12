@@ -24,6 +24,24 @@ export interface DvtMark {
   class: number;
 }
 
+export interface AssignmentMark {
+  studentId: string;
+  mark: number;
+  updatedAt?: string;
+}
+
+export interface Assignment {
+  _id: string;
+  name: string;
+  detail?: string;
+  subject: string;
+  class: number;
+  maxMarks: number;
+  marks: AssignmentMark[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface SubjectInfo {
   subject: string;
   class: number;

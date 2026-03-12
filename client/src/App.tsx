@@ -15,6 +15,8 @@ import SuperAdminDashboard from "./pages/admin/SuperAdminDashboard";
 import History from "@/pages/history";
 import Performance from "@/pages/performance";
 import Convert2CCE from "@/pages/cnvrt2cce";
+import Assignment2CCE from "@/pages/assignment2cce";
+import AssignmentsPage from "@/pages/assignments";
 import Export from "@/pages/Export";
 import Profile from "@/pages/Profile";
 import TeacherList from "@/pages/admin/TeacherList";
@@ -44,6 +46,8 @@ function Router() {
       <ProtectedRoute path="/history" component={History} />
       <ProtectedRoute path="/performance" component={Performance} />
       <ProtectedRoute path="/cnvrt2cce" component={Convert2CCE} />
+      <ProtectedRoute path="/assignment2cce" component={Assignment2CCE} />
+      <ProtectedRoute path="/assignments" component={AssignmentsPage} />
       <ProtectedRoute path="/export" component={Export} />
       <ProtectedRoute path="/profile" component={Profile} />
       <Route component={NotFound} />

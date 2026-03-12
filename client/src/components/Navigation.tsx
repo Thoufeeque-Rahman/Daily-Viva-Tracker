@@ -1,4 +1,4 @@
-import { Menu, Home, History, BarChart, Replace, Users as UsersIcon, BarChart3, GraduationCap } from "lucide-react"
+import { Menu, Home, History, BarChart, Replace, Users as UsersIcon, BarChart3, GraduationCap, ClipboardList } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useLocation } from "wouter"
 import {
@@ -33,9 +33,19 @@ export default function Navigation() {
       href: "/performance",
     },
     {
-      title: "Convert to CCE",
+      title: "DV to CCE",
       icon: Replace,
       href: "/cnvrt2cce",
+    },
+    {
+      title: "Assignments",
+      icon: ClipboardList,
+      href: "/assignments",
+    },
+    {
+      title: "Assignment to CCE",
+      icon: Replace,
+      href: "/assignment2cce",
     },
     ...(user?.role === 'super_admin' ? [
       {

@@ -110,6 +110,7 @@ const bulkImportRoutes = require("../routes/bulkImport");
 const collegesRoutes = require("../routes/colleges");
 const registrationRoutes = require("../routes/registration");
 const superAdminRegistrationRoutes = require("../routes/super-admin-registration");
+const assignmentsRoutes = require("../routes/assignments");
 
 // Import auth middleware
 const { authenticateToken } = require("../middleware/auth");
@@ -138,6 +139,7 @@ app.use("/api/improvements", authenticateToken, improvementsRoutes);
 app.use("/api/admin", authenticateToken, adminStatsRoutes); // Admin statistics routes
 app.use("/api/bulk-import", authenticateToken, bulkImportRoutes); // Bulk import routes
 app.use("/api/colleges", authenticateToken, collegesRoutes); // College management routes
+app.use("/api/assignments", authenticateToken, assignmentsRoutes); // Assignment routes
 
 app.use(express.static(path.join(__dirname, "public")));
 
