@@ -1,10 +1,15 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const Teachers = require('../models/Teachers');
+const LoginHistory = require('../models/LoginHistory');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const { authenticateToken, addCollegeFilter } = require('../middleware/auth');
 const { isSuperAdmin } = require('../middleware/isSuperAdmin');
+
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 // Public routes
 // Registration - Disabled, use /api/registration/register-college instead (Super Admin Only for creating new teachers)
@@ -84,15 +89,24 @@ router.post('/register', authenticateToken, isSuperAdmin, async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const rawIdentifier = (req.body.identifier || req.body.email || req.body.username || '').trim();
 
     // Validate input
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    if (!rawIdentifier || !password) {
+      return res.status(400).json({ error: 'Email/username and password are required' });
     }
 
-    // Find teacher
-    const teacher = await Teachers.findOne({ email });
+    const normalizedIdentifier = rawIdentifier.toLowerCase();
+    const escapedIdentifier = escapeRegex(normalizedIdentifier);
+
+    // Find teacher by email or username (case-insensitive)
+    const teacher = await Teachers.findOne({
+      $or: [
+        { email: { $regex: `^${escapedIdentifier}$`, $options: 'i' } },
+        { username: { $regex: `^${escapedIdentifier}$`, $options: 'i' } }
+      ]
+    });
     if (!teacher) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -127,9 +141,20 @@ router.post('/login', async (req, res) => {
     // Return teacher data (excluding password)
     const teacherData = teacher.toObject();
     delete teacherData.password;
+    teacherData.mustUpdateCredentials = Boolean(teacher.mustUpdateCredentials || !teacher.username);
     
     // Add tId field for frontend compatibility
     teacherData.tId = teacherData._id.toString();
+
+    // Save login event for future login history and active session reporting
+    await LoginHistory.create({
+      teacherId: teacher._id,
+      loginAt: new Date(),
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent') || '',
+      authMethod: 'email_or_username',
+      isActive: true
+    });
 
     res.json({ 
       teacher: teacherData,
@@ -150,17 +175,42 @@ router.post('/logout', (req, res) => {
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   });
   
-  // Clear session if it exists
-  if (req.session) {
-    req.session.destroy((err) => {
-      if (err) {
-        console.error('Logout error:', err);
-        return res.status(500).json({ error: 'Logout failed' });
-      }
-      res.json({ message: 'Logged out successfully' });
-    });
-  } else {
+  const finishLogout = () => {
+    if (req.session) {
+      req.session.destroy((err) => {
+        if (err) {
+          console.error('Logout error:', err);
+          return res.status(500).json({ error: 'Logout failed' });
+        }
+        res.json({ message: 'Logged out successfully' });
+      });
+      return;
+    }
+
     res.json({ message: 'Logged out successfully' });
+  };
+
+  // Try to close active login history entry for this user.
+  try {
+    let token = req.cookies?.token;
+    if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+      token = req.headers.authorization.substring(7);
+    }
+
+    if (!token) {
+      return finishLogout();
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    LoginHistory.findOneAndUpdate(
+      { teacherId: decoded.id, isActive: true },
+      { isActive: false, logoutAt: new Date() },
+      { sort: { loginAt: -1 } }
+    )
+      .finally(() => finishLogout());
+  } catch (error) {
+    console.error('Logout history update skipped:', error.message);
+    finishLogout();
   }
 });
 
@@ -272,6 +322,7 @@ router.get('/me', authenticateToken, async (req, res) => {
     // Transform teacher data to include tId for frontend compatibility
     const teacherData = teacher.toObject();
     teacherData.tId = teacherData._id.toString();
+    teacherData.mustUpdateCredentials = Boolean(teacher.mustUpdateCredentials || !teacher.username);
 
     res.json(teacherData);
   } catch (error) {
@@ -289,6 +340,100 @@ router.get('/', authenticateToken, addCollegeFilter, async (req, res) => {
   } catch (error) {
     console.error('Fetch teachers error:', error);
     res.status(500).json({ error: 'Failed to fetch teachers' });
+  }
+});
+
+// Get current teacher login history
+router.get('/login-history/me', authenticateToken, async (req, res) => {
+  try {
+    const history = await LoginHistory.find({ teacherId: req.user.id })
+      .sort({ loginAt: -1 })
+      .limit(50)
+      .lean();
+
+    res.json(history);
+  } catch (error) {
+    console.error('Fetch own login history error:', error);
+    res.status(500).json({ error: 'Failed to fetch login history' });
+  }
+});
+
+// Super admin: currently active logins
+router.get('/active-logins', authenticateToken, isSuperAdmin, async (req, res) => {
+  try {
+    const activeLogins = await LoginHistory.find({ isActive: true })
+      .sort({ loginAt: -1 })
+      .populate('teacherId', 'name email username role collegeId')
+      .lean();
+
+    res.json(activeLogins);
+  } catch (error) {
+    console.error('Fetch active logins error:', error);
+    res.status(500).json({ error: 'Failed to fetch active logins' });
+  }
+});
+
+// Force profile completion after first login from seeded/fake accounts
+router.put('/complete-profile', authenticateToken, async (req, res) => {
+  try {
+    const { email, username } = req.body;
+
+    if (!email || !username) {
+      return res.status(400).json({ error: 'Email and username are required' });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const normalizedUsername = String(username).trim().toLowerCase();
+
+    if (normalizedUsername.length < 3) {
+      return res.status(400).json({ error: 'Username must be at least 3 characters' });
+    }
+
+    const usernameTaken = await Teachers.findOne({
+      _id: { $ne: req.user.id },
+      username: normalizedUsername
+    });
+    if (usernameTaken) {
+      return res.status(400).json({ error: 'Username already in use' });
+    }
+
+    const emailTaken = await Teachers.findOne({
+      _id: { $ne: req.user.id },
+      email: normalizedEmail
+    });
+    if (emailTaken) {
+      return res.status(400).json({ error: 'Email already in use' });
+    }
+
+    const teacher = await Teachers.findByIdAndUpdate(
+      req.user.id,
+      {
+        email: normalizedEmail,
+        username: normalizedUsername,
+        mustUpdateCredentials: false,
+        emailVerified: false
+      },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!teacher) {
+      return res.status(404).json({ error: 'Teacher not found' });
+    }
+
+    const teacherData = teacher.toObject();
+    teacherData.tId = teacherData._id.toString();
+
+    res.json({
+      message: 'Profile updated successfully',
+      teacher: teacherData
+    });
+  } catch (error) {
+    if (error?.code === 11000) {
+      return res.status(400).json({ error: 'Email or username already in use' });
+    }
+
+    console.error('Complete profile error:', error);
+    res.status(500).json({ error: 'Failed to complete profile' });
   }
 });
 
@@ -314,11 +459,11 @@ router.put('/profile', authenticateToken, async (req, res) => {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    const { name, email, phone, qualification } = req.body;
+    const { name, email, username, phone, qualification } = req.body;
 
     const teacher = await Teachers.findByIdAndUpdate(
       req.user.id,
-      { name, email, phone, qualification },
+      { name, email, username, phone, qualification },
       { new: true }
     ).select('-password');
 

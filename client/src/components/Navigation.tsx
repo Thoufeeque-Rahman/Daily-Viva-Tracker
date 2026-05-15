@@ -8,6 +8,7 @@ import {
   BarChart3,
   GraduationCap,
   ClipboardList,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
@@ -36,6 +37,11 @@ export default function Navigation() {
       title: "History",
       icon: History,
       href: "/history",
+    },
+    {
+      title: "Login History",
+      icon: ShieldCheck,
+      href: "/login-history",
     },
     {
       title: "Performance Board",

@@ -5,6 +5,7 @@ const teacherSchema = new mongoose.Schema({
     name: { type: String, required: true },
     password: { type: String, required: true },
     email: { type: String, required: true, unique: true },
+    username: { type: String, unique: true, sparse: true, trim: true, lowercase: true },
     phone: { type: String, required: true },
     role: { type: String, enum: ['teacher', 'super_admin'], default: 'teacher' },
     qualification: { type: String },
@@ -26,7 +27,9 @@ const teacherSchema = new mongoose.Schema({
         }
     ],
     joinedAt: { type: Date, default: Date.now },
-    active: { type: Boolean, default: true }
+    active: { type: Boolean, default: true },
+    emailVerified: { type: Boolean, default: false },
+    mustUpdateCredentials: { type: Boolean, default: true }
 });
 
 teacherSchema.pre('save', async function (next) {

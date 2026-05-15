@@ -17,7 +17,7 @@ import { GraduationCap, Hash, Lock, Eye, EyeOff, ArrowRight } from "lucide-react
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const { toast } = useToast();
   const { user, isAuthenticated, login, isLoading, isLoginLoading } = useAuth();
@@ -54,7 +54,7 @@ export default function AuthPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email || !password) {
+    if (!identifier || !password) {
       toast({
         title: "Missing fields",
         description: "Please fill in all required fields",
@@ -64,7 +64,7 @@ export default function AuthPage() {
     }
 
     try {
-      await login(email, password);
+      await login(identifier, password);
       toast({
         title: "Login successful",
         description: "Welcome back!",
@@ -102,19 +102,19 @@ export default function AuthPage() {
           <form onSubmit={handleSubmit} className="p-0">
             <CardContent className="space-y-4 pb-0 p-0">
               <div className="space-y-1">
-                <Label htmlFor="email" className="text-xs uppercase text-sky-600 tracking-wider font-bold">
-                  Email Address
+                <Label htmlFor="identifier" className="text-xs uppercase text-sky-600 tracking-wider font-bold">
+                  Email or Username
                 </Label>
                 <div className="relative font-medium">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300">
                     <Hash className="h-4 w-4" />
                   </span>
                   <Input
-                    id="email"
+                    id="identifier"
                     type="text"
-                    placeholder="Enter your Email ID"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter email or username"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
                     disabled={isLoginLoading}
                     required
                     className="h-12 pl-11 rounded-2xl border-2 bg-sky-50 placeholder:text-gray-300 placeholder:text-sm focus:ring-2 focus:ring-sky-300 focus:ring-offset-0 focus-visible:ring-sky-300 focus-visible:ring-offset-0"

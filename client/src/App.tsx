@@ -13,6 +13,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Dashboard from "./pages/admin/dashboard";
 import SuperAdminDashboard from "./pages/admin/SuperAdminDashboard";
 import History from "@/pages/history";
+import LoginHistoryPage from "@/pages/LoginHistory";
 import Performance from "@/pages/performance";
 import Convert2CCE from "@/pages/cnvrt2cce";
 import Assignment2CCE from "@/pages/assignment2cce";
@@ -26,6 +27,7 @@ import AdminStats from "@/pages/admin/AdminStats";
 import ManageTeachers from "@/pages/admin/ManageTeachers";
 import ManageStudents from "@/pages/admin/ManageStudents";
 import SuperAdminRegistration from "@/pages/SuperAdminRegistration";
+import CompleteProfileDialog from "@/components/CompleteProfileDialog";
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/react"
 
@@ -44,6 +46,7 @@ function Router() {
       <ProtectedRoute path="/" component={StartPage} />
       <ProtectedRoute path="/evaluation" component={EvaluationPage} />
       <ProtectedRoute path="/history" component={History} />
+      <ProtectedRoute path="/login-history" component={LoginHistoryPage} />
       <ProtectedRoute path="/performance" component={Performance} />
       <ProtectedRoute path="/cnvrt2cce" component={Convert2CCE} />
       <ProtectedRoute path="/assignment2cce" component={Assignment2CCE} />
@@ -62,6 +65,7 @@ export default function App() {
         <TooltipProvider>
           <Analytics />
           <SpeedInsights />
+          <CompleteProfileDialog />
           <Router />
           <Toaster />
         </TooltipProvider>

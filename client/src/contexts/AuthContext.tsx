@@ -16,7 +16,7 @@ interface User {
   id: number;
   _id: number;
   name: string;
-  username: string;
+  username?: string;
   email: string;
   phone?: string;
   subjectsTaught: Subject[];
@@ -27,11 +27,13 @@ interface User {
   active?: boolean;
   collegeId?: string;
   college?: College;
+  emailVerified?: boolean;
+  mustUpdateCredentials?: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>;
   logout: () => void;
   updateUser: (userData: User) => void;
   isAuthenticated: boolean;
@@ -71,12 +73,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth();
   }, []);
 
-  const login = async (username: string, password: string) => {
+  const login = async (identifier: string, password: string) => {
     try {
       setIsLoginLoading(true);
       const response = await apiFetch('/api/teachers/login', {
         method: "POST",
-        body: JSON.stringify({ email: username, password }),
+        body: JSON.stringify({ identifier, password }),
       });
 
       if (!response.ok) {
