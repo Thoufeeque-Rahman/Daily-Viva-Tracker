@@ -215,56 +215,13 @@ const DvtMarksTable: React.FC = () => {
   }
 
   return (
-    <div className="p-3 bg-white rounded-lg shadow-lg">
+    <div className=" bg-white rounded-3xl p-6 shadow-sm border-2 border-gray-100">
       {/* <div className=""> */}
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3">
-        <h2 className="text-xl font-bold text-gray-800 mb-2 sm:mb-0">
-          DV Period Stats
+        <h2 className="text-xl font-bold text-blue-700 mb-2 sm:mb-0">
+          DV Period Stats 
         </h2>
-
-        {/* Controls
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-          <div className="flex gap-2 items-center">
-            <Calendar className="h-4 w-4 text-gray-500" />
-            <input
-              type="date"
-              value={dateRange.startDate}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
-                handleDateChange('startDate', e.target.value)
-              }
-              className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <span className="text-gray-500">to</span>
-            <input
-              type="date"
-              value={dateRange.endDate}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
-                handleDateChange('endDate', e.target.value)
-              }
-              className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          
-          <div className="flex gap-2">
-            <button
-              onClick={handleRefresh}
-              className="flex items-center gap-1 px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={loading}
-            >
-              <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
-            <button
-              onClick={exportToCSV}
-              className="flex items-center gap-1 px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
-              disabled={tableData.length === 0}
-            >
-              <Download className="h-3 w-3" />
-              Export
-            </button>
-          </div>
-        </div> */}
       </div>
 
       {/* {error && (
@@ -275,18 +232,18 @@ const DvtMarksTable: React.FC = () => {
 
       {/* Table */}
       <div className="overflow-auto h-[350px] thin-scrollbar">
-        <table className="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden">
+        <table className="w-full border-collapse border border-gray-300 rounded-3xl overflow-hidden">
           <thead>
             <tr className="bg-gray-50">
               <th className="border border-gray-300 px-1 py-3 text-left font-semibold text-gray-700 min-w-[72px]">
-                Class ➡️ Day ⬇️
+                {/* Class ➡️ Day ⬇️ */}
               </th>
               {classes.map((classNum: number) => (
                 <th
                   key={classNum}
                   className="border border-gray-300 px-1 py-3 text-center font-semibold text-gray-700 min-w-[50px] min-h-[70px]"
                 >
-                  {classNum}
+                  C{classNum}
                 </th>
               ))}
               <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">
@@ -300,7 +257,7 @@ const DvtMarksTable: React.FC = () => {
                 key={dayData.date}
                 className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
               >
-                <td className="border border-gray-300 px-1 py-3 font-medium text-gray-800">
+                <td className="border border-gray-300 px-1 py-2 font-medium text-gray-800">
                   {formatDate(dayData.date)}
                   <div className="text-xs text-gray-500 mt-1">
                     {/* {dayData.date} */}

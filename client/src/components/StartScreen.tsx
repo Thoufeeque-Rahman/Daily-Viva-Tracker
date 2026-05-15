@@ -180,63 +180,72 @@ export default function StartScreen({
   ];
 
   const sortedSubjects = [...(user?.subjectsTaught || [])].sort(
-    (a, b) => b.class - a.class
+    (a, b) => b.class - a.class,
   );
 
   if (isLoading) {
     return (
-      <div className="p-6 transition-all duration-300 transform bg-white shadow-lg min-h-dvh h-full">
-        {/* <div className="text-start mb-8 mt-4 flex gap-3 items-center">
-          <p className="font-medium mt-2 text-blue-600">
-            Hi,{" "}
-            {user?.name
-              ? user.name.charAt(0).toUpperCase() +
-                user.name.slice(1).toLowerCase()
-              : "there"}
-             👋!
-          </p>
-        </div> */}
-
-        {/* Loading State */}
-        <div className="mb-8 bg-white p-3 rounded-lg shadow-lg">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select Lesson
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div
-                key={index}
-                className="h-12 bg-gray-200 rounded-lg animate-pulse"
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="p-3 bg-white rounded-lg shadow-lg">
-          <div className="flex justify-between items-center mb-3">
-            <div className="h-6 bg-gray-200 rounded animate-pulse w-32"></div>
-            <div className="flex gap-2">
-              <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+      <div className="p-6 transition-all duration-300 transform bg-white min-h-dvh h-full">
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Header skeleton */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-gray-200 animate-pulse" />
+              <div className="space-y-2">
+                <div className="h-4 w-48 bg-gray-200 rounded animate-pulse" />
+                <div className="h-3 w-32 bg-gray-200 rounded animate-pulse" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-20 bg-gray-200 rounded animate-pulse" />
+              <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse" />
             </div>
           </div>
-          <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div
-                key={i}
-                className="flex justify-between items-center p-3 border rounded"
-              >
-                <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
-                <div className="flex gap-2">
-                  {Array.from({ length: 4 }).map((_, j) => (
-                    <div
-                      key={j}
-                      className="h-6 w-12 bg-gray-200 rounded animate-pulse"
-                    ></div>
-                  ))}
-                </div>
+
+          {/* Subjects grid skeleton */}
+          <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+            <h3 className="text-lg font-medium text-gray-700 mb-3">Select Lesson</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-12 rounded-xl bg-gray-200 animate-pulse"
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Table / list skeleton */}
+          <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-4 w-40 bg-gray-200 rounded animate-pulse" />
+              <div className="flex gap-2">
+                <div className="h-8 w-8 bg-gray-200 rounded animate-pulse" />
+                <div className="h-8 w-8 bg-gray-200 rounded animate-pulse" />
               </div>
-            ))}
+            </div>
+
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, row) => (
+                <div
+                  key={row}
+                  className="flex items-center justify-between gap-4 p-3 bg-gray-50 rounded"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-md bg-gray-200 animate-pulse" />
+                    <div className="space-y-2">
+                      <div className="h-3 w-36 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-2 w-24 bg-gray-200 rounded animate-pulse" />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-16 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-6 w-12 bg-gray-200 rounded animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -244,7 +253,7 @@ export default function StartScreen({
   }
 
   return (
-    <div className="p-6 transition-all duration-300 transform bg-white shadow-lg h-full min-h-dvh">
+    <div className="p-6 transition-all duration-300 transform bg-blue-50 shadow-lg h-full min-h-dvh">
       {/* <div className="text-start mb-8 mt-4 flex gap-3 items-center"> */}
       {/* <div className="bg-blue-500 inline-block p-3 rounded-full">
           <User className="text-white w-3 h-3" />
@@ -260,11 +269,13 @@ export default function StartScreen({
         </p> */}
       {/* </div> */}
 
-      {/* Subject Selection */}
-      <div className="mb-8 bg-white p-3 rounded-lg shadow-lg">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Select Lesson
-        </label>
+      {/* Subject Selection */} 
+      <div className="mb-8 bg-white rounded-3xl p-5 border-2 border-gray-100 shadow-sm">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3">
+          <h2 className="text-xl font-bold text-blue-700 mb-2 sm:mb-0">
+            Select Lesson
+          </h2>
+        </div>
         <div className="grid grid-cols-2 gap-3">
           {sortedSubjects.map((subject, index) => {
             const colorIndex = index % colorClasses.length; // Cycle through colors
@@ -275,11 +286,11 @@ export default function StartScreen({
                 key={index}
                 className={`border bg-gradient-to-r ${
                   colors.bg
-                } text-white font-medium border-gray-200 rounded-lg py-3 px-4 text-center hover:bg-gray-50 focus:outline-none transition-all ${
+                } text-white font-medium border-gray-200 rounded-2xl py-3 px-4 text-center hover:bg-gray-50 focus:outline-none transition-all ${
                   isLoading ? "opacity-50 cursor-not-allowed" : ""
                 }`}
                 onClick={() => {
-                  if (!isLoading) { 
+                  if (!isLoading) {
                     onSubjectSelect({
                       subject: subject.subject,
                       class: subject.class,
