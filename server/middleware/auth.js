@@ -23,6 +23,13 @@ const authenticateToken = (req, res, next) => {
       console.log('Invalid token payload:', user);
       return res.status(401).json({ message: 'Invalid token' });
     }
+
+    // Segregate permissions: Block student role from accessing teacher/admin endpoints
+    if (user.role === 'student') {
+      console.log('Access denied: Student role cannot access teacher endpoints');
+      return res.status(403).json({ message: 'Access denied. Teacher/Admin rights required.' });
+    }
+
     req.user = user;
     
     // Make college ID available in requests for ALL users (including super admins)
@@ -37,6 +44,46 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
+const authenticateStudent = (req, res, next) => {
+  // Check for token in cookies first (allowing studentToken or fallback token)
+  let token = req.cookies.studentToken || req.cookies.token;
+  
+  if (!token && req.headers.authorization) {
+    const authHeader = req.headers.authorization;
+    if (authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+  }
+
+  if (!token) {
+    console.log('No student token found in request');
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+
+  try {
+    const user = jwt.verify(token, process.env.JWT_SECRET);
+    if (!user || !user.id) {
+      console.log('Invalid token payload:', user);
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Ensure user has student role
+    if (user.role !== 'student') {
+      console.log('Access denied: User is not a student');
+      return res.status(403).json({ message: 'Access denied. Student authorization required.' });
+    }
+
+    req.user = user;
+    if (user.collegeId) {
+      req.collegeId = user.collegeId;
+    }
+    next();
+  } catch (error) {
+    console.error('Student authentication error:', error);
+    return res.status(401).json({ message: 'Invalid or expired token' });
+  }
+};
+
 const mongoose = require('mongoose');
 
 // Middleware to add college filter to queries
@@ -46,7 +93,6 @@ const addCollegeFilter = (req, res, next) => {
     // Convert collegeId to proper ObjectId if it's a string
     let collegeId = req.user.collegeId;
     
-    // If it's a string that looks like an ObjectId, convert it
     if (typeof collegeId === 'string' && mongoose.Types.ObjectId.isValid(collegeId)) {
       collegeId = new mongoose.Types.ObjectId(collegeId);
     }
@@ -71,4 +117,4 @@ const addCollegeFilter = (req, res, next) => {
   next();
 };
 
-module.exports = { authenticateToken, addCollegeFilter };
+module.exports = { authenticateToken, authenticateStudent, addCollegeFilter };

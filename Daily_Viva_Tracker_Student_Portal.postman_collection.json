@@ -1,0 +1,383 @@
+{
+	"info": {
+		"_postman_id": "7ca647be-b7e1-4c1c-bb76-2e8c8ad665bd",
+		"name": "Daily Viva Tracker - Student Portal",
+		"description": "API collection for the student portal side of the Daily Viva Tracker application. Import this file into Postman to instantly list and test all endpoints.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Colleges",
+			"item": [
+				{
+					"name": "Get Colleges List",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/colleges",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"colleges"
+							]
+						},
+						"description": "Retrieve the list of all active colleges. Copy one of the '_id' values to use as 'collegeId' during login."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Student Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.token) {",
+									"    pm.collectionVariables.set(\"studentToken\", jsonData.token);",
+									"    console.log(\"Saved studentToken to collection variables!\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"1001\",\n    \"password\": \"1001\",\n    \"collegeId\": \"YOUR_COLLEGE_ID_HERE\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"login"
+							]
+						},
+						"description": "Log in the student using their Admission Number (adNumber) as both username and password. On success, the token is automatically saved for all other requests."
+					},
+					"response": []
+				},
+				{
+					"name": "Student Logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"logout"
+							]
+						},
+						"description": "Log out the student and clear the auth cookie session."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Student Profile",
+			"item": [
+				{
+					"name": "Get Profile Info",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{studentToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile"
+							]
+						},
+						"description": "Retrieve details of the authenticated student's profile and their college."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Marks & Performance",
+			"item": [
+				{
+					"name": "Get Marks History (with filters)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{studentToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/marks?subject=Math&mark=&startDate=&endDate=&page=1&limit=20&sortBy=date&sortOrder=desc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"marks"
+							],
+							"query": [
+								{
+									"key": "subject",
+									"value": "Math",
+									"description": "Filter by subject name (case-insensitive partial match)"
+								},
+								{
+									"key": "mark",
+									"value": "",
+									"description": "Filter by mark score: 0 = Poor, 1 = Good, 2 = Great"
+								},
+								{
+									"key": "startDate",
+									"value": "",
+									"description": "Filter records from YYYY-MM-DD"
+								},
+								{
+									"key": "endDate",
+									"value": "",
+									"description": "Filter records up to YYYY-MM-DD"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number (pagination)"
+								},
+								{
+									"key": "limit",
+									"value": "20",
+									"description": "Items per page"
+								},
+								{
+									"key": "sortBy",
+									"value": "date",
+									"description": "Field to sort by: 'date' or 'mark'"
+								},
+								{
+									"key": "sortOrder",
+									"value": "desc",
+									"description": "Direction: 'asc' or 'desc'"
+								}
+							]
+						},
+						"description": "Retrieve paginated viva marks, overall average GPA, and grade count distributions."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Subject-wise Aggregation",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{studentToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/marks/subject-wise?startDate=&endDate=",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"marks",
+								"subject-wise"
+							],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "",
+									"description": "Start date range (optional)"
+								},
+								{
+									"key": "endDate",
+									"value": "",
+									"description": "End date range (optional)"
+								}
+							]
+						},
+						"description": "Retrieve performance data aggregated per subject (averages, distribution count, punishments)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Evaluated Subjects List",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{studentToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/subjects",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"subjects"
+							]
+						},
+						"description": "Get a list of distinct subjects where the student has viva evaluations."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Assignments & Tasks",
+			"item": [
+				{
+					"name": "Get Class Assignments",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{studentToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/assignments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"assignments"
+							]
+						},
+						"description": "Fetch assignments of the student's class, including the student's graded marks."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Improvements List",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{studentToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/improvements?status=given&subject=",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"improvements"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "given",
+									"description": "Filter by completion: 'given' or 'done'"
+								},
+								{
+									"key": "subject",
+									"value": "",
+									"description": "Filter by subject name (case-insensitive)"
+								}
+							]
+						},
+						"description": "Retrieve improvement tasks assigned to the student by teachers."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://daily-viva-tracker-3p9w.vercel.app/api/student-portal",
+			"type": "string",
+			"description": "Use http://localhost:5000/api/student-portal for local testing or https://daily-viva-tracker-3p9w.vercel.app/api/student-portal for production Vercel."
+		},
+		{
+			"key": "studentToken",
+			"value": "",
+			"type": "string",
+			"description": "Automatically populated upon login request completion."
+		}
+	]
+}

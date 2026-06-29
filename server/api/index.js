@@ -112,10 +112,13 @@ const registrationRoutes = require("../routes/registration");
 const superAdminRegistrationRoutes = require("../routes/super-admin-registration");
 const assignmentsRoutes = require("../routes/assignments");
 
+const studentPortalRoutes = require("../routes/studentPortal");
+
 // Import auth middleware
 const { authenticateToken } = require("../middleware/auth");
 
 // Public routes
+app.use("/api/student-portal", studentPortalRoutes); // Student portal routes (public login/colleges, protected marks/profile)
 app.use("/api/teachers", teachersRoutes); // Keep this public for login/register
 app.use("/api/registration", registrationRoutes); // College registration system
 app.use("/api/super-admin-registration", superAdminRegistrationRoutes); // One-time super admin registration
