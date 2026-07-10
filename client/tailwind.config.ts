@@ -14,6 +14,16 @@ export default {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		colors: {
+  			ink: '#1C2B3A',
+  			paper: '#F7F4EE',
+  			brass: '#B08942',
+  			grade: {
+  				excellent: 'var(--grade-excellent)',
+  				good: 'var(--grade-good)',
+  				satisfactory: 'var(--grade-satisfactory)',
+  				improve: 'var(--grade-improve)',
+  				poor: 'var(--grade-poor)'
+  			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

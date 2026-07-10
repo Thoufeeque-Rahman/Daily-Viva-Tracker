@@ -27,10 +27,13 @@ import ManageStudents from "@/pages/admin/ManageStudents";
 import SuperAdminRegistration from "@/pages/SuperAdminRegistration";
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/react"
+import AppV2 from "@/v2/AppV2";
 
 function Router() {
   return ( // TODO: Add a loading state
     <Switch>
+      <Route path="/v2/:nested*" component={AppV2} />
+      <Route path="/v2" component={AppV2} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/super-admin-registration/:token" component={SuperAdminRegistration} />
       <SuperAdminRoute path="/admin/teachers/:id" component={TeacherDetails} />
