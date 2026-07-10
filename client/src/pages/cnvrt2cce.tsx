@@ -11,41 +11,45 @@ import {
   SelectValue,
   SelectGroup,
 } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import {
-  GraduationCap,
-  MessageCircle,
-  User,
-  Hash,
   Target,
   Trophy,
-  Percent,
   ArrowUpDown,
-  ChartBar,
   RefreshCw,
   SquareChartGantt,
+  Download,
 } from "lucide-react";
 import { getPerformanceColors } from "@/lib/colors";
-import { AskMeModal } from "@/components/AskMeModal";
 import { useToast } from "@/hooks/use-toast";
-import { Student, DvtMark } from "@/types";
+import { Student, DvtMark, Assignment } from "@/types";
 import { CardSkeleton } from "@/components/SkeletonLoaders";
 
 interface StudentPerformance {
   student: Student;
   totalQuestions: number;
   totalScore: number;
-  percentage: number;
+  dvPercentage: number;
+  dvCceMark: number;
+  totalAssignments: number;
+  obtainedAssignmentMarks: number;
+  totalPossibleAssignmentMarks: number;
+  assignmentPercentage: number;
+  assignmentCceMark: number;
+  combinedCceMark: number;
+  maxCombinedCce: number;
+  combinedPercentage: number;
 }
 
 type SortField =
   | "rollNumber"
   | "adNumber"
-  | "percentage"
+  | "combinedPercentage"
   | "name"
-  | "totalQuestions";
+  | "totalQuestions"
+  | "totalAssignments";
 type SortDirection = "asc" | "desc";
 
 export default function Cnvrt2CCE() {
@@ -58,208 +62,258 @@ export default function Cnvrt2CCE() {
     setLocation("/auth");
     return null;
   }
+
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [students, setStudents] = useState<Student[]>([]);
   const [dvtMarks, setDvtMarks] = useState<DvtMark[]>([]);
-  const [studentPerformance, setStudentPerformance] = useState<
-    StudentPerformance[]
-  >([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [studentPerformance, setStudentPerformance] = useState<StudentPerformance[]>([]);
   const [sortField, setSortField] = useState<SortField>("rollNumber");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const [isAskMeModalOpen, setIsAskMeModalOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [totalCceMark, setTotalCceMark] = useState<number | "">(10); // default 10, allow empty
-  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
-  const [isLoadingMarks, setIsLoadingMarks] = useState(false);
+  const [totalDvCceMark, setTotalDvCceMark] = useState<number | "">(10);
+  const [totalAssignmentCceMark, setTotalAssignmentCceMark] = useState<number | "">(10);
+  const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  // const baseUrl = import.meta.env.VITE_BASE_URL;
 
-  const fetchStudents = async () => {
-    setIsLoadingStudents(true);
+  const fetchData = async () => {
+    if (!selectedSubject) return;
+
+    setIsLoading(true);
     try {
-      const response = await apiFetch(`/api/students`, {
-        method: "GET",
-      });
-      if (!response.ok) throw new Error("Failed to fetch students");
-      const data = await response.json();
-      console.log(data);
-      setStudents(data);
+      const [subject, classStr] = selectedSubject.split("|");
+      const classNum = parseInt(classStr, 10);
+
+      const [studentsResponse, dvtMarksResponse, assignmentsResponse] = await Promise.all([
+        apiFetch(`/api/students/class/${classNum}`),
+        apiFetch(`/api/dvtmarks/${encodeURIComponent(subject)}/${classNum}`),
+        apiFetch(`/api/assignments?subject=${encodeURIComponent(subject)}&class=${classNum}`),
+      ]);
+
+      if (!studentsResponse.ok || !dvtMarksResponse.ok || !assignmentsResponse.ok) {
+        throw new Error("Failed to fetch conversion data");
+      }
+
+      const studentsData = await studentsResponse.json();
+      const dvtMarksData = await dvtMarksResponse.json();
+      const assignmentsData = await assignmentsResponse.json();
+
+      setStudents(studentsData || []);
+      setDvtMarks(dvtMarksData || []);
+      setAssignments(assignmentsData || []);
     } catch (error) {
-      console.error("Error fetching students:", error);
+      console.error("Error fetching conversion data:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch students. Please try again.",
+        description: "Failed to fetch conversion data. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsLoadingStudents(false);
-    }
-  };
-
-  const fetchDvtMarks = async () => {
-    setIsLoadingMarks(true);
-    try {
-      const response = await apiFetch(`/api/dvtmarks`, {
-        method: "GET",
-      });
-      if (!response.ok) throw new Error("Failed to fetch DVT marks");
-      const data = await response.json();
-      setDvtMarks(data);
-    } catch (error) {
-      console.error("Error fetching DVT marks:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch DVT marks. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingMarks(false);
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    console.log(selectedSubject);
-    fetchStudents();
-    fetchDvtMarks();
-  }, []);
+    fetchData();
+  }, [selectedSubject]);
 
-  // Calculate performance metrics when subject changes
+  // Calculate performance metrics when subject, marks, assignments or limits change
   useEffect(() => {
-    if (!selectedSubject || !dvtMarks.length || !students.length) return;
-    console.log(dvtMarks);
-    console.log(selectedSubject);
+    if (!selectedSubject || !students.length) {
+      setStudentPerformance([]);
+      return;
+    }
 
-    const [subject, classStr] = selectedSubject.split("|");
-    const classNum = parseInt(classStr);
+    const totalPossibleAssignmentMarks = assignments.reduce(
+      (sum, assignment) => sum + (assignment.maxMarks || 0),
+      0
+    );
 
-    const performance = dvtMarks
-      .filter((mark) => mark.subject === subject && mark.class === classNum)
-      .reduce((acc: { [key: string]: StudentPerformance }, mark) => {
-        const studentId = mark.studentId;
-        console.log(mark);
-        if (!acc[studentId]) {
-          acc[studentId] = {
-            student:
-              students.find((s) => s._id === studentId) || ({} as Student),
-            totalQuestions: 0,
-            totalScore: 0,
-            percentage: 0,
-          };
-        }
-        acc[studentId].totalQuestions++;
-        acc[studentId].totalScore += mark.mark;
-        acc[studentId].percentage =
-          (acc[studentId].totalScore / (acc[studentId].totalQuestions * 2)) *
-          100;
-        return acc;
-      }, {});
+    const performance = students.map((student) => {
+      // DVT Metrics
+      const studentDvtMarks = dvtMarks.filter(
+        (mark) => String(mark.studentId) === String(student._id)
+      );
+      const totalQuestions = studentDvtMarks.length;
+      const totalScore = studentDvtMarks.reduce((sum, mark) => sum + mark.mark, 0);
+      const dvPercentage = totalQuestions > 0 ? (totalScore / (totalQuestions * 2)) * 100 : 0;
+      const dvCceMark = (dvPercentage * (Number(totalDvCceMark) || 0)) / 100;
+
+      // Assignment Metrics
+      const obtainedAssignmentMarks = assignments.reduce((sum, assignment) => {
+        const studentMark = (assignment.marks || []).find(
+          (mark) => String(mark.studentId) === String(student._id)
+        );
+        return sum + (studentMark?.mark || 0);
+      }, 0);
+      const assignmentPercentage =
+        totalPossibleAssignmentMarks > 0
+          ? (obtainedAssignmentMarks / totalPossibleAssignmentMarks) * 100
+          : 0;
+      const assignmentCceMark =
+        (assignmentPercentage * (Number(totalAssignmentCceMark) || 0)) / 100;
+
+      // Combined Metrics
+      const combinedCceMark = dvCceMark + assignmentCceMark;
+      const maxCombinedCce = (Number(totalDvCceMark) || 0) + (Number(totalAssignmentCceMark) || 0);
+      const combinedPercentage = maxCombinedCce > 0 ? (combinedCceMark / maxCombinedCce) * 100 : 0;
+
+      return {
+        student,
+        totalQuestions,
+        totalScore,
+        dvPercentage,
+        dvCceMark,
+        totalAssignments: assignments.length,
+        obtainedAssignmentMarks,
+        totalPossibleAssignmentMarks,
+        assignmentPercentage,
+        assignmentCceMark,
+        combinedCceMark,
+        maxCombinedCce,
+        combinedPercentage,
+      };
+    });
 
     // Sort based on current sort field and direction
-    const performanceArray = Object.values(performance);
-    performanceArray.sort((a, b) => {
+    performance.sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
         case "rollNumber":
           comparison =
-            parseInt(a.student.rollNumber) - parseInt(b.student.rollNumber);
+            parseInt(String(a.student.rollNumber || 0), 10) -
+            parseInt(String(b.student.rollNumber || 0), 10);
           break;
-        case "adNumber":
-          comparison =
-            parseInt(a.student.adNumber) - parseInt(b.student.adNumber);
+        case "adNumber": {
+          const numA = parseInt(String(a.student.adNumber || 0), 10);
+          const numB = parseInt(String(b.student.adNumber || 0), 10);
+          if (isNaN(numA) && isNaN(numB)) {
+            comparison = String(a.student.adNumber || "").localeCompare(
+              String(b.student.adNumber || "")
+            );
+          } else if (isNaN(numA)) {
+            comparison = 1;
+          } else if (isNaN(numB)) {
+            comparison = -1;
+          } else {
+            comparison = numA - numB;
+          }
           break;
-        case "percentage":
-          comparison = a.percentage - b.percentage;
+        }
+        case "combinedPercentage":
+          comparison = a.combinedPercentage - b.combinedPercentage;
           break;
         case "name":
-          comparison = a.student.name.localeCompare(b.student.name);
+          comparison = (a.student.name || "").localeCompare(b.student.name || "");
           break;
         case "totalQuestions":
           comparison = a.totalQuestions - b.totalQuestions;
+          break;
+        case "totalAssignments":
+          comparison = a.totalAssignments - b.totalAssignments;
           break;
       }
       return sortDirection === "asc" ? comparison : -comparison;
     });
 
-    setStudentPerformance(performanceArray as StudentPerformance[]);
-  }, [selectedSubject, dvtMarks, students, sortField, sortDirection]);
+    setStudentPerformance(performance);
+  }, [
+    selectedSubject,
+    students,
+    dvtMarks,
+    assignments,
+    sortField,
+    sortDirection,
+    totalDvCceMark,
+    totalAssignmentCceMark,
+  ]);
 
   const toggleSortDirection = () => {
     setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
   };
 
-  const handleAskMeClick = (student: Student) => {
-    setSelectedStudent(student);
-    setIsAskMeModalOpen(true);
-  };
-
-  const handleEvaluate = async (mark: number) => {
-    if (!selectedStudent || !user) return;
-
-    const subject = selectedSubject.split("|")[0];
-    const classNum = parseInt(selectedSubject.split("|")[1]);
-
-    try {
-      const response = await apiFetch(`/api/dvtmarks`, {
-        method: "POST",
-        body: JSON.stringify({
-          studentId: selectedStudent._id,
-          subject: subject,
-          adNumber: selectedStudent.adNumber,
-          mark,
-          class: classNum,
-          tId: user?.tId,
-        }),
-      });
-      console.log(response);
-      if (!response.ok) {
-        throw new Error("Failed to save evaluation");
-      }
-
-      toast({
-        title: "Evaluation Saved",
-        description: `Successfully evaluated ${selectedStudent.name} ${response.status}`,
-      });
-
-      // Refresh the data
-      fetchStudents();
-    } catch (error) {
-      console.error("Error saving evaluation:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save evaluation. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    try {
-      await Promise.all([fetchStudents(), fetchDvtMarks()]);
-      toast({
-        title: "Data Refreshed",
-        description: "Successfully refreshed student data and evaluations.",
-      });
-    } catch (error) {
-      console.error("Error refreshing data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to refresh data. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
+    await fetchData();
+    setIsRefreshing(false);
+    toast({
+      title: "Data Refreshed",
+      description: "Successfully refreshed conversion data.",
+    });
+  };
+
+  const handleDownloadCSV = () => {
+    if (!selectedSubject || studentPerformance.length === 0) return;
+
+    const [subject, classStr] = selectedSubject.split("|");
+    const classNum = classStr;
+
+    // Sort by Admission Number ascending (numerical-safe order)
+    const sortedForDownload = [...studentPerformance].sort((a, b) => {
+      const numA = parseInt(String(a.student.adNumber || 0), 10);
+      const numB = parseInt(String(b.student.adNumber || 0), 10);
+      if (isNaN(numA) && isNaN(numB)) {
+        return String(a.student.adNumber || "").localeCompare(String(b.student.adNumber || ""));
+      } else if (isNaN(numA)) {
+        return 1;
+      } else if (isNaN(numB)) {
+        return -1;
+      } else {
+        return numA - numB;
+      }
+    });
+
+    const headers = [
+      "Admission Number",
+      "Roll Number",
+      "Name",
+      "Daily Viva Percentage",
+      `Daily Viva CCE (Max: ${totalDvCceMark})`,
+      "Assignment Percentage",
+      `Assignment CCE (Max: ${totalAssignmentCceMark})`,
+      `Total CCE (Max: ${(Number(totalDvCceMark) || 0) + (Number(totalAssignmentCceMark) || 0)})`,
+    ];
+
+    const csvContent = [
+      headers.join(","),
+      ...sortedForDownload.map((p) =>
+        [
+          `"${p.student.adNumber}"`,
+          `"${p.student.rollNumber}"`,
+          `"${p.student.name.replace(/"/g, '""')}"`,
+          `"${p.dvPercentage.toFixed(1)}%"`,
+          `"${p.dvCceMark.toFixed(2)}"`,
+          `"${p.assignmentPercentage.toFixed(1)}%"`,
+          `"${p.assignmentCceMark.toFixed(2)}"`,
+          `"${p.combinedCceMark.toFixed(2)}"`,
+        ].join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${subject}_Class_${classNum}_cce_conversion.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Success",
+      description: "Marks downloaded successfully in admission number order.",
+    });
   };
 
   return (
     <div className="mx-auto max-w-md bg-white min-h-screen shadow-lg relative h-full flex flex-col">
-      <Header showContext={true} onHomeClick={() => {setLocation('/')}} />
+      <Header showContext={true} onHomeClick={() => setLocation("/")} />
       <main className="flex-1 p-6">
         <div className="flex justify-start items-center mb-4">
-          <h1 className="text-2xl font-bold text-blue-600">DV to CCE</h1>
+          <h1 className="text-2xl font-bold text-blue-600">CCE Conversion</h1>
         </div>
 
+        {/* Subject Select */}
         <div className="flex justify-between items-center mb-4">
           <Select value={selectedSubject} onValueChange={setSelectedSubject}>
             <SelectTrigger className="w-full bg-blue-50 text-blue-600 font-medium border-blue-600 hover:bg-blue-100 hover:text-blue-600 hover:border-blue-600 focus:bg-blue-100 focus:text-blue-600 focus:border-blue-600 focus:outline-none">
@@ -278,204 +332,176 @@ export default function Cnvrt2CCE() {
           </Select>
         </div>
 
-        {/* Sort Controls + Most/Least Asked Badges */}
-        {selectedSubject && studentPerformance.length > 0 && (
-          <div className="mb-6 flex items-center gap-2 flex-wrap">
-            <Select
-              value={sortField}
-              onValueChange={(value: SortField) => setSortField(value)}
-            >
-              <SelectTrigger className="w-40 bg-blue-50 text-blue-600 font-medium border-blue-600 hover:bg-blue-100 hover:text-blue-600 hover:border-blue-600 focus:bg-blue-100 focus:text-blue-600 focus:border-blue-600 focus:outline-none">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel className="text-blue-600 font-medium">
-                    Sort by
-                  </SelectLabel>
-                  <SelectItem value="rollNumber">Serial Number</SelectItem>
-                  <SelectItem value="percentage">Percentage</SelectItem>
-                  <SelectItem value="adNumber">Admission Number</SelectItem>
-                  <SelectItem value="name">Name</SelectItem>
-                  <SelectItem value="totalQuestions">
-                    Total Questions
-                  </SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleSortDirection}
-              className="bg-blue-50 text-blue-600 font-medium border-blue-600 hover:bg-blue-100 hover:text-blue-600 hover:border-blue-600 focus:bg-blue-100 focus:text-blue-600 focus:border-blue-600 focus:outline-none"
-            >
-              <ArrowUpDown className="w-4 h-4 mr-2" />
-              {sortDirection === "asc" ? "Asc" : "Desc"}
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              loading={isRefreshing}
-              disabled={isLoadingStudents || isLoadingMarks}
-              className="flex items-center gap-2 bg-blue-50 text-blue-600 font-medium border-blue-600 hover:bg-blue-100 hover:text-blue-600 hover:border-blue-600 focus:bg-blue-100 focus:text-blue-600 focus:border-blue-600 focus:outline-none"
-            >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-              {isRefreshing ? "Refreshing..." : "Refresh"}
-            </Button>
-
-            {/* Most/Least Asked Badges */}
-            <span
-              className="ml-1 px-2 py-1 text-[10px] rounded-full bg-green-100 text-green-800 font-semibold cursor-pointer hover:bg-green-200 transition"
-              title="Sort by Most Asked" 
-              onClick={() => {
-                setSortField("totalQuestions");
-                setSortDirection("desc");
-              }}
-            >
-              Most Asked Student
-            </span>
-            <span
-              className="ml-1 px-2 py-1 text-[10px] rounded-full bg-yellow-100 text-yellow-800 font-semibold cursor-pointer hover:bg-yellow-200 transition"
-              title="Sort by Least Asked"
-              onClick={() => {
-                setSortField("totalQuestions");
-                setSortDirection("asc");
-              }}
-            >
-              Least Asked Student
-            </span>
-            {/* Total CCE Mark Input */}
-            {selectedSubject && (
-              <div className="mb-4 flex items-center gap-2">
-                <label
-                  htmlFor="totalCceMark"
-                  className="text-blue-600 font-medium w-full"
-                >
-                  Total CCE Mark:
-                </label>
-                <input
-                  id="totalCceMark"
-                  type="number"
-                  min={1}
-                  value={totalCceMark}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setTotalCceMark(value === "" ? "" : Number(value));
-                  }}
-                  className="w-full px-2 py-1 border border-blue-600 rounded focus:outline-none"
-                />
-              </div>
-            )}
+        {/* Dynamic Parameter Settings */}
+        {selectedSubject && (
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="totalDvCceMark" className="text-xs font-semibold text-blue-600">
+                Convert Daily Viva to:
+              </label>
+              <input
+                id="totalDvCceMark"
+                type="number"
+                min={0}
+                value={totalDvCceMark}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setTotalDvCceMark(value === "" ? "" : Number(value));
+                }}
+                className="w-full px-3 py-1.5 border border-blue-600 rounded focus:outline-none text-sm"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="totalAssignmentCceMark" className="text-xs font-semibold text-blue-600">
+                Convert Assignment to:
+              </label>
+              <input
+                id="totalAssignmentCceMark"
+                type="number"
+                min={0}
+                value={totalAssignmentCceMark}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setTotalAssignmentCceMark(value === "" ? "" : Number(value));
+                }}
+                className="w-full px-3 py-1.5 border border-blue-600 rounded focus:outline-none text-sm"
+              />
+            </div>
           </div>
         )}
 
-        {/* Student Performance Cards */}
+        {/* Download & Sort Controls */}
+        {selectedSubject && studentPerformance.length > 0 && (
+          <div className="mb-6 space-y-4">
+            <Button
+              onClick={handleDownloadCSV}
+              className="w-full bg-blue-600 text-white font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-md"
+            >
+              <Download className="w-4 h-4" />
+              Download Converted Marks (CSV)
+            </Button>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <Select
+                value={sortField}
+                onValueChange={(value: SortField) => setSortField(value)}
+              >
+                <SelectTrigger className="w-40 bg-blue-50 text-blue-600 font-medium border-blue-600 hover:bg-blue-100 hover:text-blue-600 hover:border-blue-600 focus:bg-blue-100 focus:text-blue-600 focus:border-blue-600 focus:outline-none">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel className="text-blue-600 font-medium">Sort by</SelectLabel>
+                    <SelectItem value="rollNumber">Serial Number</SelectItem>
+                    <SelectItem value="adNumber">Admission Number</SelectItem>
+                    <SelectItem value="combinedPercentage">Combined Percentage</SelectItem>
+                    <SelectItem value="name">Name</SelectItem>
+                    <SelectItem value="totalQuestions">Questions</SelectItem>
+                    <SelectItem value="totalAssignments">Assignments</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleSortDirection}
+                className="bg-blue-50 text-blue-600 font-medium border-blue-600 hover:bg-blue-100 hover:text-blue-600 hover:border-blue-600 focus:bg-blue-100 focus:text-blue-600 focus:border-blue-600 focus:outline-none"
+              >
+                <ArrowUpDown className="w-4 h-4 mr-2" />
+                {sortDirection === "asc" ? "Asc" : "Desc"}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                loading={isRefreshing}
+                disabled={isLoading}
+                className="flex items-center gap-2 bg-blue-50 text-blue-600 font-medium border-blue-600 hover:bg-blue-100 hover:text-blue-600 hover:border-blue-600 focus:bg-blue-100 focus:text-blue-600 focus:border-blue-600 focus:outline-none"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Student Cards List */}
         <div className="space-y-4">
-          {(isLoadingStudents || isLoadingMarks) && selectedSubject ? (
+          {isLoading && selectedSubject ? (
             <>
               {Array.from({ length: 5 }).map((_, i) => (
                 <CardSkeleton key={i} />
               ))}
             </>
           ) : (
-            studentPerformance.map((performance, idx) => {
-              const colors = getPerformanceColors(performance.percentage);
-              // Find max/min totalQuestions for badge
-              const maxQuestions = Math.max(...studentPerformance.map(p => p.totalQuestions));
-              const minQuestions = Math.min(...studentPerformance.map(p => p.totalQuestions));
-              const isMostAsked = performance.totalQuestions === maxQuestions && maxQuestions !== minQuestions;
-              const isLeastAsked = performance.totalQuestions === minQuestions && maxQuestions !== minQuestions;
+            studentPerformance.map((performance) => {
+              const colors = getPerformanceColors(performance.combinedPercentage);
               return (
                 <Card
                   key={performance.student._id}
-                  className={`w-full max-w-md mx-auto border-0 shadow-xl overflow-hidden ${colors.card}`}
+                  className={`w-full max-w-md mx-auto border-0 shadow-lg overflow-hidden ${colors.card} transition duration-300 hover:scale-[1.01]`}
                 >
                   {/* Header Section */}
-                  <div className={`px-4 py-3 ${colors.header}`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex flex-col items-center gap-1 text-start">
-                          <span className="text-white/80 text-xs font-normal">
-                            Sl. #{performance.student.rollNumber}
-                          </span>
-                          <span className="text-white/80 text-xs font-normal">
-                            Ad. {performance.student.adNumber}
-                          </span>
-                        </div>
-                        <div className="">
-                          <h2 className="text-base font-bold text-white leading-tight">
-                            {performance.student.name}
-                          </h2>
-                        </div>
+                  <div className={`px-4 py-3 ${colors.header} flex justify-between items-center text-white`}>
+                    <div className="flex items-center gap-3">
+                      <div className="flex flex-col items-center gap-0.5 text-start text-[10px] text-white/80">
+                        <span>Sl. #{performance.student.rollNumber}</span>
+                        <span>Ad. {performance.student.adNumber}</span>
                       </div>
-                      {/* <div className="flex gap-2 items-center">
-                        {isMostAsked && (
-                          <span
-                            className="px-2 py-1 rounded-full bg-green-500 text-white text-xs font-semibold shadow"
-                            title="Most Asked Student"
-                          >
-                            Most Asked
-                          </span>
-                        )}
-                        {isLeastAsked && (
-                          <span
-                            className="px-2 py-1 rounded-full bg-yellow-400 text-white text-xs font-semibold shadow"
-                            title="Least Asked Student"
-                          >
-                            Least Asked
-                          </span>
-                        )}
-                      </div> */}
+                      <h2 className="text-sm font-bold leading-tight">{performance.student.name}</h2>
                     </div>
                   </div>
 
-                  {/* Content Section */}
-                  <div className="px-3 py-4 space-y-2">
-                    {/* Performance Metrics */}
-                    <div className="bg-white/80 rounded-xl p-4 shadow-sm">
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="text-center">
-                          <div className="flex items-center justify-center gap-2 mb-1">
-                            <Target className={`w-4 h-4 ${colors.icon}`} />
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">
-                              Questions
-                            </p>
+                  {/* Content Grid */}
+                  <div className="px-3 py-4">
+                    <div className="bg-white/95 rounded-xl p-4 shadow-inner grid grid-cols-3 gap-2">
+                      {/* Daily Viva Column */}
+                      <div className="text-center flex flex-col justify-between border-r border-gray-200 pr-2">
+                        <div>
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <Target className="w-3.5 h-3.5 text-blue-600 animate-pulse" />
+                            <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Daily Viva</p>
                           </div>
-                          <p className="text-lg font-bold text-gray-800">
-                            {performance.totalQuestions}
-                          </p>
+                          <p className="text-[10px] text-gray-600 mt-1">Qns: <span className="font-semibold">{performance.totalQuestions}</span></p>
+                          <p className="text-[10px] text-gray-600">Pct: <span className="font-semibold">{performance.dvPercentage.toFixed(1)}%</span></p>
                         </div>
-
-                        <div className="text-center">
-                          <div className="flex items-center justify-center gap-2 mb-1">
-                            <ChartBar className={`w-4 h-4 ${colors.icon}`} />
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">
-                              Percent
-                            </p>
-                          </div>
-                          <p className={`text-lg font-bold ${colors.text}`}>
-                            {performance.percentage.toFixed(1)}%
-                          </p>
+                        <div className="mt-2 pt-2 border-t border-gray-100">
+                          <p className="text-[9px] text-gray-400 uppercase tracking-wider">CCE Mark</p>
+                          <p className="text-sm font-bold text-blue-700">{performance.dvCceMark.toFixed(2)}</p>
                         </div>
+                      </div>
 
-                        <div className="text-center">
-                          <div className="flex items-center justify-center gap-2 mb-1">
-                            <SquareChartGantt
-                              className={`w-4 h-4 ${colors.icon}`}
-                            />
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">
-                              CCE Mark
-                            </p>
+                      {/* Assignment Column */}
+                      <div className="text-center flex flex-col justify-between border-r border-gray-200 px-1">
+                        <div>
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <SquareChartGantt className="w-3.5 h-3.5 text-amber-600" />
+                            <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Assignments</p>
                           </div>
-                          <p className={`text-lg font-bold ${colors.text}`}>
-                            {(
-                              (performance.percentage * (Number(totalCceMark) || 0)) /
-                              100
-                            ).toFixed(2)}
-                          </p>
+                          <p className="text-[10px] text-gray-600 mt-1">Tasks: <span className="font-semibold">{performance.totalAssignments}</span></p>
+                          <p className="text-[10px] text-gray-600">Pct: <span className="font-semibold">{performance.assignmentPercentage.toFixed(1)}%</span></p>
+                        </div>
+                        <div className="mt-2 pt-2 border-t border-gray-100">
+                          <p className="text-[9px] text-gray-400 uppercase tracking-wider">CCE Mark</p>
+                          <p className="text-sm font-bold text-amber-700">{performance.assignmentCceMark.toFixed(2)}</p>
+                        </div>
+                      </div>
+
+                      {/* Combined CCE Column */}
+                      <div className="text-center flex flex-col justify-between pl-2">
+                        <div>
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <Trophy className={`w-3.5 h-3.5 ${colors.icon}`} />
+                            <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Total CCE</p>
+                          </div>
+                          <p className="text-[10px] text-gray-600 mt-1">Max: <span className="font-semibold">{performance.maxCombinedCce.toFixed(2)}</span></p>
+                          <p className="text-[10px] text-gray-600">Pct: <span className="font-semibold">{performance.combinedPercentage.toFixed(1)}%</span></p>
+                        </div>
+                        <div className="mt-2 pt-2 border-t border-gray-100">
+                          <p className="text-[9px] text-gray-400 uppercase tracking-wider">Combined</p>
+                          <p className={`text-base font-black ${colors.text}`}>{performance.combinedCceMark.toFixed(2)}</p>
                         </div>
                       </div>
                     </div>
@@ -486,11 +512,11 @@ export default function Cnvrt2CCE() {
           )}
         </div>
 
-        {selectedSubject && studentPerformance.length === 0 && !isLoadingStudents && !isLoadingMarks && (
+        {selectedSubject && studentPerformance.length === 0 && !isLoading && (
           <p className="text-center text-gray-500 py-8">
             No performance data found for this subject
           </p>
-        )} 
+        )}
 
         {!selectedSubject && (
           <p className="text-center text-gray-500 py-8">
@@ -498,17 +524,6 @@ export default function Cnvrt2CCE() {
           </p>
         )}
       </main>
-
-      {selectedStudent && (
-        <AskMeModal
-          isOpen={isAskMeModalOpen}
-          onClose={() => setIsAskMeModalOpen(false)}
-          student={selectedStudent}
-          onEvaluate={handleEvaluate}
-          subject={selectedSubject.split("|")[0]}
-          class={parseInt(selectedSubject.split("|")[1])}
-        />
-      )}
     </div>
   );
 }

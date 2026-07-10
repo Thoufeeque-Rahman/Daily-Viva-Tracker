@@ -43,7 +43,7 @@ export default function Navigation() {
       href: "/performance",
     },
     {
-      title: "DV to CCE",
+      title: "CCE Conversion",
       icon: Replace,
       href: "/cnvrt2cce",
     },
@@ -51,11 +51,6 @@ export default function Navigation() {
       title: "Assignments",
       icon: ClipboardList,
       href: "/assignments",
-    },
-    {
-      title: "Assignment to CCE",
-      icon: Replace,
-      href: "/assignment2cce",
     },
     ...(user?.role === "super_admin"
       ? [
