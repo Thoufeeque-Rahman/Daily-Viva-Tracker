@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api-utils";
 import Header from "@/components/Header";
+import * as XLSX from "xlsx";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Select,
@@ -241,7 +242,7 @@ export default function Cnvrt2CCE() {
     });
   };
 
-  const handleDownloadCSV = () => {
+  const handleDownloadExcel = () => {
     if (!selectedSubject || studentPerformance.length === 0) return;
 
     const [subject, classStr] = selectedSubject.split("|");
@@ -273,35 +274,64 @@ export default function Cnvrt2CCE() {
       `Total CCE (Max: ${(Number(totalDvCceMark) || 0) + (Number(totalAssignmentCceMark) || 0)})`,
     ];
 
-    const csvContent = [
-      headers.join(","),
-      ...sortedForDownload.map((p) =>
-        [
-          `"${p.student.adNumber}"`,
-          `"${p.student.rollNumber}"`,
-          `"${p.student.name.replace(/"/g, '""')}"`,
-          `"${p.dvPercentage.toFixed(1)}%"`,
-          `"${p.dvCceMark.toFixed(2)}"`,
-          `"${p.assignmentPercentage.toFixed(1)}%"`,
-          `"${p.assignmentCceMark.toFixed(2)}"`,
-          `"${p.combinedCceMark.toFixed(2)}"`,
-        ].join(",")
-      ),
-    ].join("\n");
+    const data = sortedForDownload.map((p) => ({
+      "Admission Number": p.student.adNumber,
+      "Roll Number": p.student.rollNumber,
+      "Name": p.student.name,
+      "Daily Viva Percentage": `${p.dvPercentage.toFixed(1)}%`,
+      [`Daily Viva CCE (Max: ${totalDvCceMark})`]: parseFloat(p.dvCceMark.toFixed(2)),
+      "Assignment Percentage": `${p.assignmentPercentage.toFixed(1)}%`,
+      [`Assignment CCE (Max: ${totalAssignmentCceMark})`]: parseFloat(p.assignmentCceMark.toFixed(2)),
+      [`Total CCE (Max: ${(Number(totalDvCceMark) || 0) + (Number(totalAssignmentCceMark) || 0)})`]: parseFloat(p.combinedCceMark.toFixed(2)),
+    }));
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `${subject}_Class_${classNum}_cce_conversion.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const worksheet = XLSX.utils.json_to_sheet(data, { header: headers });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "CCE Conversion");
+    XLSX.writeFile(workbook, `${subject}_Class_${classNum}_cce_conversion.xlsx`);
 
     toast({
       title: "Success",
-      description: "Marks downloaded successfully in admission number order.",
+      description: "Marks downloaded successfully as Excel file in admission number order.",
+    });
+  };
+
+  const handleDownloadPortalExcel = () => {
+    if (!selectedSubject || studentPerformance.length === 0) return;
+
+    const [subject, classStr] = selectedSubject.split("|");
+    const classNum = classStr;
+
+    // Sort by Admission Number ascending (numerical-safe order)
+    const sortedForDownload = [...studentPerformance].sort((a, b) => {
+      const numA = parseInt(String(a.student.adNumber || 0), 10);
+      const numB = parseInt(String(b.student.adNumber || 0), 10);
+      if (isNaN(numA) && isNaN(numB)) {
+        return String(a.student.adNumber || "").localeCompare(String(b.student.adNumber || ""));
+      } else if (isNaN(numA)) {
+        return 1;
+      } else if (isNaN(numB)) {
+        return -1;
+      } else {
+        return numA - numB;
+      }
+    });
+
+    const headers = ["adno", "total mark"];
+
+    const data = sortedForDownload.map((p) => ({
+      "adno": p.student.adNumber,
+      "total mark": parseFloat(p.combinedCceMark.toFixed(2)),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data, { header: headers });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Portal Marks");
+    XLSX.writeFile(workbook, `${subject}_Class_${classNum}_portal_format.xlsx`);
+
+    toast({
+      title: "Success",
+      description: "Portal Excel file downloaded successfully in admission number order.",
     });
   };
 
@@ -372,13 +402,21 @@ export default function Cnvrt2CCE() {
 
         {/* Download & Sort Controls */}
         {selectedSubject && studentPerformance.length > 0 && (
-          <div className="mb-6 space-y-4">
+          <div className="mb-6 space-y-3">
             <Button
-              onClick={handleDownloadCSV}
+              onClick={handleDownloadExcel}
               className="w-full bg-blue-600 text-white font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-md"
             >
               <Download className="w-4 h-4" />
-              Download Converted Marks (CSV)
+              Download Converted Marks (Excel)
+            </Button>
+
+            <Button
+              onClick={handleDownloadPortalExcel}
+              className="w-full bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition flex items-center justify-center gap-2 shadow-md"
+            >
+              <Download className="w-4 h-4" />
+              Download Portal File (Excel)
             </Button>
 
             <div className="flex items-center gap-2 flex-wrap">
