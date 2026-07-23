@@ -317,11 +317,11 @@ export default function Cnvrt2CCE() {
       }
     });
 
-    const headers = ["adno", "total mark"];
+    const headers = ["Ad.No", "Mark"]; // for online portal
 
     const data = sortedForDownload.map((p) => ({
-      "adno": p.student.adNumber,
-      "total mark": parseFloat(p.combinedCceMark.toFixed(2)),
+      "Ad.No": p.student.adNumber,
+      "Mark": Math.floor(p.combinedCceMark),
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(data, { header: headers });
