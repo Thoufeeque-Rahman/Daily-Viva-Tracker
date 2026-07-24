@@ -16,7 +16,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { GraduationCap, Hash, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 
 export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { toast } = useToast();
@@ -92,21 +91,16 @@ export default function AuthPage() {
         </div>
 
         {/* Auth Card */}
-        <Card className="bg-white rounded-3xl shadow-2xl px-8 py-6">
-          {/* <CardHeader className="px-6 pt-6 pb-0">
-            <CardTitle className="text-start mb-0">
-              <h2 className="text-xl font-bold text-blue-700 mb-2 sm:mb-0">Staff Login</h2>
-            </CardTitle>
-          </CardHeader> */}
-
+        {/* <Card className="bg-white rounded-3xl shadow-2xl px-8 py-6"> */}
+        <Card className="bg-white rounded-3xl p-5 border-2 border-gray-100 shadow-sm">
           <form onSubmit={handleSubmit} className="p-0">
             <CardContent className="space-y-4 pb-0 p-0">
               <div className="space-y-1">
                 <Label htmlFor="email" className="text-xs uppercase text-sky-600 tracking-wider font-bold">
                   Email Address
                 </Label>
-                <div className="relative font-medium">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300">
+                <div className="relative font-medium ">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300">
                     <Hash className="h-4 w-4" />
                   </span>
                   <Input
@@ -117,7 +111,7 @@ export default function AuthPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isLoginLoading}
                     required
-                    className="h-12 pl-11 rounded-2xl border-2 bg-sky-50 placeholder:text-gray-300 placeholder:text-sm focus:ring-2 focus:ring-sky-300 focus:ring-offset-0 focus-visible:ring-sky-300 focus-visible:ring-offset-0"
+                    className="h-14 pl-11 rounded-2xl border-2 border-gray-100 bg-sky-50 placeholder:text-gray-300 placeholder:text-sm focus:ring-2 focus:ring-sky-300 focus:ring-offset-0 focus-visible:ring-sky-300 focus-visible:ring-offset-0"
                   />
                 </div>
               </div>
@@ -127,7 +121,7 @@ export default function AuthPage() {
                   Portal Password
                 </Label>
                 <div className="relative font-medium">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300">
                     <Lock className="h-4 w-4" />
                   </span>
 
@@ -139,7 +133,7 @@ export default function AuthPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isLoginLoading}
                     required
-                    className="h-12 pl-11 pr-12 border-2 rounded-2xl bg-sky-50 placeholder:text-gray-300 placeholder:text-sm focus:ring-2 focus:ring-sky-300 focus:ring-offset-0 focus-visible:ring-sky-300 focus-visible:ring-offset-0"
+                    className="h-14 pl-11 pr-12 border-2 border-gray-100 rounded-2xl bg-sky-50 placeholder:text-gray-300 placeholder:text-sm focus:ring-2 focus:ring-sky-300 focus:ring-offset-0 focus-visible:ring-sky-300 focus-visible:ring-offset-0"
                   />
 
                   <button
