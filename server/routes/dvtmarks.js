@@ -1,19 +1,50 @@
 const express = require("express");
 const DvtMarks = require("../models/DvtMarks");
 const Student = require("../models/Students");
+const Semesters = require("../models/Semesters");
 const { authenticateToken, addCollegeFilter } = require("../middleware/auth");
 const router = express.Router();
+
+/**
+ * Helper: get the active semester for the current user's college.
+ * Returns the semester doc or null if none is active.
+ */
+async function getActiveSemester(user) {
+  if (!user) return null;
+  const filter = { isActive: true };
+  if (user.collegeId) filter.collegeId = user.collegeId;
+  return Semesters.findOne(filter);
+}
+
+/**
+ * Helper: build the semester filter for DVT mark queries.
+ * - If no active semester → no filter (show everything, backward compat).
+ * - If active semester exists → only show marks for that semester
+ *   OR marks with no semesterId (legacy marks created before feature).
+ *   BUT once a start-semester action runs, all pre-transition marks get
+ *   stamped with the old semesterId, so they'll correctly disappear.
+ */
+function buildSemesterFilter(activeSemester) {
+  if (!activeSemester) return {};
+  return {
+    $or: [
+      { semesterId: activeSemester._id },
+      { semesterId: null },
+      { semesterId: { $exists: false } }
+    ]
+  };
+}
+
 
 // Get all DvtMarks
 router.get("/", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
     console.log("Fetching DvtMarks with college filter:", req.collegeFilter);
-    const dvtMarks = await DvtMarks.find(req.collegeFilter || {}).sort({ date: -1 }); // Sort by date descending
+    const activeSemester = await getActiveSemester(req.user);
+    const semesterFilter = buildSemesterFilter(activeSemester);
+    const query = { ...(req.collegeFilter || {}), ...semesterFilter };
 
-    // console.log(`Found ${dvtMarks.length} DvtMarks documents`);
-    if (dvtMarks.length > 0) {
-      // console.log("Sample document:", JSON.stringify(dvtMarks[0], null, 2));
-    }
+    const dvtMarks = await DvtMarks.find(query).sort({ date: -1 });
 
     res.json(dvtMarks);
   } catch (error) {
@@ -21,6 +52,7 @@ router.get("/", authenticateToken, addCollegeFilter, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
 
 // Create a new DvtMark
 router.post("/", authenticateToken, addCollegeFilter, async (req, res) => {
@@ -36,24 +68,13 @@ router.post("/", authenticateToken, addCollegeFilter, async (req, res) => {
     // Get college ID from authenticated user
     let collegeId;
     if (req.user.role === 'super_admin') {
-      // For super admin, use the student's college or the provided college ID
       collegeId = req.body.collegeId || student.collegeId;
     } else {
-      // For regular users, use their college ID
       collegeId = req.user.collegeId;
     }
 
-    // Create the mark object
-    const dvtMark = {
-      subject,
-      mark,
-      date: new Date(),
-      class: classNumber,
-      studentId: student._id,
-      adNumber,
-      tId,
-      collegeId,
-    }; 
+    // Attach the active semester (if any)
+    const activeSemester = await getActiveSemester(req.user);
 
     // Create a new DvtMarks document
     const newDvtMark = new DvtMarks({
@@ -65,6 +86,7 @@ router.post("/", authenticateToken, addCollegeFilter, async (req, res) => {
       adNumber,
       tId,
       collegeId,
+      semesterId: activeSemester ? activeSemester._id : null,
     });
 
     // Save the new DvtMarks document
@@ -77,6 +99,7 @@ router.post("/", authenticateToken, addCollegeFilter, async (req, res) => {
   }
 });
 
+
 // Get DvtMarks by student ID, subject, and class for student history
 router.get("/student/:studentId/:subject/:class", authenticateToken, addCollegeFilter, async (req, res) => {
   try {
@@ -88,11 +111,15 @@ router.get("/student/:studentId/:subject/:class", authenticateToken, addCollegeF
       class: classNumber,
     });
 
+    const activeSemester = await getActiveSemester(req.user);
+    const semesterFilter = buildSemesterFilter(activeSemester);
+
     const queryConditions = {
       studentId: studentId,
       subject: subject,
       class: parseInt(classNumber),
-      ...(req.collegeFilter || {})
+      ...(req.collegeFilter || {}),
+      ...semesterFilter
     };
 
     const dvtMarks = await DvtMarks.find(queryConditions).sort({ date: -1 }).limit(10); // Get last 10 records
@@ -114,21 +141,19 @@ router.get("/:subject/:class", authenticateToken, addCollegeFilter, async (req, 
       class: req.params.class,
     });
 
+    const activeSemester = await getActiveSemester(req.user);
+    const semesterFilter = buildSemesterFilter(activeSemester);
+
     const queryConditions = {
       subject: req.params.subject,
       class: parseInt(req.params.class),
-      ...(req.collegeFilter || {})
+      ...(req.collegeFilter || {}),
+      ...semesterFilter
     };
 
     const dvtMarks = await DvtMarks.find(queryConditions).sort({ date: -1 });
 
     console.log(`Found ${dvtMarks.length} matching documents`);
-    if (dvtMarks.length > 0) {
-      console.log(
-        "Sample filtered document:",
-        JSON.stringify(dvtMarks[0], null, 2)
-      );
-    }
 
     res.json(dvtMarks);
   } catch (error) {
@@ -136,6 +161,7 @@ router.get("/:subject/:class", authenticateToken, addCollegeFilter, async (req, 
     res.status(500).json({ message: error.message });
   }
 });
+
 
 // Delete a DvtMark
 router.delete("/:id", authenticateToken, async (req, res) => {
@@ -177,7 +203,7 @@ router.put("/:id", authenticateToken, addCollegeFilter, async (req, res) => {
 
 
 // Function to get DVT marks count per day per class
-async function getDvtMarksTable(startDate, endDate, collegeFilter = {}) {
+async function getDvtMarksTable(startDate, endDate, collegeFilter = {}, semesterFilter = {}) {
   try {
     // Ensure proper date range - include full end date
     const startDateTime = new Date(startDate + 'T00:00:00.000Z');
@@ -188,7 +214,8 @@ async function getDvtMarksTable(startDate, endDate, collegeFilter = {}) {
         $gte: startDateTime,
         $lte: endDateTime
       },
-      ...collegeFilter
+      ...collegeFilter,
+      ...semesterFilter
     };
 
     console.log("getDvtMarksTable - Match conditions:", JSON.stringify(matchConditions, null, 2));
@@ -485,7 +512,7 @@ router.get("/dvtmarksbydate", authenticateToken, addCollegeFilter, async (req, r
   try {
     const { startDate, endDate } = req.query;
     
-    // Set default date range - last 90 days to today (extended for more data)
+    // Set default date range - last 90 days to today
     const defaultEndDate = new Date();
     const defaultStartDate = new Date();
     defaultStartDate.setDate(defaultStartDate.getDate() - 90);
@@ -493,44 +520,9 @@ router.get("/dvtmarksbydate", authenticateToken, addCollegeFilter, async (req, r
     const actualStartDate = startDate || defaultStartDate.toISOString().split('T')[0];
     const actualEndDate = endDate || defaultEndDate.toISOString().split('T')[0];
     
-    console.log("=== DVT MARKS BY DATE DEBUG ===");
-    console.log("User:", req.user?.email, "Role:", req.user?.role);
-    console.log("User CollegeId:", req.user?.collegeId, typeof req.user?.collegeId);
-    console.log("College filter:", JSON.stringify(req.collegeFilter));
     console.log("Date range:", actualStartDate, "to", actualEndDate);
-    
-    // Check if user's collegeId matches any in database
-    if (req.user?.collegeId) {
-      const userCollegeMatches = await DvtMarks.countDocuments({ 
-        collegeId: req.user.collegeId 
-      });
-      console.log(`DVT marks matching user's collegeId (${req.user.collegeId}): ${userCollegeMatches}`);
-      
-      // Also check with string comparison in case of type mismatch
-      const userCollegeMatchesStr = await DvtMarks.countDocuments({ 
-        collegeId: req.user.collegeId.toString() 
-      });
-      console.log(`DVT marks matching user's collegeId as string: ${userCollegeMatchesStr}`);
-    }
-    
-    // Get unique collegeIds in database to compare
-    const uniqueCollegeIds = await DvtMarks.distinct('collegeId');
-    console.log(`Unique collegeIds in database:`, uniqueCollegeIds.map(id => id ? id.toString() : 'null'));
-    
-    // Total DVT marks in database
-    const totalInDb = await DvtMarks.countDocuments();
-    console.log(`Total DVT marks in database: ${totalInDb}`);
-    
-    // First, let's check if there's any data in the date range without college filter
-    const totalCount = await DvtMarks.countDocuments({
-      date: {
-        $gte: new Date(actualStartDate),
-        $lte: new Date(actualEndDate + 'T23:59:59.999Z')
-      }
-    });
-    console.log(`Total DVT marks in date range (all colleges): ${totalCount}`);
-    
-    // Check with college filter
+
+    // Determine college filter (fallback if marks don't have collegeId)
     const collegeFilteredCount = await DvtMarks.countDocuments({
       date: {
         $gte: new Date(actualStartDate),
@@ -538,56 +530,37 @@ router.get("/dvtmarksbydate", authenticateToken, addCollegeFilter, async (req, r
       },
       ...(req.collegeFilter || {})
     });
-    console.log(`DVT marks with college filter: ${collegeFilteredCount}`);
-    
-    // Check if DVT marks actually have collegeId field
-    const sampleWithCollegeId = await DvtMarks.findOne({ collegeId: { $exists: true } });
-    const sampleWithoutCollegeId = await DvtMarks.findOne({ collegeId: { $exists: false } });
-    
-    console.log("Sample with collegeId:", sampleWithCollegeId ? "exists" : "none found");
-    console.log("Sample without collegeId:", sampleWithoutCollegeId ? "exists" : "none found");
-    
-    // Check if DVT marks have collegeId field at all
-    const totalDocsWithCollegeId = await DvtMarks.countDocuments({ collegeId: { $exists: true, $ne: null } });
+
     const totalDocsWithoutCollegeId = await DvtMarks.countDocuments({ 
       $or: [{ collegeId: { $exists: false } }, { collegeId: null }] 
     });
-    
-    console.log(`DVT marks with collegeId: ${totalDocsWithCollegeId}`);
-    console.log(`DVT marks without collegeId: ${totalDocsWithoutCollegeId}`);
-    
-    // Determine which filter to use
+
     let collegeFilterToUse = req.collegeFilter || {};
-    
-    // If most/all DVT marks don't have collegeId, temporarily disable filtering
     if (totalDocsWithoutCollegeId > 0 && collegeFilteredCount === 0) {
-      console.log("WARNING: DVT marks in database don't have collegeId field");
-      console.log("TEMPORARILY DISABLING COLLEGE FILTER to retrieve data");
+      console.log("⚠️  Legacy data without collegeId — temporarily disabling college filter");
       collegeFilterToUse = {};
-      
-      // Log this for attention
-      console.log("⚠️  MIGRATION NEEDED: Run POST /api/dvtmarks/migrate/add-college-ids to fix this");
     }
+
+    // Get active semester filter
+    const activeSemester = await getActiveSemester(req.user);
+    const semesterFilter = buildSemesterFilter(activeSemester);
     
     const aggregatedData = await getDvtMarksTable(
       actualStartDate, 
       actualEndDate,
-      collegeFilterToUse
+      collegeFilterToUse,
+      semesterFilter
     );
     
     const tableData = formatToTable(aggregatedData);
-    
-    console.log(`Aggregated data length: ${aggregatedData.length}`);
-    console.log(`Formatted table data length: ${tableData.length}`);
-    console.log("Sample aggregated data:", JSON.stringify(aggregatedData.slice(0, 2), null, 2));
-    console.log("===============================");
-    
+
     res.json({
       success: true,
       data: tableData,
       summary: {
         totalDays: tableData.length,
-        dateRange: { startDate: actualStartDate, endDate: actualEndDate }
+        dateRange: { startDate: actualStartDate, endDate: actualEndDate },
+        activeSemester: activeSemester ? { _id: activeSemester._id, name: activeSemester.name } : null
       }
     });
     
@@ -612,6 +585,9 @@ router.post("/bulk-batch", authenticateToken, addCollegeFilter, async (req, res)
         message: "Evaluations array is required and must not be empty" 
       });
     }
+
+    // Fetch active semester once for the whole batch
+    const activeSemester = await getActiveSemester(req.user);
 
     const savedEvaluations = [];
     const errors = [];
@@ -648,6 +624,7 @@ router.post("/bulk-batch", authenticateToken, addCollegeFilter, async (req, res)
           adNumber: student.adNumber,
           tId,
           collegeId,
+          semesterId: activeSemester ? activeSemester._id : null,
         });
 
         const savedMark = await newDvtMark.save();
@@ -718,12 +695,13 @@ router.post("/bulk-individual", authenticateToken, addCollegeFilter, async (req,
     // Get college ID from authenticated user or student
     let collegeId;
     if (req.user.role === 'super_admin') {
-      // For super admin, use the student's college or the provided college ID
       collegeId = req.body.collegeId || student.collegeId;
     } else {
-      // For regular users, use their college ID
       collegeId = req.user.collegeId;
     }
+
+    // Attach the active semester (if any)
+    const activeSemester = await getActiveSemester(req.user);
 
     // Create a new DvtMarks document
     const newDvtMark = new DvtMarks({
@@ -735,6 +713,7 @@ router.post("/bulk-individual", authenticateToken, addCollegeFilter, async (req,
       adNumber: student.adNumber,
       tId,
       collegeId,
+      semesterId: activeSemester ? activeSemester._id : null,
     });
 
     const savedMark = await newDvtMark.save();

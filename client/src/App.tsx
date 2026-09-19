@@ -25,6 +25,7 @@ import AdminStats from "@/pages/admin/AdminStats";
 import ManageTeachers from "@/pages/admin/ManageTeachers";
 import ManageStudents from "@/pages/admin/ManageStudents";
 import SuperAdminRegistration from "@/pages/SuperAdminRegistration";
+import SemesterManagement from "@/pages/admin/SemesterManagement";
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/react"
 
@@ -39,6 +40,7 @@ function Router() {
       <SuperAdminRoute path="/admin/superadmin" component={SuperAdminDashboard} />
       <SuperAdminRoute path="/admin/stats" component={AdminStats} />
       <SuperAdminRoute path="/admin/grading" component={GradingConfig} />
+      <SuperAdminRoute path="/admin/semesters" component={SemesterManagement} />
       <SuperAdminRoute path="/admin/*" component={Dashboard} />
       <ProtectedRoute path="/" component={StartPage} />
       <ProtectedRoute path="/evaluation" component={EvaluationPage} />

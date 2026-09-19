@@ -38,6 +38,12 @@ const dvtMarksSchema = new mongoose.Schema({
   tId: {
     type: String,
     required: false
+  },
+  semesterId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Semester',
+    required: false,
+    default: null
   }
 }, {
   timestamps: true

@@ -8,6 +8,7 @@ import {
   BarChart3,
   GraduationCap,
   ClipboardList,
+  CalendarDays,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
@@ -68,6 +69,11 @@ export default function Navigation() {
             title: "Super Admin Dashboard",
             icon: BarChart3,
             href: "/admin/superadmin",
+          },
+          {
+            title: "Manage Semesters",
+            icon: CalendarDays,
+            href: "/admin/semesters",
           },
           // {
           //   title: "Admin Statistics",
