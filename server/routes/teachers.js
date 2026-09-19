@@ -185,10 +185,10 @@ router.post('/create', authenticateToken, addCollegeFilter, async (req, res) => 
     // Get college ID - only admins from same college or super admins can create teachers
     let collegeId;
     if (req.user.role === 'super_admin') {
-      // Super admin can create teachers for any college, but must specify college ID
-      collegeId = req.body.collegeId;
+      // Use explicitly provided collegeId, otherwise fall back to the super admin's own college
+      collegeId = req.body.collegeId || req.user.collegeId;
       if (!collegeId) {
-        return res.status(400).json({ error: 'College ID is required when creating teachers as super admin' });
+        return res.status(400).json({ error: 'College ID could not be determined. Please contact support.' });
       }
     } else {
       // Regular admin creates teachers for their own college

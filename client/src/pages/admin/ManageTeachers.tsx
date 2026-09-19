@@ -248,7 +248,7 @@ export default function ManageTeachers() {
         return;
       }
 
-      const response = await axios.post("/api/teachers/register", newTeacher);
+      const response = await axios.post("/api/teachers/create", newTeacher);
       const newTeacherRecord = response.data.teacher; // API returns { message, teacher }
       
       // Add new teacher to local state instead of refetching
@@ -274,7 +274,7 @@ export default function ManageTeachers() {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to create teacher.",
+        description: error.response?.data?.error || error.response?.data?.message || "Failed to create teacher.",
         variant: "destructive",
       });
     }
