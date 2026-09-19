@@ -58,7 +58,8 @@ import {
   Calendar,
   Mail,
   Phone,
-  GraduationCap
+  GraduationCap,
+  KeyRound
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import axios from "@/lib/axios";
@@ -132,6 +133,10 @@ export default function ManageTeachers() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showBulkImportDialog, setShowBulkImportDialog] = useState(false);
+  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
+  const [resetPasswordTeacher, setResetPasswordTeacher] = useState<Teacher | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importResults, setImportResults] = useState<BulkImportResult | null>(null);
@@ -451,6 +456,45 @@ export default function ManageTeachers() {
         description: error.response?.data?.message || "Failed to update teacher.",
         variant: "destructive",
       });
+    }
+  };
+
+  // Handle reset password click
+  const handleResetPasswordClick = (teacher: Teacher) => {
+    setResetPasswordTeacher(teacher);
+    setNewPassword("");
+    setShowResetPasswordDialog(true);
+  };
+
+  // Handle reset password submit
+  const handleResetPassword = async () => {
+    if (!resetPasswordTeacher) return;
+    if (!newPassword || newPassword.length < 6) {
+      toast({
+        title: "Validation Error",
+        description: "Password must be at least 6 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      setIsResettingPassword(true);
+      await axios.put(`/api/teachers/${resetPasswordTeacher._id}/reset-password`, { newPassword });
+      toast({
+        title: "Password Reset",
+        description: `Password for ${resetPasswordTeacher.name} has been reset successfully.`,
+      });
+      setShowResetPasswordDialog(false);
+      setResetPasswordTeacher(null);
+      setNewPassword("");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || "Failed to reset password.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResettingPassword(false);
     }
   };
 
@@ -978,6 +1022,14 @@ export default function ManageTeachers() {
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="Reset Password"
+                              onClick={() => handleResetPasswordClick(teacher)}
+                            >
+                              <KeyRound className="h-4 w-4 text-orange-500" />
+                            </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="sm">
@@ -1341,6 +1393,58 @@ export default function ManageTeachers() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Reset Password Dialog */}
+        <Dialog
+          open={showResetPasswordDialog}
+          onOpenChange={(open) => {
+            setShowResetPasswordDialog(open);
+            if (!open) { setResetPasswordTeacher(null); setNewPassword(""); }
+          }}
+        >
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <KeyRound className="h-5 w-5 text-orange-500" />
+                Reset Password
+              </DialogTitle>
+              <DialogDescription>
+                Set a new password for{" "}
+                <span className="font-semibold">{resetPasswordTeacher?.name}</span>.
+                The old password is not required.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="reset-new-password">New Password *</Label>
+                <Input
+                  id="reset-new-password"
+                  type="password"
+                  placeholder="Min. 6 characters"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleResetPassword(); }}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => { setShowResetPasswordDialog(false); setNewPassword(""); }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleResetPassword}
+                disabled={isResettingPassword}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                {isResettingPassword ? "Resetting…" : "Reset Password"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
       </main>
     </div>
   );

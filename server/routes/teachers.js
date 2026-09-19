@@ -230,7 +230,7 @@ router.post('/create', authenticateToken, addCollegeFilter, async (req, res) => 
   }
 });
 
-// Change Password
+// Change Password (requires current password — for teacher self-service)
 router.put('/change-password', authenticateToken, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -256,6 +256,32 @@ router.put('/change-password', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Failed to update password' });
   }
 });
+
+// Super admin: Reset a teacher's password without requiring the old password
+router.put('/:teacherId/reset-password', authenticateToken, isSuperAdmin, async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters' });
+    }
+
+    const teacher = await Teachers.findById(req.params.teacherId);
+    if (!teacher) {
+      return res.status(404).json({ error: 'Teacher not found' });
+    }
+
+    // Set the new password — pre-save hook will hash it
+    teacher.password = newPassword;
+    await teacher.save();
+
+    res.json({ message: `Password reset successfully for ${teacher.name}` });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
 
 // Get current teacher
 router.get('/me', authenticateToken, async (req, res) => {
