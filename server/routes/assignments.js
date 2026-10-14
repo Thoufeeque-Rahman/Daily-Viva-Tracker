@@ -140,6 +140,7 @@ router.get("/:id/marks", authenticateToken, addCollegeFilter, async (req, res) =
     const students = await Student.find({
       ...(req.collegeFilter || {}),
       class: assignment.class,
+      active: { $ne: false },
     }).lean();
 
     const marksMap = new Map((assignment.marks || []).map((entry) => [String(entry.studentId), entry.mark]));

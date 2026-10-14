@@ -59,6 +59,7 @@ export const students = pgTable("students", {
   adNumber: text("ad_number").notNull().unique(),
   photoUrl: text("photo_url"),
   classId: integer("class_id").notNull(),
+  active: boolean("active").default(true),
 });
 
 export const insertStudentSchema = createInsertSchema(students).pick({
@@ -68,6 +69,7 @@ export const insertStudentSchema = createInsertSchema(students).pick({
   adNumber: true,
   photoUrl: true,
   classId: true,
+  active: true,
 });
 
 export type InsertStudent = z.infer<typeof insertStudentSchema>;

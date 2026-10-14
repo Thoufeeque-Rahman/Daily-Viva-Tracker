@@ -35,7 +35,8 @@ export default function EvaluationPage() {
         const studentsResp = await apiFetch(`/api/students/class/${selectedSubject.class}`, { method: "GET" });
         if (!studentsResp.ok) throw new Error("Failed to fetch students");
         const studentsData = await studentsResp.json();
-        setStudents(studentsData);
+        const activeStudents = (studentsData as Student[]).filter((s) => s.active !== false);
+        setStudents(activeStudents);
 
         const roundResp = await apiFetch(`/api/rounds/${selectedSubject.subject}/${selectedSubject.class}`, { method: "GET" });
         if (!roundResp.ok) {
@@ -43,10 +44,10 @@ export default function EvaluationPage() {
           const createResp = await apiFetch(`/api/rounds/`, {
             method: "POST",
             body: JSON.stringify({
-              studentsNotAsked: studentsData.map((s: Student) => s._id),
+              studentsNotAsked: activeStudents.map((s: Student) => s._id),
               subject: selectedSubject.subject,
               class: selectedSubject.class,
-              totalStudents: studentsData.length,
+              totalStudents: activeStudents.length,
               startedAt: new Date(),
             }),
           });
@@ -84,18 +85,34 @@ export default function EvaluationPage() {
   };
 
   const fetchStudent = async (studentId: string) => {
-    const response = await apiFetch(`/api/students/${studentId}`, { method: "GET" });
-    if (!response.ok) throw new Error("Failed to fetch student");
-    const data = await response.json();
-    setCurrentStudent(data as Student);
-    setCurrentEvaluation(null);
-    return data;
+    try {
+      const response = await apiFetch(`/api/students/${studentId}`, { method: "GET" });
+      if (!response.ok) {
+        console.warn(`Student ${studentId} not found, removing from round.`);
+        const updatedRounds = await removeStudentFromRound(studentId);
+        return await pickRandomStudent(updatedRounds);
+      }
+      const data = await response.json();
+      if (data.active === false) {
+        console.log(`Student ${data.name} (${studentId}) is inactive (dropped), skipping and removing from round.`);
+        const updatedRounds = await removeStudentFromRound(studentId);
+        return await pickRandomStudent(updatedRounds);
+      }
+      setCurrentStudent(data as Student);
+      setCurrentEvaluation(null);
+      return data;
+    } catch (err) {
+      console.warn(`Error fetching student ${studentId}:`, err);
+      const updatedRounds = await removeStudentFromRound(studentId);
+      return await pickRandomStudent(updatedRounds);
+    }
   };
 
   const increaseRound = async () => {
+    const activeStudentIds = students.filter((s) => s.active !== false).map((s) => s._id);
     const response = await apiFetch(`/api/rounds/${rounds[0]._id}/increaseRound`, {
       method: "POST",
-      body: JSON.stringify({ studentsNotAsked: students.map((s) => s._id) }),
+      body: JSON.stringify({ studentsNotAsked: activeStudentIds }),
     });
     if (!response.ok) throw new Error("Failed to increase round");
     const data = await response.json();

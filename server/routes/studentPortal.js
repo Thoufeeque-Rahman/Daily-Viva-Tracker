@@ -87,6 +87,13 @@ router.post("/login", async (req, res) => {
       });
     }
 
+    if (student.active === false) {
+      return res.status(403).json({
+        success: false,
+        error: "This student account is inactive (dropped). Please contact administration."
+      });
+    }
+
     // Generate JWT token
     const token = jwt.sign(
       {

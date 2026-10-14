@@ -1,6 +1,11 @@
 {
+  "scripts": {
+    "run:ai": "tsx --env-file=.env.local index.ts"
+  },
   "dependencies": {
     "@vercel/analytics": "^1.6.1",
+    "ai": "^7.0.113",
+    "tsx": "^4.23.15",
     "xlsx": "^0.18.5"
   }
 }

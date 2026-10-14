@@ -85,6 +85,7 @@ router.get("/class-wise", authenticateToken, async (req, res) => {
     // Group by student
     const studentMarks = {};
     marks.forEach(mark => {
+      if (!mark.studentId) return;
       const studentId = mark.studentId._id;
       if (!studentMarks[studentId]) {
         studentMarks[studentId] = {

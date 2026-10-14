@@ -64,6 +64,9 @@ router.post("/", authenticateToken, addCollegeFilter, async (req, res) => {
     if (!student) {
       return res.status(404).json({ message: "Student not found" });
     }
+    if (student.active === false) {
+      return res.status(400).json({ success: false, message: "Cannot evaluate an inactive (dropped) student" });
+    }
 
     // Get college ID from authenticated user
     let collegeId;
@@ -601,6 +604,10 @@ router.post("/bulk-batch", authenticateToken, addCollegeFilter, async (req, res)
         const student = await Student.findOne({ _id: studentId });
         if (!student) {
           errors.push({ studentId, error: "Student not found" });
+          continue;
+        }
+        if (student.active === false) {
+          errors.push({ studentId, error: "Cannot evaluate an inactive (dropped) student" });
           continue;
         }
 

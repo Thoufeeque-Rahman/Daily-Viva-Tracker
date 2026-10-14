@@ -15,7 +15,11 @@ const studentSchema = new mongoose.Schema({
     ref: 'College',
     required: true
   },
-  dateOfBirth: { type: Date, required: false }, // Optional DOB field
+  dateOfBirth: { type: Date, required: false },
+  // Semester-transition fields
+  active: { type: Boolean, default: true },
+  status: { type: String, enum: ['active', 'completed'], default: 'active' },
+  batchNumber: { type: Number, default: null },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

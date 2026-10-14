@@ -181,11 +181,12 @@ export default function EvaluationScreen({
     await Promise.all([fetchAllStudentsData(), fetchDvtMarks()]);
   };
 
-  // Filter students based on search query
-  // console.log(allStudents);
-  const filteredStudents = allStudents.filter((student) =>
-    student.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter students based on search query (only active students)
+  const filteredStudents = allStudents
+    .filter((student) => student.active !== false)
+    .filter((student) =>
+      student.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   // Helper function to check if mark requires improvement
   const requiresImprovement = (mark: number) => {
@@ -295,9 +296,9 @@ export default function EvaluationScreen({
       return;
     }
 
-    // First filter students by class (only students from the current class)
+    // First filter students by class (only ACTIVE students from the current class)
     const studentsInClass = allStudentsData.filter(
-      (student) => student.class === classNum
+      (student) => student.class === classNum && student.active !== false
     );
 
     // Calculate question counts for each student in this class and subject
@@ -440,7 +441,7 @@ export default function EvaluationScreen({
         />
         {showSearchResults && (
           <div className="absolute w-full bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
-            {(searchQuery ? filteredStudents : allStudents).map((student) => (
+            {(searchQuery ? filteredStudents : allStudents.filter((s) => s.active !== false)).map((student) => (
               <div
                 key={student._id}
                 className="p-2 hover:bg-gray-100 cursor-pointer"

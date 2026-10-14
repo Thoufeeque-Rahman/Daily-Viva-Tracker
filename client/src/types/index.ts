@@ -1,11 +1,16 @@
 export interface Student {
   _id: string;
   name: string;
-  rollNumber: string;
-  adNumber: string;
+  fullName?: string;
+  rollNumber: string | number;
+  adNumber: string | number;
   photoUrl?: string;
   classId?: number;
   class?: number;
+  dateOfBirth?: string;
+  active?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
   dvtMarks?: Array<{
     subject: string;
     mark: number;

@@ -67,6 +67,8 @@ import { DatePicker } from "@/components/ui/date-picker";
 import axios from "@/lib/axios";
 import { BulkDeleteActions, useBulkSelection } from "@/components/BulkDeleteActions";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { UserX, UserCheck } from "lucide-react";
 
 interface Student {
   _id: string;
@@ -76,6 +78,9 @@ interface Student {
   adNumber: number;
   class: number;
   dateOfBirth?: string;
+  active?: boolean;
+  status?: string;
+  batchNumber?: number;
   createdAt: string;
 }
 
@@ -108,6 +113,8 @@ export default function ManageStudents() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [classFilter, setClassFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState<string | null>(null);
 
   // Bulk selection hook
   const {
@@ -135,6 +142,7 @@ export default function ManageStudents() {
     adNumber: "",
     class: "",
     dateOfBirth: "",
+    active: true,
   });
 
   // Edit form state
@@ -145,6 +153,7 @@ export default function ManageStudents() {
     adNumber: "",
     class: "",
     dateOfBirth: "",
+    active: true,
   });
 
   // Check if user is super admin
@@ -225,8 +234,16 @@ export default function ManageStudents() {
       );
     }
 
+    // Status filter
+    if (statusFilter !== "all") {
+      const isActive = statusFilter === "active";
+      filtered = filtered.filter(
+        (student) => (student.active !== false) === isActive
+      );
+    }
+
     setFilteredStudents(filtered);
-  }, [students, searchTerm, classFilter]);
+  }, [students, searchTerm, classFilter, statusFilter]);
 
   // Handle add student
   const handleAddStudent = async () => {
@@ -366,19 +383,104 @@ export default function ManageStudents() {
     }
   };
 
-  // Handle delete student
-  const handleDeleteStudent = async (studentId: string, studentName: string) => {
+  // Toggle student active status
+  const handleToggleStatus = async (studentId: string, newActive: boolean, studentName: string) => {
     try {
-      await axios.delete(`/api/students/${studentId}`);
+      setIsUpdatingStatus(studentId);
+      await axios.patch(`/api/students/${studentId}/toggle-active`, { active: newActive });
       
-      // Remove student from local state instead of refetching
-      setStudents(prevStudents => prevStudents.filter(student => student._id !== studentId));
-      setFilteredStudents(prevFiltered => prevFiltered.filter(student => student._id !== studentId));
+      setStudents(prevStudents =>
+        prevStudents.map(student =>
+          student._id === studentId ? { ...student, active: newActive } : student
+        )
+      );
+      setFilteredStudents(prevFiltered =>
+        prevFiltered.map(student =>
+          student._id === studentId ? { ...student, active: newActive } : student
+        )
+      );
       
       toast({
-        title: "Success",
-        description: `${studentName} has been deleted successfully.`,
+        title: newActive ? "Student Activated" : "Student Deactivated (Dropped)",
+        description: `${studentName} is now marked as ${newActive ? "active" : "inactive (dropped)"}. ${!newActive ? "They will no longer appear in rounds or evaluations." : ""}`,
       });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to update student status.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingStatus(null);
+    }
+  };
+
+  // Bulk update student active status
+  const handleBulkStatusChange = async (active: boolean) => {
+    if (selectedStudents.length === 0) return;
+    try {
+      setIsLoading(true);
+      await axios.patch("/api/students/bulk-toggle-active", {
+        studentIds: selectedStudents,
+        active,
+      });
+
+      setStudents(prevStudents =>
+        prevStudents.map(student =>
+          selectedStudents.includes(student._id) ? { ...student, active } : student
+        )
+      );
+      setFilteredStudents(prevFiltered =>
+        prevFiltered.map(student =>
+          selectedStudents.includes(student._id) ? { ...student, active } : student
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: `${selectedStudents.length} student(s) marked as ${active ? "active" : "inactive (dropped)"}.`,
+      });
+      clearSelection();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to update students.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle delete student (soft-deactivates by default to preserve evaluation data)
+  const handleDeleteStudent = async (studentId: string, studentName: string, permanent: boolean = false) => {
+    try {
+      const url = permanent ? `/api/students/${studentId}?permanent=true` : `/api/students/${studentId}`;
+      await axios.delete(url);
+      
+      if (permanent) {
+        setStudents(prevStudents => prevStudents.filter(student => student._id !== studentId));
+        setFilteredStudents(prevFiltered => prevFiltered.filter(student => student._id !== studentId));
+        toast({
+          title: "Permanently Deleted",
+          description: `${studentName} has been permanently deleted.`,
+        });
+      } else {
+        setStudents(prevStudents =>
+          prevStudents.map(student =>
+            student._id === studentId ? { ...student, active: false } : student
+          )
+        );
+        setFilteredStudents(prevFiltered =>
+          prevFiltered.map(student =>
+            student._id === studentId ? { ...student, active: false } : student
+          )
+        );
+        toast({
+          title: "Student Deactivated (Dropped)",
+          description: `${studentName} marked as dropped/inactive. Evaluation history preserved.`,
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -398,6 +500,7 @@ export default function ManageStudents() {
       adNumber: student.adNumber?.toString() || "",
       class: student.class?.toString() || "",
       dateOfBirth: student.dateOfBirth ? student.dateOfBirth.split('T')[0] : "",
+      active: student.active !== false,
     });
     setShowEditDialog(true);
   };
@@ -422,6 +525,7 @@ export default function ManageStudents() {
         adNumber: parseInt(editStudent.adNumber),
         class: parseInt(editStudent.class),
         fullName: editStudent.fullName || editStudent.name,
+        active: editStudent.active,
       };
 
       const response = await axios.put(`/api/students/${selectedStudent._id}`, studentData);
@@ -762,6 +866,30 @@ export default function ManageStudents() {
                   placeholder="Pick date of birth..."
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-status">Status</Label>
+                <Select
+                  value={editStudent.active ? "active" : "inactive"}
+                  onValueChange={(val) =>
+                    setEditStudent({
+                      ...editStudent,
+                      active: val === "active",
+                    })
+                  }
+                >
+                  <SelectTrigger id="edit-status">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active (Enrolled)</SelectItem>
+                    <SelectItem value="inactive">Inactive (Dropped Out)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500">
+                  Inactive students are never selected in viva rounds and cannot be evaluated.
+                </p>
+              </div>
             </div>
 
             <div className="flex justify-end gap-2">
@@ -843,10 +971,26 @@ export default function ManageStudents() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-500">Added to System</Label>
-                  <div className="text-sm text-gray-600">
-                    {new Date(selectedStudent.createdAt).toLocaleString()}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Status</Label>
+                    <div>
+                      {selectedStudent.active !== false ? (
+                        <Badge className="bg-green-100 text-green-800 border-green-300">
+                          Active (Enrolled)
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="bg-red-100 text-red-800 border-red-300">
+                          Inactive (Dropped Out)
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">Added to System</Label>
+                    <div className="text-sm text-gray-600">
+                      {new Date(selectedStudent.createdAt).toLocaleString()}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -975,22 +1119,62 @@ export default function ManageStudents() {
                       ))}
                   </SelectContent>
                 </Select>
+
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active Only</SelectItem>
+                    <SelectItem value="inactive">Inactive Only</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Bulk Delete Actions */}
+        {/* Bulk Actions */}
         {filteredStudents.length > 0 && (
-          <BulkDeleteActions
-            selectedItems={selectedStudents}
-            onSelectAll={handleSelectAll}
-            onSelectItem={handleSelectItem}
-            onBulkDelete={handleBulkDeleteStudents}
-            totalItems={filteredStudents.length}
-            entityName="students"
-            disabled={isLoading}
-          />
+          <div className="space-y-2 mb-6">
+            <BulkDeleteActions
+              selectedItems={selectedStudents}
+              onSelectAll={handleSelectAll}
+              onSelectItem={handleSelectItem}
+              onBulkDelete={handleBulkDeleteStudents}
+              totalItems={filteredStudents.length}
+              entityName="students"
+              disabled={isLoading}
+            />
+            {selectedStudents.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 p-3 bg-amber-50/60 border border-amber-200 rounded-lg text-sm">
+                <span className="font-medium text-amber-900">
+                  Status Actions ({selectedStudents.length} selected):
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-white border-amber-300 text-amber-800 hover:bg-amber-100"
+                  onClick={() => handleBulkStatusChange(false)}
+                  disabled={isLoading}
+                >
+                  <UserX className="h-4 w-4 mr-1.5 text-amber-600" />
+                  Mark as Inactive (Dropped)
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-white border-emerald-300 text-emerald-800 hover:bg-emerald-100"
+                  onClick={() => handleBulkStatusChange(true)}
+                  disabled={isLoading}
+                >
+                  <UserCheck className="h-4 w-4 mr-1.5 text-emerald-600" />
+                  Mark as Active
+                </Button>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Students Table */}
@@ -1037,6 +1221,7 @@ export default function ManageStudents() {
                       <TableHead>Class</TableHead>
                       <TableHead>Roll No.</TableHead>
                       <TableHead>Admission No.</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead>Added</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -1124,6 +1309,27 @@ export default function ManageStudents() {
                         </TableCell>
 
                         <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={student.active !== false}
+                              disabled={isUpdatingStatus === student._id}
+                              onCheckedChange={(checked) =>
+                                handleToggleStatus(student._id, checked, student.name)
+                              }
+                            />
+                            {student.active !== false ? (
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                                Active
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs">
+                                Inactive
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+
+                        <TableCell>
                           <div className="text-sm text-gray-600">
                             {new Date(student.createdAt).toLocaleDateString()}
                           </div>
@@ -1147,28 +1353,41 @@ export default function ManageStudents() {
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm">
+                                <Button variant="ghost" size="sm" title="Delete or Deactivate">
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>
-                                    Delete Student
+                                    Deactivate or Delete Student
                                   </AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete{" "}
-                                    {student.name}? This action cannot be
-                                    undone.
+                                  <AlertDialogDescription className="space-y-2">
+                                    <div>
+                                      Are you sure you want to handle <strong>{student.name}</strong>?
+                                    </div>
+                                    <div className="p-3 bg-amber-50 rounded text-amber-900 text-xs border border-amber-200">
+                                      <strong>Recommended for dropped students:</strong> Mark as Inactive instead of permanently deleting. Marking inactive preserves evaluation marks, reports, and attendance history while immediately and permanently preventing this student from appearing in any current or future viva rounds.
+                                    </div>
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
-                                <AlertDialogFooter>
+                                <AlertDialogFooter className="flex-col sm:flex-row gap-2">
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  {student.active !== false && (
+                                    <Button
+                                      variant="outline"
+                                      className="border-amber-400 text-amber-800 hover:bg-amber-100"
+                                      onClick={() => handleToggleStatus(student._id, false, student.name)}
+                                    >
+                                      <UserX className="h-4 w-4 mr-1 text-amber-600" />
+                                      Mark Inactive (Dropped)
+                                    </Button>
+                                  )}
                                   <AlertDialogAction 
-                                    onClick={() => handleDeleteStudent(student._id, student.name)}
+                                    onClick={() => handleDeleteStudent(student._id, student.name, true)}
                                     className="bg-red-600 hover:bg-red-700"
                                   >
-                                    Delete
+                                    Permanent Delete
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>

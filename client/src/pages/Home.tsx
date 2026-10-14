@@ -77,20 +77,22 @@ export default function Home() {
     }
     const data = await response.json();
     console.log("Fetched Students:", data);
-    setStudents(data);
-    return data;
+    const activeStudents = (data as Student[]).filter((s) => s.active !== false);
+    setStudents(activeStudents);
+    return activeStudents;
   };
 
   const createRound = async (subject: SubjectInfo, students: Student[]) => {
     console.log("Creating round for subject:", subject);
+    const activeStudents = students.filter((s) => s.active !== false);
 
     const response = await apiFetch(`/api/rounds/`, {
       method: "POST",
       body: JSON.stringify({
-        studentsNotAsked: students.map((student) => student._id),
+        studentsNotAsked: activeStudents.map((student) => student._id),
         subject: subject.subject,
         class: subject.class,
-        totalStudents: students.length,
+        totalStudents: activeStudents.length,
         startedAt: new Date(),
       }),
     });
@@ -159,12 +161,13 @@ export default function Home() {
 
   const increaseRound = async () => {
     console.log("Increasing round", rounds[0]);
+    const activeStudentIds = students.filter((student) => student.active !== false).map((student) => student._id);
     const response = await apiFetch(
       `/api/rounds/${rounds[0]._id}/increaseRound`,
       {
         method: "POST",
         body: JSON.stringify({
-          studentsNotAsked: students.map((student) => student._id),
+          studentsNotAsked: activeStudentIds,
         }),
       }
     );
@@ -183,20 +186,32 @@ export default function Home() {
 
   const fetchStudent = async (studentId: string) => {
     console.log("Fetching student with ID:", studentId);
-    const response = await apiFetch(`/api/students/${studentId}`, {
-      method: "GET",
-    });
-    if (!response.ok) {
-      console.log("Failed to fetch student:", response.statusText);
-      throw new Error("Failed to fetch student" + response.statusText);
+    try {
+      const response = await apiFetch(`/api/students/${studentId}`, {
+        method: "GET",
+      });
+      if (!response.ok) {
+        console.warn(`Failed to fetch student ${studentId}. Removing from round.`);
+        const updatedRounds = await removeStudentFromRound(studentId);
+        return await getRandomStudent(updatedRounds);
+      }
+      const data = await response.json();
+      if (data.active === false) {
+        console.log(`Student ${data.name} (${studentId}) is inactive (dropped). Removing from round.`);
+        const updatedRounds = await removeStudentFromRound(studentId);
+        return await getRandomStudent(updatedRounds);
+      }
+      console.log("Fetched Student:", data.name, "ID:", data._id);
+      console.log("Setting current student to:", data.name);
+      setCurrentStudent(data as Student);
+      // Clear any previous evaluation when switching to a new student
+      setCurrentEvaluation(null);
+      return data;
+    } catch (error) {
+      console.warn(`Error fetching student ${studentId}:`, error);
+      const updatedRounds = await removeStudentFromRound(studentId);
+      return await getRandomStudent(updatedRounds);
     }
-    const data = await response.json();
-    console.log("Fetched Student:", data.name, "ID:", data._id);
-    console.log("Setting current student to:", data.name);
-    setCurrentStudent(data as Student);
-    // Clear any previous evaluation when switching to a new student
-    setCurrentEvaluation(null);
-    return data;
   };
   // const getRandomStudentIndex = (rounds: { studentsNotAsked: string[] }[]) => {
 

@@ -77,7 +77,7 @@ export function BulkEvaluationModal({
 
   // State to track remaining students (for individual mode)
   const [remainingStudents, setRemainingStudents] =
-    useState<Student[]>(initialStudents);
+    useState<Student[]>(initialStudents.filter((s) => s.active !== false));
 
   // State to track each student's selected evaluation (for batch mode)
   const [studentEvaluations, setStudentEvaluations] = useState<
@@ -104,7 +104,7 @@ export function BulkEvaluationModal({
   // Reset students list when modal opens
   useEffect(() => {
     if (isOpen) {
-      setRemainingStudents(initialStudents);
+      setRemainingStudents(initialStudents.filter((s) => s.active !== false));
       setStudentEvaluations({});
     }
   }, [isOpen, initialStudents]);

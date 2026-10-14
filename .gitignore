@@ -10,5 +10,6 @@ vite.config.ts.*
 client/.env
 server/.env
 .env
+.env.local
 
 server/index.js
